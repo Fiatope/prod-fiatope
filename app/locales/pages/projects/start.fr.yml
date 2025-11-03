@@ -1,0 +1,53 @@
+fr:
+  projects:
+    start:
+      title: "Soumettre un projet"
+      meta_description: "Découvrez tous les éléments nécessaires pour lancer votre campagne de financement participatif et en faire un réel succès"
+      titlebis: "Activer votre campagne en trois étapes"
+      get-started: 'Démarrer'
+      guide_access: 'Accedez au Guide'
+      campaign: 'ACTIVER VOTRE CAMPAGNE '
+      campaigne: 'EN TROIS ETAPES'
+      steps:
+        first:
+          title: '1. SOUMETTRE'
+          description: "Nous vous répondons dans un court délai."
+        second:
+          title: '2. PEAUFINER'
+          description: "Une présentation de qualité est la clé du succès."
+        third:
+          title: '3. LANCER'
+          description: "Le projet est activé dès notre GO. "
+      who:
+        title: 'Qui peut soumettre un projet?'
+        local-governments: 'Organismes privés'
+        nonprofits: 'Associations'
+        neighborhood-organizations: 'Jeunes Entreprises'
+        description: "Nous travaillons avec un réseau de partenaires en Europe et en Afrique, afin de guarantir l'authenticité des projets et le sérieux des structures qui les soumettent. les fonds sont collectables en Europe."
+      work:
+        title: 'Une campagne réussie demande un minimum'
+        subtitle: "Il vous faudra:"
+        look: 'voir des campagnes'
+        team:
+          title: 'De la Motivation'
+          description: "Afin d'obtenir le meilleur résultat, il vous faudra être engagé et déterminé."
+        imagery:
+          title: 'De Belles Images'
+          description: 'Une image vaut plus que mille mots. Engagez vos contributeurs avec des images qui les captivent.'
+        video:
+          title: 'Une Video Marquante'
+          description: "Une vidéo est un excellent moyen de présenter votre projet et d'éclairer vos futurs contributeurs."
+        detailed:
+          title: 'Une Documentation Détaillée'
+          description: "Plus les contributeurs ont d'information sur votre projet et plus ils seront enclins à contribuer."
+        rewards:
+          title: 'Des Rewards attrayants'
+          description: 'Motivez vos contributeurs en leur offrant des rewards.'
+        engagement:
+          title: 'Un Soutien pré-établi'
+          description: 'Une campagne de financement participatif se réussit grâce à une base solide de personnes qui soutiennent le projet.'
+      inspiration:
+        title: "Si vous avez besoin d'inspiration"
+        subtitle: 'Regarder des campagnes qui ont été financées avec succès :'
+      start:
+        title: "Lancez vous en connaissance de cause"

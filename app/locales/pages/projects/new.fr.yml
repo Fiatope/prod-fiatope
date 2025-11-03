@@ -1,0 +1,47 @@
+fr:
+  projects:
+    new:
+      title: 'Nouveau Projet'
+      missing_mobile_phone_for_new_project: "Vous devez renseigner votre numéro de téléphone pour créer un projet"
+      not_mangopay_ready: 'Nous avons besoin des informations ci-dessous pour la création de votre projet'
+      titles:
+        site: 'Je soumets mon projet'
+        header: 'Mon Projet'
+        sub: ''
+      joyride:
+        next: 'Suivant'
+        done: 'Effectué'
+        start:
+          title: 'Vous êtes à la phase de soumission.'
+          description: 'Les informations fournies ici peuvent être changées plus tard.'
+        category:
+          title: 'Choisissez une catégorie'
+          description: 'Quelle catégorie décrit le mieux votre projet? Vous pourrez la changer plus tard.'
+        name:
+          title: 'Nom du projet'
+          description: 'Comment souhaitez-vous appeler votre projet? un titre court et parlant est toujours mieux!'
+        currency:
+          title: 'Monnaie'
+          description: "Choisissez la monnaie dans laquelle les fonds seront collectés entre Euro et Dollar US"
+        goal:
+          title: 'Montant visé'
+          description: 'Combien devez-vous lever de fonds pour réaliser votre projet? Veuillez entrer un nombre sans virgules.'
+        online_days: 
+          title: 'durée (jours)'
+          description: 'le temps que votre projet sera visible sur la plateforme'
+        location:
+          title: 'Ville, Pays'
+          description: 'Dans quelle ville et quel pays est basée votre projet?'
+        headline:
+          title: "Indiquer le bénéficiaire"
+          description: "Indiquez l'organisation pour qui la levée de fonds est effectuée."
+        about:
+          title: 'Détaillez votre projet.'
+          description: "Expliquez ce que votre projet apporte et pourquoi la communauté visée doit s'y impliquer."
+        code_partenaire:
+          title: 'Code Partenaire'
+        organization_type:
+          title: "Type d'organisation"
+          description: "Veuillez indiquer la nature de l'organisation qui recevra les fonds levés."
+      accept_terms_html: 'En soumettant, vous acceptez les %{link}.'
+      Category: 'catégorie'

@@ -1,0 +1,22 @@
+- @title = "Création de crowfunding - Etape 3"
+
+- if @partner && @partner.hero_image.url.present?
+  .[style="text-align: center; width: 100%; min-height: 30.625em; padding: 3.75em 0; background-size: cover; background-position: center; background-image:url(#{@partner.hero_image.url});"]
+    .filter-black-title.flex-container
+      .background-title.flex-item
+        /h2 = "Création d'une campagne de crowfunding"
+- else
+  .background-full-color.flex-container.text-center
+      .background-title.flex-item
+        h2 = "Création d'une campagne de crowfunding"
+
+.new-project-page[class="category-#{@project.category.to_s.parameterize}"]
+
+  .row
+    .col-md-offset-2.col-md-8
+      .new-project-box
+        .row
+          .large-10.small-11.columns.large-centered.small-centered
+            = simple_form_for @project, url: wizard_path, method: :put do |f|
+              = render 'step3_fields', f: f
+              = f.submit t('crowdfunding.next'), class: 'btn btn-medium-green'

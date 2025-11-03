@@ -1,0 +1,12 @@
+= content_for :title, t('.titre')
+|Bienvenue, #{@email},
+br
+br
+|Vous êtes tout prêt de pouvoir utiliser les services de #{Configuration[:company_name]}! Veuillez confirmer votre email en cliquant sur le lien:
+
+h4 #{link_to 'Confirmer mon email', confirmation_url(@resource, :confirmation_token => @token)}
+br
+br
+|Bien à vous,
+br
+|L équipe #{Configuration[:company_name]}

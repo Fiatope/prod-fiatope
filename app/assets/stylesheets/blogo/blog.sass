@@ -1,0 +1,257 @@
+/*
+ *= require blogo/pure-min
+ */
+
+$width: 1120px
+$font: sans-serif
+
+$link-color: #286790
+
+body
+  background: #F3F3F3
+  background-image: image-url('blogo/background.png')
+
+
+#content
+  padding: 25px
+
+#main
+  padding-right: 40px
+  .article-overview
+    padding-bottom: 10px
+    border-bottom: 2px solid #aaa
+    &:last-child
+      border-bottom: 0px
+
+
+#disqus-comments
+  margin-top: 30px
+  padding-left: 2px
+  padding-right: 2px
+  h1
+    border-bottom: 2px solid #aaa
+    color: #888
+    font-size: 1.4em
+  a
+    color: $link-color
+
+
+#container
+  margin: 0 auto
+  max-width: $width
+
+  background: #FFF
+  display: block
+  box-shadow: 0px 0px 10px #aaa
+
+  .blogo-header
+    background: #3D4F5D
+    color: #fff
+    padding: 10px 22px
+    height: 80px
+    position: relative
+    h1
+      color: #fff
+      font-size: 2em
+      line-height: 1.5em
+      margin: 4px 0px
+      a
+        text-decoration: none
+        color: #fff
+    h2
+      font-weight: 100
+      margin: 3px 0px
+      font-style: italic
+      font-size: 1.2em
+      line-height: 1em
+      color: #B0CADB
+    
+    ul
+      list-style: none
+      li
+        display: inline-block
+        text-align: right
+
+    .header-titles
+      position: absolute
+    .logo-icon
+      position: absolute
+      right: 145px
+      bottom: 12px
+      width: 56px
+      height: 58px 
+      background-image: image-url('blogo/home-icon.png')
+
+    .header-icons
+      position: absolute
+      right: 180px
+      bottom: 10px
+    .rss-icon, .twitter-icon, .facebook-icon, .github-icon, .home-icon
+      display: inline-block
+      width: 48px
+      height: 48px
+    .rss-icon
+      background-image: image-url('blogo/rss-icon.png')
+      &:hover
+        background-image: image-url('blogo/rss-icon-active.png')
+    .home-icon
+      background-image: image-url('blogo/home-icon.png')
+      &:hover
+        background-image: image-url('blogo/home-icon-active.png')
+    .twitter-icon
+      background-image: image-url('blogo/twitter-icon.png')
+      &:hover
+        background-image: image-url('blogo/twitter-icon-active.png')
+    .facebook-icon
+      background-image: image-url('blogo/facebook-icon.png')
+      &:hover
+        background-image: image-url('blogo/facebook-icon-active.png') 
+    .github-icon
+      background-image: image-url('blogo/github-icon.png')
+      &:hover
+        background-image: image-url('blogo/github-icon-active.png')
+
+
+.blogo-article
+  font-family: $font
+  .posted
+    font-size: 1em
+    padding: 4px 0px
+    color: #888
+
+      color: #fff
+  h1, h2, h3, h4, h5
+    color: #444
+  h2, h3, h4, h5
+    margin-bottom: 0.25em
+  h1
+    font-size: 2em
+    line-height: 1.2em
+    a
+      text-decoration: none
+      color: #444
+  h2
+    font-size: 1.4em
+  h3
+    font-size: 1.2em
+
+  p
+    color: #444
+    text-align: justify
+    margin-bottom: 1.5em
+    font-size: 1em
+    line-height: 1.5em
+    a
+      color: $link-color
+      text-decoration: none
+      &:hover
+        text-decoration: underline
+  ul
+    li
+      font-size: 1em
+      line-height: 1.5em
+      a
+        color: $link-color
+        text-decoration: none
+        &:hover
+          text-decoration: underline
+  img
+    border-radius: 0.3em
+
+.article-tags
+  float: right
+
+aside
+  h1
+    background: #5b768b
+    color: #dae1e7
+    font-size: 1.2em
+    margin-top: 30px
+    padding: 10px
+    border-radius: 8px 8px 0px 0px
+    text-align: center
+  ul
+    list-style-type: none
+    margin: 0px
+    padding: 0px
+  a
+    color: $link-color
+    text-decoration: none
+    &:hover
+      text-decoration: underline
+  .tag
+    margin: 2px
+
+
+.tags
+  text-align: center
+
+.tag
+  display: inline-block
+  position: relative
+  font-size: 12px
+  line-height: 14px
+
+
+.blogo-recent-posts li
+  margin-bottom: 12px
+
+.paginator
+  text-align: center
+
+.button-secondary, .button-warning, .button-success
+  color: white
+  border-radius: 4px
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2)
+
+.button-secondary
+  background: rgb(66, 184, 221)
+
+.button-warning
+  background: rgb(223, 117, 20)
+
+.button-success
+  background: rgb(28, 184, 65)
+
+
+
+// Social sharing
+.social
+  // This gets Google to fall into place
+  font-size: 1px
+  margin: 15px 10px
+
+  // This gets Facebook to fall into place
+  iframe
+    vertical-align: middle
+
+  // Set an optional width for your button wrappers
+  span
+    display: inline-block
+    width: 110px
+
+  //Adjust the widths individually if you like
+  .google
+    width: 75px
+
+  //This gets Facebook to fall into place
+  .fb-share-button
+    vertical-align: middle
+
+  // Set an optional width for your button wrappers
+  span
+    display: inline-block
+    width: 110px
+
+  // Adjust the widths individually if you like
+  .google
+    width: 75px
+
+a.powered-by
+  display: block
+  color: $link-color
+  text-decoration: none
+  text-align: right
+  font-size: 0.8em
+  &:hover
+    text-decoration: underline

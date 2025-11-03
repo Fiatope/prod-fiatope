@@ -1,0 +1,8 @@
+fr:
+  projects:
+    success:
+      titles:
+        site: 'Projet créé avec succès!'
+        header: 'Projet créé avec succès!'
+      text: "Félicitations pour cette première étape! Vous pouvez à présent détailler la présentation de votre projet, expliquer le contexte, le problème à résoudre, la solution que vous apportez, son impact social, pourquoi il est important de contribuer et présenter votre équipe.  <br /><br /> Sans ces précisions il ne nous sera pas possible de donner une suite à votre soumission. Incluez aussi des photos ou une vidéo illustrant le projet. Seuls les projets innovants et à fort impact social ont une chance d'être acceptés"
+      continue: 'Continuez'

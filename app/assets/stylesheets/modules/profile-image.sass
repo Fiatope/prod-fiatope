@@ -1,0 +1,20 @@
+=avatar-position($size, $type: person)
+  @if $type == person
+    width: $size
+    height: $size
+  @else if $type == organization
+    width: $size
+    height: $size / 2
+
+.profile-image
+  overflow: hidden
+  margin: 0 auto
+  &.personal
+    border-radius: 50%
+    +avatar-position(85px)
+    &.large
+      +avatar-position(150px)
+  &.organization, &.channel
+    +avatar-position(170px, organization)
+    &.large
+      +avatar-position(300px, organization)

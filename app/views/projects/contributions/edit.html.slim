@@ -1,0 +1,77 @@
+- content_for :title, t('.title', project_name: @project.name)
+
+- content_for :meta_tags
+  meta name="turbolinks-visit-control" content="reload"
+
+.create-contribution-page[data-thank-you-path=project_contribution_path(project_id: @project, id: @contribution.id)]
+  = hero_header_tag @project do
+    .row
+      .large-10.columns.large-centered
+      - if @project.hero_image.blank?
+        h3
+          = t('.you_are_presale_to')
+          br/
+          strong = @project.name
+        form.total-value
+          .row
+            .large-5.columns.large-centered.small-centered
+              input[type='text' disabled=true value="#{t('.total')}#{number_to_currency(@contribution.value, unit: @project.currency_sym)}" data-total-text=t('.total') style='border: none']
+              - if @contribution.cfa_value
+                div[style="font-size:14px; color:white; margin-top:6px;"]
+                  = t('.cfa_equivalent_html', cfa_value: @contribution.cfa_value.round)
+
+              - if @project.matches.active.any?
+                .to-be-matched-by
+                  = t('.to_be_matched_by')
+                  br/
+                  = @project.matches.active.map { |m| m.user.display_name }.uniq.to_sentence
+              .who-pay-fees.hidden
+                = check_box_tag 'pay_payment_fees', 1, false, disabled: 'disabled'
+                = label_tag 'pay_payment_fees', t('.i_want_pay_fees')
+                - if browser.device.mobile? || browser.device.tablet?
+                  = link_to '#', class: 'fees-info-button', data: { reveal_id: 'pay-fees-modal' } do
+                    i.icon-et-info-circled
+
+                  #pay-fees-modal.reveal-modal.small
+                    a.close-reveal-modal ×
+                    p = t('.tooltip-text', project_name: @project.name).html_safe
+                - else
+                  .custom-tooltip
+                    = link_to '#', class: 'fees-info-button' do
+                      i.icon-et-info-circled
+                    .tooltip-content.hide
+                      p = t('.tooltip-text', project_name: @project.name).html_safe
+
+
+  .row
+    section.content.large-8.medium-8.columns
+      h3.title = t('.payment_form_title')
+
+      div
+        = "Franc CFA (#{@contribution.project.address_state =~ /mali/i ? 'XOF' : 'XAF'})"
+      div.payments
+        = render 'shared/payments/orange_money', resource: @contribution
+        = render 'shared/payments/pay_plus_africa', resource: @contribution
+        = render 'shared/payments/touch', resource: @contribution
+      br 
+      div
+        = "#{@project.currency.upcase}"
+      = render 'shared/payments/form', resource: @contribution
+
+    aside.large-4.medium-4.columns
+      .project-image
+        = image_tag @project.display_image('project_thumb_large'), id: 'project_image', alt: @project.name
+        h5 = "#{@project.time_to_go[:time]} #{@project.time_to_go[:unit]} #{@project.remaining_text}"
+
+      - if @contribution.rewards.present?
+        h4 = t('.reward.titles')
+        - for reward in @contribution.rewards
+          .selected-reward
+            .description
+             
+              - @contribution.contribution_rewards.each do |rc| 
+                h5 = "#{rc.reward_id == reward.id && rc.quantity ? rc.quantity.to_i : '' }x - #{reward.title}"
+                br
+              p =  reward.description.truncate(120)
+      .faqs
+        = render 'faqs'

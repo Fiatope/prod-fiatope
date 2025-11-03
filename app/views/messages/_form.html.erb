@@ -1,0 +1,26 @@
+<div class="row form">
+	<div class="col-md-6 col-md-offset-3 text-center">
+		<%= form_for @message do |f| %>
+
+		<%= recaptcha_tags %>
+
+		<%= f.label :Nom, class: 'strong-label' %>
+		<%= f.text_field :name, placeholder: "Indiquez votre nom", class:"wrap"%>
+
+		<%= f.label :email, class: 'strong-label' %>
+		<%= f.text_field :email, placeholder: "Indiquez votre email"%>
+
+		<%= f.label :objet, class: 'strong-label' %> 
+    	<%= f.text_field :subject, placeholder: "Indiquez le sujet"%> 
+
+		<%= f.label :message, class: 'strong-label'  %> 
+		<%= f.text_area :message, placeholder: "Précisez votre message" %>
+
+		<%= f.hidden_field :type, value:nil %>
+
+		<%= f.submit :Envoyer, class: 'btn-medium-red-nm btn-block' %>
+
+		<% end %>
+
+	</div> 
+</div>

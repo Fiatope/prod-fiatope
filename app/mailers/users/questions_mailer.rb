@@ -1,0 +1,18 @@
+class Users::QuestionsMailer < ActionMailer::Base
+  layout 'email'
+
+  def delivered_question(question, user, project, asker)
+    @question = question
+    @user = user
+    @project = project
+    @asker = asker
+
+    mail(
+      from: "#{::Configuration[:company_name]} <#{::Configuration[:email_system]}>",
+      reply_to: "#{asker.display_name} <#{asker.email}>",
+      to: @user.email,
+      subject: "Question Regarding #{@project.name}.",
+      template_name: "new"
+    )
+  end
+end

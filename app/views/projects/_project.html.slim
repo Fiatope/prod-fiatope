@@ -1,0 +1,128 @@
+- content_for :title, t('.title')
+- large = defined?(large) && large
+- if !defined?(:contribution)
+  - contribution = nil
+
+= cache [:project_box, project, project.progress, project.pledged, large, contribution, defined?(:columns), browser.device.mobile?, browser.ie?(8), project.remaining_days] do
+
+  .project-box[itemscope itemtype="http://schema.org/CreativeWork" class=project_box_classes(project, large, contribution, try(:columns))]
+    meta[ itemprop="dateCreated" content=project.created_at.to_date ]
+    - if project.soon?
+      - project_link = 'javascript:void(0)'
+    - else
+      - if project.partner.present?
+        - project_link = partner_project_path(partner_id: project.partner.permalink, id: project.permalink)
+      - else
+        - project_link = project_path(project)
+
+    = link_to project_link, target: (defined?(embed_link) ? :blank : '') do
+      - if project.expired?
+        .status-image
+          - if project.successful? && project.reached_goal?
+            = image_tag "successful.#{I18n.locale}.png"
+          - elsif project.successful? && !project.reached_goal?
+            = image_tag "successful_flex.#{I18n.locale}.png"
+          - elsif project.failed? 
+            = image_tag "not_successful.#{I18n.locale}.png"
+          - elsif project.canceled?
+            = image_tag "canceled.png"
+      - elsif project.soon?
+        .status-image
+          = image_tag "coming_soon.#{I18n.locale}.png"
+
+      .row
+        .cover.small-12.columns
+          = image_tag project.display_image(large || contribution && !browser.device.mobile? ? 'project_thumb_large' : 'project_thumb'), itemprop: 'image'
+
+      - if contribution && !browser.device.mobile?
+        .back-informations.large-3.medium-3.columns.right
+          h5
+            - contribution.confirmed_at.present?
+              i.icon-et-calendar
+              = l contribution.confirmed_at.to_date, format: :long
+
+          - if contribution.display_value
+            h5
+              i.icon-et-heart
+              = contribution.display_value
+          - if contribution.rewards
+            - for reward in contribution.rewards
+              .reward
+                h5
+                  i.icon-et-trophy
+                  = t('rewards.index.reward_title', minimum: reward.display_minimum)
+                  - contribution.contribution_rewards.each do |rc| 
+                    = "  #{rc.reward_id == reward.id && rc.quantity ? rc.quantity.to_i : '' }"
+                - description = reward.description.gsub(/"/,'&quot;')
+                p[title=description] = truncate(reward.description, length: 160)
+
+            .share
+              .large-12.columns
+                = link_to t('.share.facebook'), "http://www.facebook.com/sharer.php?s=100&p[title]=#{project.name}&p[summary]=#{project.headline}&p[url]=#{project_url(project)}&p[images[0]=#{project.display_image('project_thumb_facebook')}", class: 'button with-icon facebook', target: :blank
+              .large-12.columns
+                = link_to t('.share.twitter'), "https://twitter.com/intent/tweet?text=#{URI::encode_www_form_component(t('.share.twitter-text', name: project.name, hash_tag: project.hash_tag))}", class: 'button with-icon twitter', target: :blank
+
+          - if project.donation_can_issue_tax_receipt
+              .large-12.columns
+                = link_to t('recu_fiscal'), tax_receipt_user_contribution_path(current_user, contribution, format: :pdf), style: "color : white", class: 'button button-primary'
+
+
+      .content[class=project_content_classes(project, large, contribution)]
+        - if large || contribution && !browser.device.mobile?
+          h4.name = project.name
+
+        .category
+          span = project.category.to_s
+
+        - unless large || contribution && !browser.device.mobile?
+          h4.name = project.name
+
+        .location
+          i.icon-et-location
+          | &nbsp;
+          /= project.location
+          = project.address_city 
+
+        - if (large || !browser.ie?(8) || contribution && !browser.device.mobile?)
+          .description.hide-for-small[itemprop='description']
+            span = truncate(project.headline, length: 140, separator: ' ')
+            a
+
+        .status
+          .row
+            - if project.presale?
+              .pledged.large-4.columns = "#{project.display_pledged_presale} (#{project.progress_presale}%)"
+              .time.project.large-8.columns
+                i.icon-et-clock
+                - if project.soon?
+                  = t('.soon')
+                - elsif project.expired?
+                  = t('.completed')
+                - else
+                  = "#{project.time_to_go[:time]} #{project.time_to_go[:unit]} #{project.remaining_text}"
+            - else
+              .pledged.large-4.columns = "#{project.display_pledged} (#{project.progress}%)"
+              .time.project.large-8.columns
+                i.icon-et-clock
+                - if project.soon?
+                  = t('.soon')
+                - elsif project.expired?
+                  = t('.completed')
+                - else
+                  = "#{project.time_to_go[:time]} #{project.time_to_go[:unit]} #{project.remaining_text}"
+          - if project.presale?
+            = project.progress_bar_presale
+          - else
+            = project.progress_bar
+
+      - if project.partner
+        - if project.presale?
+          = link_to t('.view_project'), project_link, class:'btn btn-block btn-medium-orange-w-m', style: "background-color: #{project.partner.primary_theme_color};"
+        - else
+          = link_to t('.view_project'), project_link, class:'btn btn-block btn-medium-yellow-w-m', style: "background-color: #{project.partner.primary_theme_color};"
+      - else
+        - if project.presale?
+          = link_to t('.view_project'), project_link, class:'btn btn-block btn-medium-orange-w-m'
+        - else
+          = link_to t('.view_project'), project_link, class:'btn btn-block btn-medium-yellow-w-m'
+

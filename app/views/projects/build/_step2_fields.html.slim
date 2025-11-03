@@ -1,0 +1,10 @@
+= f.input :description, as: :text, input_html: { value: @project.description || t('crowdfunding.description_placeholder') }, label: t('crowdfunding.description')
+
+= f.input :how_knows_fiatope, as: :string, label: @partner.present? ? "COMMENT AVEZ VOUS ENTENDU PARLER DE #{@partner.name.upcase} ?" : t('crowdfunding.how_knows_fiatope')
+
+= f.input :how_knows_crowdfunding, as: :string, label: t('crowdfunding.how_knows_crowdfunding')
+
+= f.input :already_did_crowdfunding, as: :string, label: t('crowdfunding.already_did_crowdfunding')
+
+- if @partner
+  = f.input :partner_id, :as => :hidden, :input_html => { :value => @partner.id }

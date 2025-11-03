@@ -1,0 +1,10 @@
+fr:
+  projects:
+    updates:
+      new:
+        send: "Envoyer la mise à jour"
+        comment: "Mettre à jour le texte"
+        exclusive: "Seulement visible des contributeurs?"
+        title: "Titre de la mise à jour"
+        warning: "Votre mise à jour sera automatiquement envoyée par email à ceux qui vous ont déjà soutenu. Veuillez donc à sa pertinence."
+        created: 'Votre mise à jour a été envoyée avec succès!'

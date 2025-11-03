@@ -1,0 +1,6 @@
+fr:
+  projects:
+    carousel:
+      discover_only:
+        button: 'Découvrir les projets'
+        button1: 'Proposer un projet'

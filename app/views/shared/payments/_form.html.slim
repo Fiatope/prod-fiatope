@@ -1,0 +1,17 @@
+.payment
+  section.row.methods
+    - PaymentEngine.all.each do |engine|
+      .large-6.columns[class="payment-method-option-#{engine.name}"]
+        label.payment-method-option
+          .left
+            = radio_button_tag :payment_method, engine.name, false, :'data-value-without-fees' => number_to_currency(resource.value, unit: resource.project.currency_sym), :'data-value-with-fees' => number_to_currency(engine.fee_calculator(resource.value).gross_amount,  unit: resource.project.currency_sym)
+            | &nbsp;
+            = image_tag("payments/#{engine.name}.png", alt: engine.name.humanize, class: 'payment-method-option-icon')
+          .left.description
+            h6 = t(".payment-method.#{engine.name}.title")
+
+  
+  .loading
+    /= image_tag 'logo-icon.png', class: "loader-img"
+  - PaymentEngine.engines.each do |engine|
+    div[id="#{engine.name}-payment" class="payment-method" data-path=engine.payment_path(resource)]

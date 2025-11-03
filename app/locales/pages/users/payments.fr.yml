@@ -1,0 +1,8 @@
+fr:
+  users:
+    payments:
+      advanced:
+        title: "Autorisation avancée"
+      submit: 'Sauvegarder le RIB'
+      iban: 'Entrez votre Iban'
+      rib: 'Entrez votre Rib'

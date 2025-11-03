@@ -1,0 +1,52 @@
+en:
+  projects:
+    start:
+      title: "Start a project"
+      meta_description: "Discover all the elements necessary to launch your crowdfunding campaign and make it a real success"
+      get-started: 'Get Started'
+      guide_access: 'Access to the Guide'
+      campaign: 'ACTIVATE YOUR CAMPAIGN'
+      campaigne: 'IN THREE STEPS'
+      steps:
+        first:
+          title: '1. SUBMIT AN IDEA'
+          description: "The first step of getting started is getting your idea out! We'll review it to make sure it fits."
+        second:
+          title: '2. PLAN YOUR PROJECT'
+          description: "It takes more than an idea, so while we are reviewing, you'll be getting all of your ducks."
+        third:
+          title: '3. LUNCH CAMPAIGN'
+          description: "Once your project is approved, you'll be ready to go live and start raising money!"
+      who:
+        title: 'Who can run a campaign?'
+        local-governments: 'Non Governments'
+        nonprofits: 'Non profits'
+        neighborhood-organizations: 'Young companies'
+        description: "Any person anywhere is welcomed to propose a project on Fiatope as well as it targets the deveopment in Africa. However, campaigns must be owned by non-government organiszations, nonprofits, or young start-up companies. This one, simple requirement helps to ensure that the projects you give your contributions to handle it responsibly."
+      work:
+        title: 'A successful campaign takes some work.'
+        subtitle: "Here's what you'll need:"
+        look: 'view campaigns'
+        team:
+          title: 'A Strong Team'
+          description: "In order to receive the greatest return, you'll need an active and engaged team backed by a minded organization."
+        imagery:
+          title: 'Beautiful Imagery'
+          description: 'A picture is worth a thousand words. Engage your contributors with images that capture their attention.'
+        video:
+          title: 'A Powerful Video'
+          description: 'A video is the very best way to summarize your project allow contributors to get a glimpse into your organization.'
+        detailed:
+          title: 'Detailed Copy'
+          description: 'Explain your project in detail. The more users know about your project and how you plan to use their money, the more likely they are to contribute.'
+        rewards:
+          title: 'Compelling Rewards'
+          description: 'Incentivize contributors further by offering rewards as icing on the cake.'
+        engagement:
+          title: 'Pre-established support'
+          description: 'A successfull crowdfunding campaign relies on a solid base of people who support the project'
+      inspiration:
+        title: 'Need a little inspiration?'
+        subtitle: 'Check out these successfully funded campaigns:'
+      start: 
+        title: 'Start your campaign knowingly'

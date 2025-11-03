@@ -1,0 +1,108 @@
+#partner-layout
+  .project-page
+    header.hero
+      .name, .subtitle, .headline, .status
+        a
+          color: #A70D0D
+          &:hover
+            color: #A70D0D
+        .progress
+          margin-top: 50px
+          background: white
+          +radius(3px)
+          height: 30px
+          span
+            display: block
+            background: #A70D0D
+            height: 30px
+            +radius(3px)
+          &.green-bar
+            span
+              border: 1px solid $border-color
+              background: lighten(#A70D0D, 30%)
+      .contribute-top
+        margin-top: +emCalc(25px)
+
+    section.status-bar
+      color: #142F57
+      i
+        color: #A70D0D
+      border-bottom: 1px solid #142F57
+      .columns:not(:first-child)
+        border-left: 1px solid #142F57
+        .button
+          background: white
+          color: #142F57
+          border: 1px solid darken(#142F57, 10%)
+          border-bottom-width: 2px
+          &:after
+            border-left-color: darken(#142F57, 10%)
+          &.facebook
+            color: $facebook-color
+          &.twitter
+            color: $twitter-color
+    .button
+      &.contribute
+        &:after
+      &.edit
+        background: #A70D0D
+        border-color: darken(#142F57, 10%)
+    .call-to-action
+      .button
+        &.contribute
+          font-size: 125%
+        &.edit
+          background: #A70D0D
+          border-color: darken(#A70D0D, 10%)
+    section.author
+      color: #A70D0D
+      h4
+        color: #E6CE6D
+        a
+          color: #142F57
+      p
+        color: silver
+      .ask-a-question-button
+        background: #A70D0D
+      .social
+        display:block
+        text-align:center
+        ul
+          margin: auto
+          width: 118px
+        a
+          color: #E6CE6D
+          &:hover
+            color: #142F57
+    .share-white
+      .button
+        background: white
+        color: #E6CE6D
+        border-bottom-color: darken(#142F57, 10%)
+        &:after
+          border-left-color: darken(#142F57, 10%)
+
+    section.channel
+      +single-transition(background-color, 0.6s)
+      +single-transition(box-shadow, 0.6s)
+      &:hover
+        background: #142F57
+        box-shadow: 0 0 8px rgba(0, 0, 0, 0.30)
+  .embed-panel-page
+    .content
+      background: darken($body-bg, 5%)
+      border-top: 1px solid darken(#142F57, 5%)
+    .subtitle
+      color: #333333
+      i 
+        color: #142F57
+        padding-right: 15px
+        padding-bottom: 45px
+      a
+        color: #333333
+  .project-page 
+    .prog
+      color: #333333
+      span
+        background: #142F57
+

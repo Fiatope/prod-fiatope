@@ -1,0 +1,46 @@
+= content_for :title, t('.titre')
+- project = @notification.project
+- confirmed_contributions_today = project.contributions.confirmed_today
+
+|Great news, #{project.user.display_name}, #{confirmed_contributions_today.size} contributors gave to your campaign today for a total of: #{number_to_currency(confirmed_contributions_today.map(&:value).sum, precision: 0)}
+br
+br
+table width="500" border="1" cellpadding="10" cellspacing="0" style='font-size: 13px;'
+  thead
+    tr
+      th width="100" Contributor
+      th width="100" Email
+      th width="100" Amount
+      th width="200" Selecteds Reward
+  tbody
+    - confirmed_contributions_today.each do |contribution|
+      tr
+        td= contribution.user.display_name
+        td= contribution.user.email
+        td= contribution.display_value
+        td
+          - if contribution.rewards
+            - for reward in contribution.rewards
+              strong #{number_to_currency reward.minimum_value, precision: 0}
+              - contribution.contribution_rewards.each do |rc| 
+                = "  #{rc.reward_id == reward.id && rc.quantity ? rc.quantity.to_i : '' }"
+              |  &mdash; #{reward.display_description}
+          - else
+            |  No reward selected. If this was in error, please email #{mail_to Configuration[:email_contact]}
+          br
+          - if project.presale?
+              .user-reward = "Articles :"
+              - for article in contribution.articles
+                .user-reward = "- #{article.title}"
+
+br
+|You can view all contributors here: #{link_to project_contributions_path(project), project_contributions_path(project)}
+br
+br
+|You can even send an update to your contributors: #{link_to project_updates_path(project), project_updates_path(project)}
+
+br
+br
+|Keep on truckin',
+br
+|The #{Configuration[:company_name]} Team

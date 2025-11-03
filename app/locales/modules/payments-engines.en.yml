@@ -1,0 +1,10 @@
+fr:
+  payments:
+    common:
+      terms: 'By contributing to this project, I accept the %{link}.'
+      terms-link: 'Terms and Conditions of Use'
+      confirm: 'Confirm payment'
+      proccessing: 'Transaction in process...'
+      error:
+        title: "A problem has occured..."
+        name: 'Reload the page and try again.'

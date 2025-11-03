@@ -1,0 +1,26 @@
+<% content_for :title, @project.name %>
+
+<%= flash_messages if flash.notice.present? %>
+
+<div class="contribution-page">
+  <%= hero_header_tag @project do %>
+    <div class="large-10 columns large-centered">
+      <h3><%= t('.title') %></h3>
+    </div>
+  <% end %>
+
+  <div class="row page-main-content">
+    <div class="col-md-6 col-md-offset-3">
+
+      <%= form_tag touch_payment_status_project_contribution_path(@contribution.project, @contribution) do %>
+        <%= hidden_field_tag :country_operator, @response['country_operator'] %>
+        <%= hidden_field_tag :id_client, @response['idFromClient'] %>
+        <%= submit_tag 'Terminer le paiement', class: 'btn btn-primary btn-medium-green' %>
+        <% if @new_payment %>
+          <%= submit_tag 'Effectuer un nouveau paiement', class: 'btn btn-primary btn-medium-green' %>
+        <% end %>
+      <% end %>
+
+    </div>
+  </div>
+</div>

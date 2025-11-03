@@ -1,0 +1,42 @@
+= content_for :title, "Jobs"
+
+- if request.xhr?
+  a.close-reveal-modal ×
+
+#about-page
+  .row
+    h2.page-headline
+      | Freelance Missions, Internships
+    = image_tag("panorama_fiatope_five.jpg", :align=> "center")                                                   
+
+  .row
+     .page-headline
+
+  .job-description
+    .row
+      h3
+        p We are seeking freelancers in the following areas
+      h5
+        p Market intelligence (analysis and market studies)
+      h5
+        p Ruby on Rails Development (Front-End et Back-End)
+      h5
+        p Web Design Web
+      h5
+        p Digital Communication
+      h5
+        p French-English (American) translation
+      h5
+        p Legal assistance
+      h5
+        p Administration and accounting
+  .row
+      h3
+       p We are also looking for student interns and apprentices
+
+  .row
+    h4 
+      | Send us an email at  
+      a href='mailto:contact@fiatope.com' contact@fiatope.com
+      |
+  .row

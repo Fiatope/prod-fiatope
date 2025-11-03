@@ -1,0 +1,21 @@
+= simple_form_for @partner, html: { id: 'new_project'} do |f|
+  .new_partner
+    .row
+      = f.input :name, required: true
+      = f.input :headline, required: true, as: :string
+      = f.input :permalink, required: true, as: :string
+      = f.input :about, required: true
+      = f.input :email, required: true
+      = f.input :primary_theme_color, label: "Couleur du thème (Hex code)"
+    .image-uploader
+      = f.input :uploaded_image, as: :file
+      - if @partner.uploaded_image.present?
+        .image-preview
+          = image_tag(@partner.uploaded_image.project_thumb.url, size: '220x172')
+    .image-uploader
+      = f.input :hero_image, as: :file
+      - if @partner.hero_image.present?
+        .image-preview
+          = image_tag(@partner.hero_image_url(:blur), size: '220')
+    = f.submit "Sauvegarder", class: "button"
+    .row[style="margin-bottom:120px;"]

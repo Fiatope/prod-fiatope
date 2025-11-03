@@ -1,0 +1,22 @@
+fr:
+  rewards:
+    index:
+      sold_out: "Nous sommes vraiment désolés, ce reward n'est plus disponible!"
+      add: 'Ajouter un Reward'
+      add_presale: 'Ajouter un Article'
+      estimated_deliver: "Estimation de livraison: %{prevision}"
+      contributions_to_confirm:
+        one:  "1 contribution à temps pour être confirmée."
+        other: "%{count} contributions à temps pour être confirmées."
+      reward_title: "Pour %{minimum} et plus"
+      reward_title_presale: "Pour %{minimum}"
+      contact: 'Contact'
+      reward_deliver_time: "Estimation de Livraison: %{prevision}"
+    form:
+      soon_presale: 'Article à venir?'
+      new_presale: 'Créer Article'
+      edit_presale: 'Mettre à jour Article'
+    form_presale:
+      soon_presale: 'Article à venir?'
+      new_presale: 'Créer Article'
+      edit_presale: 'Mettre à jour Article'

@@ -1,0 +1,48 @@
+---
+events:
+- links: {}
+  occurred_at: '2014-08-14T18:58:44.850000Z'
+  uri: "/events/EV048db6b423e511e4b0ef0647853a3607"
+  entity:
+    bank_account_verifications:
+    - verification_status: pending
+      links:
+        bank_account: BA7AA3yiW6upqETZwU8pyqYg
+      created_at: '2014-08-14T18:58:44.399925Z'
+      attempts_remaining: 3
+      updated_at: '2014-08-14T18:58:44.850225Z'
+      deposit_status: succeeded
+      attempts: 0
+      href: "/verifications/BZ6V6wsEkufWOpfszp360nj"
+      meta: {}
+      id: BZ6V6wsEkufWOpfszp360nj
+    links:
+      bank_account_verifications.bank_account: "/bank_accounts/{bank_account_verifications.bank_account}"
+  href: "/events/EV048db6b423e511e4b0ef0647853a3607"
+  type: bank_account_verification.deposited
+  id: EV048db6b423e511e4b0ef0647853a3607
+links: {}
+registration:
+  events:
+  - links: {}
+    occurred_at: '2014-08-14T18:58:44.850000Z'
+    uri: "/events/EV048db6b423e511e4b0ef0647853a3607"
+    entity:
+      bank_account_verifications:
+      - verification_status: pending
+        links:
+          bank_account: BA7AA3yiW6upqETZwU8pyqYg
+        created_at: '2014-08-14T18:58:44.399925Z'
+        attempts_remaining: 3
+        updated_at: '2014-08-14T18:58:44.850225Z'
+        deposit_status: succeeded
+        attempts: 0
+        href: "/verifications/BZ6V6wsEkufWOpfszp360nj"
+        meta: {}
+        id: BZ6V6wsEkufWOpfszp360nj
+      links:
+        bank_account_verifications.bank_account: "/bank_accounts/{bank_account_verifications.bank_account}"
+    href: "/events/EV048db6b423e511e4b0ef0647853a3607"
+    type: bank_account_verification.deposited
+    id: EV048db6b423e511e4b0ef0647853a3607
+  links: {}

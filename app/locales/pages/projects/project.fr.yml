@@ -1,0 +1,11 @@
+fr:
+  projects:
+    project:
+      get_involved: 'Impliquez-vous!'
+      completed: 'Terminé'
+      soon: 'Bientôt'
+      share:
+        twitter-text: "Jetez un coup d'oeil au projet %{name} %{hash_tag} que je soutiens sur @Fiatope_"
+        twitter: 'Tweetez'
+        facebook: 'Partagez'
+      view_project: 'Voir le projet'

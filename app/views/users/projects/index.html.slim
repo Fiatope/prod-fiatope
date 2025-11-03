@@ -1,0 +1,33 @@
+- content_for :page_content do
+  - if collection.any?
+    .my-campaigns
+      table
+        thead
+          tr
+            th= t('.id')
+            th= 'cover'
+            th= 'name'
+            th= 'pleged'
+            th= 'deadline'
+            th= 'total of contributions'
+            th.text-right= 'actions'
+        tbody
+          - collection.each do |project|
+            tr
+              td= link_to project.id, project_path(project)
+              td title=project.name
+                = link_to edit_project_path(project) do
+                  = image_tag project.display_image, size: '50', class: 'project-imgage'
+              td= project.name
+              td
+                = "#{project.display_pledged} / #{project.display_goal}"
+              td= project.display_expires_at
+              td= project.total_contributions
+              td.text-right
+                = link_to edit_project_path(project), class: 'button tiny' do
+                  i.icon-et-pencil
+
+- if request.xhr?
+  = yield :page_content
+- else
+  = render template: 'users/edit'

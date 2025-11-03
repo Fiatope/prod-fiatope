@@ -1,0 +1,20 @@
+en:
+  project:
+    display_status:
+      expired: 'expired'
+      failed: 'failed'
+      canceled: 'canceled'
+      successful: 'successful'
+      tobefollowed: 'to be followed'
+      waiting_confirmation: 'waiting confirmation'
+      waiting_funds: 'waiting funds'
+      not_reached_goal: 'not reached goal'
+      draft: 'draft'
+    organization_type:
+      municipality: 'Physical person'
+      neighborhood_organization: 'Private Organisation'
+      registered_nonprofit: 'Association'
+      public_private_partnership: 'Hospital'
+      cid_bid: 'University'
+      other: 'other'
+      not_sure: 'Young company'

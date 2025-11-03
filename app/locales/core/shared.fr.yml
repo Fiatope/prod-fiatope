@@ -1,0 +1,7 @@
+fr:
+  french: 'français'
+  english: 'anglais'
+
+  errors:
+    messages:
+      extension_white_list_error: "Vous devez fournir un fichier possèdant l'extension parmis celles-ci: jpg jpeg gif png"

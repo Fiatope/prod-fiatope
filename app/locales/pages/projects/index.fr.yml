@@ -1,0 +1,106 @@
+fr:
+  projects:
+    index:
+      title: "Plateforme de financement participatif en Afrique"
+      meta_description: "Fiatope est une plateforme de financement participatif par dons qui oeuvre au développement économique et social de l'Afrique."
+      titlebis: 'Des solutions pour une Afrique émergente'
+      titleter: 'Des solutions adaptées à chaque situation'
+      subtitle: 'Participez à la phase Pilote en soutenez un ou plusieurs projets'
+      discover_projects: 'Découvrez des projets innovants'
+      recommended: 'Recommendé'
+      near: 'Projects Near'
+      channels: 'NOS PARTENAIRES'
+      ending_soon: 'Sur la fin'
+      successful: 'Réussi'
+      coming_soon: 'Bientôt'
+      join:
+        join_the_neighborhood: 'Rejoindre Fiatope'
+        already_joined: 'Déjà Membre? %{link}.'
+        sign_in: 'Se connecter'
+      hero:
+        title: "Permettre une action solidaire à fort impact<strong></strong>"
+        subtitle: "Un monde d'opportunités s'ouvre avec Fiatope. Rejoignez notre newsletter pour rester connectés\n"
+        email_placeholder: 'Mon Email'       
+        submit: 'Rejoindre la Newsletter'
+      teasing:
+        title: "Par le Crowdfunding"
+      how-it-works:
+        title: "Comment ça Marche?"
+        one:
+          headline:  'Cagnottes'
+          text: "Créer une cagnotte pour une action vers une communauté dans un pays d'Afrique. Contribuer à une telle cagnotte."
+          button: "Espace cagnotte"
+        two:
+          headline: 'Projets'
+          text: "Démarrer un projet original de développement local. Contribuer à un tel projet. Avoir de l'impact pour l'Afrique"
+          button: "Espace projet" 
+        three:
+          headline: 'Contributions'
+          text: 'Contribuez à vos projets coup de coeur. Participez à des cagnottes privées. Les cagnotte ne sont pas visibles sur le site.'
+          button: 'Je contribue à un projet'
+        four:
+          button: 'Comment ça marche?'
+      how-it-works-bis:
+        five:
+          headline: 'Comment ça marche?'
+      actualités:
+        title: 'Actualités'
+      paiements:
+        title: 'Paiments Sécurisés' 
+      partenaires: 
+        title: 'NOS PARTENAIRES'
+      press: 'LA PRESSE EN PARLE'
+      why-fiatope:
+        six:
+          headline: 'Pourquoi choisir Fiatope?'
+          button: 'Pourquoi choisir Fiatope?'    
+        reason:
+          secu:
+            title: 'Sécurité'
+            content: "Chez Fiatope, nous respectons nos engagements de confidentialité. Vos informations de paiement et vos contributions sont sécurisées. Notre partenaire local se charge de remettre au porteur de projet via un processus transparent, la collecte des Fiatopers."
+          fiab: 
+            title: 'Fiabilité'
+            content: "Vous avez l'assurance que vos dons seront reçus par le porteur de projet bénéficiare. En effet la Banque de France encadre strictement l'activité de détention de fonds pour le compte de tiers et garantit la destination des fonds via l'agrément qu'elle donne à notre intermédiaire de paiement et les obligations légales de Fiatope."
+          prof: 
+            title: 'Professionalisme'
+            content: "Notre aptitude à sélectionner pour vous des projets ambitieux, originaux et innovants dans des domaines tels que l'enseignement supérieur, la santé, les technologies, l'environnement, l'agriculture, la culture. Nous travaillons pour cela avec de nombreux partenaires en Europe et en Afrique."
+          trans: 
+            title: 'Transparence'
+            content: "Fiatope est une entreprise responsable. Nous travaillons avec des partenaires agréés par les autorités administratives et financières françaises et internationales. Nous mettons tout en oeuvre pour garantir la sécurité de vos informations et des fonds que vous nous confiez pour des tiers."
+      start-one:
+        seven:
+          headline: ' Un projet à financer?'
+          button: 'Démarrer votre campagne'
+      mission:
+        height:
+          headline: 'Notre mission'
+      channels:
+        there: 'Nous y étions'
+
+      start-one:
+        title: 'Vous avez un projet à financer?'
+        button: 'Soumettez votre projet'
+      register:
+        title: ''
+        button: 'Inscrivez-vous pour suivre les projets'
+      discover:
+        title: 'Vous recherchez un coup de coeur?'
+        titlea: 'Nos projets coup de cœur'
+        button: "Financer les projets"
+        button1: "Découvrir d'autres projets"
+        titleb: 'NOS PARTENAIRES'
+      discover_only:
+        button: 'DECOUVRIR les projets'
+        button1: 'Proposer un projet'
+      porteurs:
+        title: 'Vous êtes porteur de projet? Lancez-vous !'
+      video:
+        button: 'Voir la vidéo'
+      filters:
+        selection: 'La sélection Fiatope de la semaine'
+        successful: 'Exemple de projet financé avec succès'
+        coming_soon: 'Bientôt sur Fiatope'
+
+    project:
+      title: ""
+

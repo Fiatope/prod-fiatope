@@ -1,0 +1,4 @@
+= content_for :title, t('.titre')
+- project = @notification.project
+|Le projet #{link_to(project.name, project_url(project))} vient d'atteindre sa date limite de publication sur le site.
+br

@@ -1,0 +1,14 @@
+= content_for :title, t('.titre')
+.idee-page.static-page
+  .row
+    .title
+       h3 Energies renouvelables
+       = image_tag("panorama_fiatope_eleven.jpg", :align=> "center")
+    .text
+     h5 Chez Fiatope, nous pensons que une bonne croissance doit être saine et durable, et surtout qu’elle ne se fasse pas au détriment de la nature.
+     h5 Nous nous engageons en faveur d’initiatives de tous ordres qui visent à exploiter la force des éléments naturels pour alimenter les machines, refroidir, éclairer, réchauffer…
+     br
+
+     = link_to t('.soumettre votre projet'), new_project_path, class: 'button large-4 medium-4 columns large-centered'
+
+

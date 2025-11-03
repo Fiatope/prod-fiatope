@@ -1,0 +1,56 @@
+.row(style="background-color: white")
+  em.right
+    = @contribution.confirmed_at.try(:strftime, "%d-%b-%Y %H:%M:%S")
+  = wicked_pdf_image_tag "https://kwendoo.s3.amazonaws.com/assets/Logo-Kwendoo-Small-e3b314a09ea9d8de7340403428f5a785.png", height: "200px", width: "150px"
+.row.print-target(style="margin-top:2em; background-color: white")
+  .large-6.small-6.columns
+    p = t('.receipt.address_html', brand: Configuration[:company_name])
+  .large-6.small-6.columns
+    dl
+      - if @contribution.user.display_name.present?
+        dt = t('.receipt.terms.display_name')
+        dd = @contribution.user.display_name
+      - if @contribution.user.email.present?
+        dt = t('.receipt.terms.email')
+        dd = @contribution.user.email
+      - if address = [@contribution.user.address_number, @contribution.user.address_street, @contribution.user.address_neighborhood].compact.join(" ") && address.present?
+        dt = t('.receipt.terms.address')
+        dd = address
+      - if @contribution.user.address_city.present?
+        dt = t('.receipt.terms.address_city')
+        dd = @contribution.user.address_city
+      - if @contribution.user.address_state.present?
+        dt = t('.receipt.terms.address_state')
+        dd = @contribution.user.address_state
+      - if @contribution.user.address_zip_code.present?
+        dt = t('.receipt.terms.address_zip_code')
+        dd = @contribution.user.address_zip_code
+  .large-12.columns
+    - if @contribution.payment_id
+      h3 = t('.receipt.heading') + " No. " + @contribution.payment_id
+      dl
+        dt = t('.receipt.confirmed_at_label')
+        dd = @contribution.confirmed_at.try(:strftime, "%d-%b-%Y %H:%M:%S")
+    table.table
+      thead.bg-success
+        tr
+          th = t('.receipt.table.quantity_heading')
+          th = t('.receipt.table.code_heading')
+          th = t('.receipt.table.project_heading')
+          th = t('.receipt.table.description_heading')              
+          th = t('.receipt.table.unit_heading')
+          th = t('.receipt.table.total_heading')
+      tbody
+        tr
+          td 1
+          td
+            em = "Contribution ##{@contribution.id}"
+          td = "#{@contribution.project.name}"
+          td = "#{truncate((@contribution.short_note || @contribution.project.headline), length: 25)}"
+          td.text-right = @contribution.display_value
+        tr
+          td[colspan=4 style="background:#eee;border:none;"]
+          td.text-right.table-active.bg-dark
+            strong(style="font-size:120%;") = t('.receipt.table.total_caption')
+          td.text-right
+            strong(style="font-size:120%;") = @contribution.display_value

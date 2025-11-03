@@ -1,0 +1,8 @@
+fr:
+  users:
+    set_email:
+      update_email_title: 'Ajouter votre adresse email'
+      site_title: 'Créer votre compte Fiatope'
+      title: 'Entrer votre adresse Email'
+      submit: 'Proceed'
+      create: 'Joindre Fiatope'

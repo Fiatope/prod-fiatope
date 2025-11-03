@@ -1,0 +1,20 @@
+= content_for :title, t('.titre')
+- user = @notification.user
+|Bonjour #{user.name},
+br
+br
+|Merci d avoir soumis votre projet à #{Configuration[:company_name]}.
+br
+br
+|Nous sommes cependant dans le regret de ne pouvoir l'approuver, et ce pour l'une ou plusieurs des raisons suivantes; 
+ol 
+  li Le type de structure que vous représentez n'est pas habilité à lever des fonds sur notre plateforme
+  li Votre projet a été jugé comme étant trop éloigné de notre philosophie de financement
+  li Vtre projet ne remplit pas les conditions d eligibilité telles que définies par nous, notre partenaire de Paiemnent ou par la Banque de France
+br
+|Encore une fois, merci pour votre soumission et bonne chance pour votre projet
+br
+br
+|Tout le meilleur,
+br
+|L équipe #{Configuration[:company_name]} 

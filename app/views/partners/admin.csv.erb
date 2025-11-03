@@ -1,0 +1,16 @@
+<% headers = ['ID', 'Name', 'User name', 'User email', 'Category', 'Goal', 'Pledged', 'Total contributions', 'Recommended', 'Online date', 'State', 'Partner'] %>
+<%= CSV.generate_line(headers).strip.html_safe %>
+<% @projects.each do |project| %>
+  <%= CSV.generate_line([project.id,
+                         project.name,
+                         project.user.name,
+                         project.user.email,
+                         project.category,
+                         project.goal,
+                         project.pledged,
+                         project.total_contributions,
+                         project.recommended,
+                         project.online_date,
+                         project.state,
+                         @partner.name]).strip.html_safe %>
+<% end %>

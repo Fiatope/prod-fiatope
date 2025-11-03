@@ -1,0 +1,11 @@
+en:
+  facebook_locale: 'en_US'
+  site:
+    title: "Crowdfunding Africa"
+    meta_title:  "%{title} · %{company_name}"
+    description: "Fiatope is a donation crowdfunding platform aimed at supporting SMEs in Africa with their seed funding."
+    keywords: "Diaspora, Africa, Start-Ups, crowdfunding, projects, events, communities "
+    email:
+      contact: 'contact@fiatope.com'
+    ograph:
+      description: "Crowdfunding Platform for Africa"

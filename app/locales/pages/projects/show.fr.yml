@@ -1,0 +1,75 @@
+fr:
+  projects:
+    show:
+      so_far: '&nbsp; collectés sur &nbsp; '
+      so_far_presale: '&nbsp; articles précommandés sur '
+      reached_goal_small_separator_html: '&nbsp; / &nbsp; '
+      anonymous_contribution: "Contributeur anonyme"
+      subtitle:
+        all_or_none: "Un projet dans la catégorie %{category_name}, lancé à %{city}, par %{author}"
+        flexible: "Une <span data-tooltip class='has-tip' title='Every Dollar Counts! <br /><br />la cagnotte sera financée que l'objectif soit atteint ou non.'> cagnotte</span> dans la catégorie %{category_name} par %{author} lancé à %{city}"
+      status-bar:
+        goal: 'Objectif: %{value}'
+        total_contributions: '%{value} contributeurs'
+        contribute: 'Contribuer'
+      cfa_ratio_info: "Dont %{percent}% collectés en francs CFA"
+      neighbors_behind_this: 'Ont Contribué'
+      display_status:
+        all_or_none:
+          reached_goal: "Cette campagne a atteint son objectif et le projet sera financé le %{date}"
+          not_reached_goal: "Ce projet sera financé seulement si au moins %{goal} est promis avant le %{date}"
+          failed: "Ce projet n' a pas atteint l' objectif de %{goal} avant le %{date} et n'a pas été financé"
+          canceled: "Ce projet a été annulé"
+          tobefollowed: "Ce projet est en train de dopper son audience afin de pouvoir lancer plus tard un crowdfunding"
+          successful: "Cette campagne a réussi et le projet a été financé le %{date}"
+          waiting_funds: "En attente de confirmation des promesses de contribution pour savoir si le projet sera financé."
+          draft: "Ce projet n'est pas encore ouvert aux contributions. Peaufinez sa présentation"
+        flexible:
+          reached_goal: "Cette campagne a atteint son objectif et la cagnotte sera financée le %{date}"
+          not_reached_goal: "Cette cagnotte sera financée le %{date}"
+          failed: "Cette cagnotte a été financée le %{date}"
+          successful: "Cette campagne a réussi et la cagnotte a été financée le %{date}"
+          waiting_funds: "Cette cagnotte s'est terminée récemment et sera financée."
+          draft: "Cette cagnotte est encore à l'étude et n'est pas ouverte à contribution."
+      contribute: 'Contribuer'
+      precommander: 'Précommander'
+      create_match: 'abonder' 
+      unsub_submit: 'suivre la campagne'
+      cotise: 'Cotiser_ou_adhérer'
+      edit: 'Modifier la Campagne'
+      pay: 'Retirer les fonds' 
+      share:
+        title: 'Impliquez vos amis et connaissances'
+      no-neighbors: "Pas encore de contributeurs. Soyez le premier!"
+    author:
+      author:
+        about: 'A propos de %{name}'
+      ask_a_question: 'Poser une question au porteur de projet'
+      in_partnership_with: 'En Partenariat avec'
+    video_embed:
+      a_project_by_html: "Un projet de %{link} sur"
+    share:
+      twitter-text: "Jetez un coup d'oeil au projet %{name} %{hash_tag} sur @Fiatope_: %{project_url}"
+      twitter: 'Tweetez'
+      facebook: 'Partagez'
+      email: 'Email'
+      embed: 'Insérer sur votre site'
+    header:
+      subtitle:
+        all_or_none: "Un projet dans la catégorie %{category_name}, lancé à %{city}, par %{author}"
+        flexible: "A <span data-tooltip class='has-tip' title='Every Dollar Counts! <br /><br />In this type of campaign, the project is funded whether or not the goal is reached.'>flexible</span> %{category_name} project by %{author} in %{city}"
+        so_far: '&nbsp; collectés sur &nbsp; ' 
+        contribute: 'Contribuer'
+      so_far: '&nbsp; collectés sur &nbsp; '
+    tabs:
+        about: 'A propos'
+        updates: 'Mises à jour'
+        faqs: 'FAQs'
+        comments: 'Commentaires'
+        contributions: 'Contributeurs'
+        precommandes: 'Précommandes'
+        precommander: "Précommander à <strong>%{project_name}</strong>"
+        budget: 'Budget'
+        english: 'English'
+        terms: 'Les termes'
+        reports: 'Rapports'

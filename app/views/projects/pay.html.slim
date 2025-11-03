@@ -1,0 +1,36 @@
+- content_for :title, @project.name
+= render partial: 'layouts/disqus_count'
+= render 'projects/meta_tags'
+
+.project-page
+  = render 'projects/shortheader'
+  = render 'projects/status_bar'
+
+  .row.page-main-content
+    section.large-9.medium-8.columns.main
+      = render 'projects/draft_warning' if @project.draft?
+      = render 'projects/rejected_warning' if @project.rejected?
+
+    .large-8.medium-4.columns
+     h5
+       |Pour pouvoir continuer, veuillez renseigner vos informations Bancaires (IBAN et BIC)
+       = link_to t('.iban'), payments_user_path(current_user)
+       | et télécharger votre pièce d'identité
+       = link_to t('.cni'), mangopay_authentications_user_path(current_user)
+              
+    aside.large-3.medium-4.columns.sidebar
+      .call-to-action
+        - if @project.online? && !@project.expired?
+          = render 'projects/noscript'
+
+          /- if current_user && (current_user.organization? || current_user.channel? || current_user.admin?)
+          /  = link_to t('.create_match'), new_project_match_url(@project), class: "button with-icon create-match hide-for-small"
+        - else
+          .alert-box.secondary.status-description
+            = display_status(@project)
+
+
+        = render 'messages/form_fund', :@message => Message.new(:name => current_user.name, :email => current_user.email, :subject => "retirer les fonds", :message => @project.name)
+
+
+/      = render 'projects/author' if browser.device.mobile?

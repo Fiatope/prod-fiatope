@@ -1,0 +1,105 @@
+/*
+ *= require blogo/pure-min
+ *= require blogo/modal
+ *= require blogo/pikaday
+ */
+
+$link-color: #286790
+
+a
+  color: $link-color
+
+#admin-container
+  background: #fff
+  margin: 20px
+  display: block
+
+#modal-preview
+  width: 100%
+  height: 100%
+  .modal-inner
+    height: 100%
+    width: 100%
+    margin: auto
+    left: 0px
+  header
+    h1
+      font-size: 20px
+      font-weight: 100
+  .modal-content
+    height: 90%
+    max-height: 90%
+  iframe
+    display: block
+    margin: auto
+    width: 100%
+    height: 100%
+    border: none
+
+.form-new-post
+  .left-fields
+    width: 97%
+    input
+      width: 100%
+    textarea
+      width: 100%
+      height: 350px
+
+  #post-title
+    font-weight: bold
+    color: #444
+  #post-url
+    padding: 11px 7px
+    font-size: 12px
+
+#admin-menu
+  margin: 0 auto
+  .nav
+    padding: 0px
+    background-color: #fff
+    box-shadow: 0px 0px 10px #aaa
+
+  li
+    margin: 8px
+  ul.pull-right
+    text-align: right
+    float: right
+
+  margin-bottom: 10px
+
+.admin-header
+  color: #888
+  font-size: 18px
+
+
+.alert
+  padding: 20px
+  margin: 10px auto
+
+.alert-error
+  background-color: #FEE
+
+.alert-info
+  background-color: #EFE
+
+.input-content
+  height: 250px
+
+
+.field_with_errors input
+  background: #fff0f0
+
+
+.button-secondary, .button-warning, .button-success
+  color: white
+  border-radius: 4px
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2)
+
+.button-secondary
+  background: rgb(66, 184, 221)
+
+.button-warning
+  background: rgb(223, 117, 20)
+
+.button-success
+  background: rgb(28, 184, 65)

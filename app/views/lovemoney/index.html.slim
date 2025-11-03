@@ -1,0 +1,74 @@
+- content_for :title, t('.title')
+
+- content_for :page_content do
+  .row
+    - if @presenter.projects.present?
+      = render @presenter.projects
+    - else
+      p = t('.empty')
+    .text-right
+      = link_to url_for(show_all_projects: 1), class: 'see-more' do
+        = t('words.see_more')
+        i.icon-et-right-circled
+
+  - if @presenter.channels.any?
+    section.channels.default-list
+      .row
+        .large-12.columns
+          h3
+            i.icon-et-megaphone
+            = t('.channels')
+
+      .row
+        = render @presenter.channels
+
+
+- if request.xhr?
+  = yield :page_content
+- else
+  .discover-page[data-path=discover_path show-all-projects=@presenter.must_show_all_projects]
+    section.filters.white.
+      .background-full.flex-container.text-center
+        .background-title.flex-item
+          h2 = t('.discovera')
+             
+          
+					  
+					    
+      = form_tag discover_path, method: 'GET', class: 'discover-form row' do
+        .col-md-3
+          = select_tag :near, options_for_select(@presenter.locations, @presenter.filters[:near]), prompt: t('.near'), class: 'near-input search-yellow yellow'
+        .col-md-3
+          = select_tag :category, options_for_select(@presenter.categories, @presenter.filters[:category]), prompt: t('.category'), class: 'category-input search-yellow yellow'         
+        .col-md-3
+          = select_tag :state, options_for_select(@presenter.available_states, @presenter.filters[:state]), prompt: t('.state'), class: 'state-input search-yellow yellow'
+        .col-md-3
+          = text_field_tag :search, nil, value: params[:search], placeholder: 'Search...', class: 'search-input search-yellow yellow'
+          = link_to '#search', class: 'search-button' do
+                i.icon-et-search
+
+      .tags.hide-for-small
+        strong = t('.tags')
+        - for tag in @presenter.tags
+          = link_to tag.display_name, discover_path(tags: tag.name), data: { name: tag.name, class: tag.name.parameterize }, class: "#{tag.name.parameterize} #{'selected' if @presenter.filters[:tags].present? && @presenter.filters[:tags].include?(tag.name) }"
+      .results-for
+        strong = t('.showing_results_for')
+        - for type, value in @presenter.filters
+          - if type == :tags
+            - for tag in value
+              .filter
+                = tag.titleize
+                  | &nbsp; | &nbsp;
+                = link_to 'x', '#', data: { :'filter-type' => type, :'filter-value' => tag.parameterize }, class: 'remove-filter'
+          - else
+            .filter
+              - if type == :filter
+                = t(".filters.#{value}")
+              - else
+                = value
+              | &nbsp; | &nbsp;
+              = link_to 'x', '#', data: { :'filter-type' => type }, class: 'remove-filter'
+
+
+    section.content.projects
+      = yield :page_content

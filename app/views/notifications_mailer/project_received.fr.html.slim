@@ -1,0 +1,20 @@
+= content_for :title, t('.titre')
+- user = @notification.user
+|Chèr(e), #{user.name}!
+br
+br
+|Nous vous remercions pour votre soumission et pour la confiance à #{Configuration[:company_name]}. Notre équipe vous reviendra sous 24h.
+br
+br
+|Pendant ce temps, vous pouvez continuer à compléter les informations requises ici #{link_to "votre draft de projet", project_url(@notification.project)}. Votre projet restera en mode "Draft" jusqu'à approbation par nos équipes.
+br
+br
+|Aussi, #{link_to "jetez un coup doeil à d autres projets",  "#{Configuration[:base_url]}/discover"} pour vous inspirer. 
+br
+br
+|Veuillez nous suivre sur #{link_to 'Facebook', Configuration[:facebook_url]} et sur #{link_to 'Twitter', "http://twitter.com/#{Configuration[:twitter_username]}" } pour rester à jours des dernières nouvelles. Pour toute question, envoyez nous un email à : #{mail_to Configuration[:email_contact]}
+br
+br
+|Bien à vous,
+br
+|L équipe #{Configuration[:company_name]}

@@ -1,0 +1,4 @@
+rvm:
+  - 2.1.1
+cache: bundler
+script: './bin/test_suite'

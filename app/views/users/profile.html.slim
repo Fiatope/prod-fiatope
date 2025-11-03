@@ -1,0 +1,18 @@
+- content_for :page_content do
+  = initjs_tag app_name: 'Neighborly', partial: true
+  #user-profile-content.row
+    .large-8.columns
+      = simple_form_for resource do |f|
+        = hidden_field_tag :redirect_url, params[:redirect_url] if params[:redirect_url].present?
+        - if resource.channel?
+          /= render 'users/profile_types/channel', f: f
+        - else
+          = render 'users/profile_types/personal_organization', f: f, resource: resource
+        /= render 'authorizations'
+        /= render 'address', f: f
+        = f.button :submit, class: 'btn btn-medium-red'
+
+- if request.xhr? || defined?(partial)
+  = yield :page_content
+- else
+  = render template: 'users/edit'

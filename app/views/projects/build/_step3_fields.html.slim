@@ -1,0 +1,21 @@
+= f.input :how_many_contributors, as: :integer, label: t('crowdfunding.how_many_contributors'), input_html: { min: 0, max: 5}
+
+= f.input :how_much_contribute, as: :integer, label: t('crowdfunding.how_much_contribute'), input_html: { min: 0, max: 5}
+
+= f.input :contributors_from_where, as: :string, label: t('crowdfunding.contributors_from_where')
+
+= f.input :enrollment_strategy, as: :text, label: t('crowdfunding.enrollment_strategy')
+
+/= f.input :partner, as: :boolean, label: t('crowdfunding.has_partner')
+
+/div#input_partner.answer
+/  = f.input :partner_id, label: t('crowdfunding.partner_yes'), collection: Partner.array, selected: @project.partner_id, include_blank: true, required: false
+
+- if @partner
+  = f.input :partner_id, :as => :hidden, :input_html => { :value => @partner.id }
+
+- Project::CROWDFUNDING_SOCIAL_NETWORKS.each do |network|
+  = f.input network, as: :string, label: (image_tag("#{network}_30x30.png", style: 'width: 20px') + ' ' + network.capitalize)
+  
+  = f.input "#{network}_followers", as: :integer, label: t('crowdfunding.followers')
+

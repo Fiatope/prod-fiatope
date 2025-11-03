@@ -1,0 +1,74 @@
+Neighborly.Neighborly                              ?= {}
+Neighborly.Neighborly.Mangopay                     ?= {}
+Neighborly.Neighborly.Mangopay.Creditcard          ?= {}
+Neighborly.Neighborly.Mangopay.Creditcard.Payments ?= {}
+
+Neighborly.Neighborly.Mangopay.Creditcard.Payments.New = Backbone.View.extend
+  el: '.neighborly-mangopay-creditcard-form'
+
+  initialize: ->
+    _.bindAll(this, 'submit', 'submitToMangopay', 'toggleAddNewCard', 'toggleSelected')
+    this.Flash = Neighborly.Neighborly.Mangopay.Creditcard.Flash
+
+    this.$button = this.$('input[type=submit]')
+    # this.$('form').bind('submit', this.submit)
+    this.$('input[type=radio]').bind('change', this.toggleAddNewCard)
+    this.$('input[type=radio]').bind('change', this.toggleSelected)
+    this.toggleSelected()
+
+  submit: (event) ->
+    selectedCard = this.$('[name="payment[use_card]"]:checked, [name="payment[use_card]"]:hidden')
+    return if $.inArray(selectedCard.val(), ['new', '']) == -1
+
+    event.preventDefault()
+    this.submitToMangopay(selectedCard)
+    # This return is necessary because of jquery_ujs was disabling the submit
+    # button even when we enable it.
+    return false
+
+  submitToMangopay: (selectedCard) ->
+    that = this
+    $.rails.disableFormElements(that.$el)
+
+    if this.$('#payment_expiration_month').val().length == 1
+      month_value = '0'+ this.$('#payment_expiration_month').val()
+    else
+      month_value = this.$('#payment_expiration_month').val()
+
+    creditCardData =
+      number:           this.$('#payment_card_number').val()
+      expiration_month: month_value
+      expiration_year:  this.$('#payment_expiration_year').val()
+      cvv:              this.$('#payment_security_code').val()
+      name:             this.$('#payment_user_name').val()
+      address:
+        postal_code:      this.$('#payment_user_address_zip_code').val()
+        country_code:     'USA'
+
+    mangopay_callback_for_201 = (response) ->
+      selectedCard.val(response.cards[0].href)
+      that.$('[data-mangopay-credit-card-input]').val('')
+      that.$('form').submit()
+      that.Flash.remove()
+
+    mangopay_callback_for_400 = (response) ->
+      that.Flash.message('<%= I18n.t("neighborly.mangopay.creditcard.payments.new.errors.invalid_card") %>')
+
+    mangopay_callback_for_402 = (response) ->
+      that.Flash.message('<%= I18n.t("neighborly.mangopay.creditcard.payments.new.errors.card_tokenization_error") %>')
+
+    mangopay_callback_for_404 = (response) ->
+      that.Flash.message('<%= I18n.t("neighborly.mangopay.creditcard.payments.new.errors.marketplace_uri") %>')
+
+    mangopay_callback_for_500 = (response) ->
+      that.Flash.message('<%= I18n.t("neighborly.mangopay.creditcard.payments.new.errors.mangopay") %>')
+
+  toggleSelected: ->
+    this.$('.card-box').removeClass('selected')
+    this.$('input[type=radio]:checked').parents('.card-box').addClass('selected')
+
+  toggleAddNewCard: ->
+    if this.$('#payment_use_card_new').is(':checked')
+      this.$('.add-new-creditcard-form').removeClass('hide')
+    else
+      this.$('.add-new-creditcard-form').addClass('hide')

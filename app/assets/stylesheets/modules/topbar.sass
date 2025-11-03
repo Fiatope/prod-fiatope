@@ -1,0 +1,191 @@
+// .contain-to-grid.fixed
+//   -webkit-transform: translateZ(0)
+
+// .top-bar
+//   margin-bottom: 0
+
+//   .name
+//     padding-left: +emCalc(25px)
+//     margin-right: +emCalc(15px)
+
+//     @media #{$medium}
+//       padding-left: 0
+
+//     h1
+//       padding-top: +emCalc(13px)
+
+//       a
+//         display: block
+//         text-indent: -99999em
+//         width: 200px
+//         height: 72px
+//         background: image-url('logo@2x.png') center no-repeat
+//         background: image-url('logo.png') center no-repeat\9 // It will apply to all ie from 8 and below
+//         background-size: cover
+//         padding-left: 0
+
+//   .top-bar-section
+//     .main-menu a:not(.button)
+//       @media #{$medium}
+//         padding: +emCalc(0, 20px)
+
+//       i
+//         color: $topbar-icon-color
+//         padding-right: +emCalc(8px)
+//         font-size: 120%
+
+//     li
+//       a
+//         text-transform: uppercase
+//       i
+//         display: none
+//         @media #{$medium}
+//           display: inline-block
+
+//       &.search-box
+//         i
+//           display: inline-block
+
+//       &.user-action, &.search-box
+//         img.profile-picture
+//           width: 13px
+//           height: 13px
+//           border-radius: 50%
+
+//       &.search-box
+//         +clearfix
+//         margin: +emCalc(5px, 20px, 20px, 20px)
+//         padding: 8px 9px 8px 13px
+//         border-radius: +emCalc(20px)
+//         background: $topbar-bg-highlight
+
+//         a
+//           padding: 0
+//           background: none
+//           display: block
+//           float: right
+
+//         i
+//           color: $primary-color
+
+//         form
+//           display: inline
+
+//           input
+//             display: inline-block
+//             float: left
+//             width: 93%
+//             top: 0
+//             padding: 0
+//             padding-top: +emCalc(5px)
+//             border: none
+//             background: none
+//             color: white
+//             box-shadow: none
+//             height: auto
+//             font-size: 85%
+
+//             &.show
+//               display: inline
+
+//             &:focus
+//               box-shadow: none
+
+//             &[type=submit]
+//               display: none
+
+//       @media #{$topbar-media-query}
+//         &.search-box
+//           margin-left: +emCalc(10px)
+//           margin-right: 0
+
+//           form input
+//             width: +emCalc(100px)
+//             display: none
+//             padding-top: 0
+//             line-height: +emCalc(14px)
+
+//         &.user-action, &.search-box
+//           margin-top: +emCalc(30px)
+//           font-size: 90%
+//           background: $topbar-bg-highlight
+
+//           &.sign-out
+//             display: none
+
+//           &.radius-left
+//             border-top-left-radius: +emCalc(20px)
+//             border-bottom-left-radius: +emCalc(20px)
+//             padding-right: 0
+//             padding-left: +emCalc(15px)
+
+//           &.radius-right
+//             border-top-right-radius: +emCalc(20px)
+//             border-bottom-right-radius: +emCalc(20px)
+//             padding-left: 0
+//             padding-right: +emCalc(15px)
+//           &.radius-left.radius-right
+//             padding-right: +emCalc(15px)
+//             padding-left: +emCalc(15px)
+//           &.with-divider
+//             a:after
+//               content: '|'
+//               color: white
+//               margin: +emCalc(0, 7px)
+
+//           a
+//             line-height: normal !important
+//             padding: 0
+//             background: none
+
+//             &.user-profile, &.sign-in
+//               color: white
+//               &:hover
+//                 color: darken(white, 10%)
+
+//             &.sign-up, &.sign-out
+//               color: $primary-color
+
+//             &.user-profile
+//               text-transform: none
+
+//         &.user-action
+//           padding: +emCalc(10px)
+
+//   #user-dropdown
+//     background: darken(desaturate($primary-color, 30%), 10%)
+//     border-width: 0
+//     border-radius: $global-radius
+//     font-size: 120%
+//     margin-top: +emCalc(8px)
+//     &.f-dropdown:before
+//       border-bottom-color: $primary-color
+//     &.f-dropdown:after
+//       border-bottom-color: transparent
+//     li
+//       float: none
+//       &:first-child
+//         background: $primary-color
+//         border-radius: $global-radius $global-radius 0 0
+//       &:last-child
+//         border-radius: 0 0 $global-radius $global-radius
+//       &:hover
+//         background: $primary-color
+//       a
+//         padding: +emCalc(15px)
+//         text-transform: none
+//         i
+//           padding-right: +emCalc(5px)
+//       &.divider
+//         border-top: none
+//         border-bottom: 1px solid darken($primary-color, 20%)
+
+// .f-topbar-fixed
+//   padding-top: 0 !important
+//   @media #{$medium}
+//     padding-top: $topbar-height !important
+
+// header.fixed
+//   position: relative
+//   @media #{$medium}
+//     position: fixed

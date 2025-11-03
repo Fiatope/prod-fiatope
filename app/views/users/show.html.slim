@@ -1,0 +1,66 @@
+= content_for :meta_tags do
+  meta property="og:title" content=@user.display_image
+  meta property="og:url" content=="#{Configuration[:base_url]}#{user_path(@user)}"
+  meta property="og:image" content==@user.display_image
+  meta property="og:site_name" content=::Configuration[:company_name]
+  meta property="og:description" content=@user.bio
+  meta property="fb:admins" content=facebook_url_admin
+
+.user-profile-page
+  - content_for :user_image do
+    - if @user.organization?
+      = @user.display_image_html width: 300, height: 150, class: 'large'
+    - else
+      = @user.display_image_html width: 150, height: 150, class: 'large'
+
+  - if @user.location.present?
+    / header.hero
+    /  .location.location-coordinates.pin-img[data-longitude=resource.longitude data-latitude=resource.latitude]
+    /  .map-canvas
+      = yield :user_image
+  - else
+    header.hero
+      = yield :user_image
+
+  .hero-bio
+    .row
+      .large-6.large-centered.columns
+        h2.profile
+          = @user.display_name
+        /h3.city
+        /  = @user.location
+        p.bio
+          = @user.bio
+        
+        ul.user-social
+          - if @user.facebook_url.present?
+            li
+              = link_to @user.facebook_url, target: 'blank', class: "social-link" do
+                i.icon-et-facebook
+          - if @user.twitter_url.present?
+            li
+              = link_to @user.twitter_url, target: 'blank', class: "social-link" do
+                i.icon-et-twitter
+          - if @user.linkedin_url.present?
+            li
+              = link_to @user.linkedin_url, target: 'blank', class: "social-link" do
+                i.icon-et-linkedin
+          - if @user.other_url.present?
+            li
+              = link_to @user.other_url, target: 'blank', class: "social-link" do
+                i.icon-et-globe
+      
+
+  section.content.projects
+    - if @user.total_contributions > 0
+      .row
+        .large-12.columns
+          h3.subtle-title.ive_contributed= t('.ive_contributed', number: @user.total_contributions)
+          .row
+            = render @projects, columns: "large-4"
+    - if @user.total_led > 0
+      .row
+        .large-12.columns
+          h3.subtle-title.ive_led= t('.ive_led', number: @user.total_led)
+          .row
+            = render @user.projects_led, columns: "large-4"

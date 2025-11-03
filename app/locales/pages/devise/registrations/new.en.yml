@@ -1,0 +1,23 @@
+en:
+  devise:
+    registrations:
+      new:
+        have_account_html: "Already joined? <strong>Sign in</strong>"
+        titles:
+          site: 'Sign up'
+          header: 'Join Fiatope'
+          header_contribution: 'Fill in your Information'
+        links:
+          login: "Log in <i class='icon-et-right-circled'></i>"
+        form:
+          labels:
+            show_password: 'Show password'
+            type: 'You are?'
+            personne: 'personal'
+          hint:
+            password_length: '*must be at least 6 characters.'
+          inputs:
+            submit: 'Join Fiatope'
+            submit_contribution: 'Confirm'            
+            facebook: 'Sign up with Facebook'
+            mdp_contribution: "Crate a password for later use"             

@@ -1,0 +1,21 @@
+.row
+  .col-md-offset-1.col-md-10
+    .row
+      .large-10.small-11.columns.large-centered.small-centered[style="margin-bottom:200px;"]
+        = link_to "Ajouter un partenaire", new_partner_path, class: 'button pull-right'
+        h3[style="padding-top:8px;"]
+          = "Partenaires"
+
+        table[style="width:100%"]
+          - if @partners.any?
+            tr
+              td= "Permalink"
+              td= "Actions"
+            - @partners.each do |partner|
+              tr
+                td= partner.permalink
+                td= link_to "Modifier", edit_partner_path(partner), class: "button"
+          - else
+              tr
+                td= "Aucun partenaire pour l'instant"
+                td= ""

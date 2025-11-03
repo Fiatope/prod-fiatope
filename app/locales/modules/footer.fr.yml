@@ -1,0 +1,41 @@
+fr:
+  layouts:
+    footer:
+      quick_links: 'A PROPOS'
+      securise: 'Paiement sécurisé via :'
+      autorise: 'Paiement autorisé :'
+      encryption: 'Site sécurisé par chiffrement https :'
+      more_quick_links: 'BON A SAVOIR'
+      about: 'A propos'
+      discover: 'Trouver des projets à financer'
+      tofollow: 'Trouver des projets à suivre'
+      start_campaign: 'Démarrer une campagne'
+      how_it_works: 'Comment ça marche ?'
+      how_to_submit_a_project: 'Comment soumettre un projet'
+      contact: 'Nous contacter'
+      faq: 'FAQ / Aide'
+      legal: 'Notice légale et confidentialité'
+      terms: "CONDITIONS"
+      why_fiatope: 'Pourquoi nous choisir ?'
+      selection: 'sélection des projets'
+      successful: 'Réussir sa campagne'
+      successful_video: 'Réussir la vidéo de son projet'
+      how_does_it_cost: 'Tarifs'
+      csr_partners: 'Partenaires'
+      org_partners: 'Devenez partenaire'
+      outlet: 'Plaquette Fiatope'
+      opportunities: "Un monde d'opportunités"
+      statistics: 'Statistiques'
+      sitemap: 'Plan du site'
+      jobs: 'Fiatope Jobs'
+      link: 'CGU MangoPay'
+      ambassadors: 'Ambassadeurs'
+      values_ethics: 'Valeurs et éthique' 
+      fiatope_origin: "D'ou vient Fiatope"
+      selection_criteria: "Critères de sélection"
+      stay_in_touch: 'Suivez-nous'
+      built_with_love: ''
+      article_financement: "Financement participatif en Afrique"
+      now_accepting_proposals: 'Propostions bienvenues à présent!'
+      now_accepting_proposals_text: "Vous avez besoin de fonds pour le développement de votre projet ou de votre jeune entreprise en Afrique. vous rêvez d'avoir de l'impact dans les pays du Sud. Fiatope est pour vous…"
+      we_want_to_help: 'lancez-vous'

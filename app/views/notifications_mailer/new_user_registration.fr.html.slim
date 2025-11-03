@@ -1,0 +1,36 @@
+= content_for :title, t('.titre')
+- user = @notification.user
+- recommended = Project.visible.with_state('online').recommended.limit(3)
+
+| Salut
+- if user.name
+  | , #{user.name}!
+
+br/
+br/
+| Merci de rejoindre Fiatope, la plateforme qui permet d'agir pour la promotion des initiatives socio-économiques dans les pays du Sud.
+br
+br
+
+- if recommended.any?
+  | En guise de démarrage, voici notre recommandation de projets:
+  br
+  br
+  table border="0" cellpadding="3" cellspacing="0" width="520" align="center"
+    tr
+      - recommended.each do |project| 
+        td width="160" valign="top"
+          = link_to project_url(project), style: 'text-decoration: none; color: #333;' do
+            = image_tag(project.display_image, size: '160x100')
+            br/
+            p style='font-size: 13px; padding: 5px'= project.name
+
+br
+center
+ = link_to 'Découvrir les projets', discover_url, target: 'blank', class: 'button'
+br
+br
+| Bien à vous,
+br
+| L équipe #{Configuration[:company_name]}
+

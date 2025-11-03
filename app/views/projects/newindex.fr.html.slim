@@ -1,0 +1,74 @@
+- content_for :title, t('.title')
+.newindex-page
+  header.hero.center[data-image-url=image_path('panorama_fiatope_sixteen.jpg')]
+    .row
+      .small-12.medium-12.medium-centered.columns
+        h2 = t('.Des solutions pour une Afrique émergente').html_safe
+
+        = link_to new_user_registration_path do
+             /h3 = t('.register.title')
+             span.button.medium = t('.Inscrivez Vous')
+             .facebook-box
+               .fb-like data-href="#{Configuration['facebook_url']}" data-width="224" data-height="40" data-header="false" data-send="true"
+             br
+    .row
+
+  hr
+  section.teasing
+    .row
+      h3.text-center
+        | 
+      h4.text-center
+        = link_to t('.Accompagnement_digital'), coaching_path, class: 'button large-5 medium-4 columns left'
+        = link_to t('.Financement_participatif'), root_url, class: 'button large-5 medium-4 columns right'
+        = link_to t('Cagnotte en ligne'), "https://www.kwendoo.com", class: 'button large-5 medium-4 columns left'
+        = link_to t('.ONG_et_Fondations'), new_whitelabel_path, class: 'button large-5 medium-4 columns right'
+        br
+        br
+        br
+        = image_tag("multi_ethnic_entrepreneurs.jpg", :align=> "middle")
+        |
+  
+
+  .row
+      .large-10.columns.large-centered
+        hr
+
+
+  section.actualités
+    .row
+      h3.text-center
+        = t('.actualités')
+    .row
+      h3.text-center 
+        = image_tag "oser_banniere.png", align: "middle"
+      h4.text-center
+        a href ="http://www.fiatope.com/org-partners-oser" Fiatope s'associe au Collectif OseR l'Afrique
+
+  .row
+    .large-12.columns.large-centered
+      hr
+
+  .row
+    = link_to t('.les projets accompagnés'), discover_path, class: 'button large-4 medium-4 columns center'
+    = link_to t('.soumettre votre projet'), new_project_path, class: 'button large-4 medium-4 columns center'
+
+  .row
+    .large-12.columns.large-centered
+      hr  
+   
+  section.partners
+    .row
+      h3.text-center
+        = t('.partenaires')
+      h4.text-center
+        |
+        a[href="http://www.info-afrique.com"] = image_tag "info-afrique.com.jpg"
+
+        a[href="https://www.kwendoo.com"] = image_tag "Logo_Kwendoo.jpg"
+
+        a[href="http://oserlafrique.com"] = image_tag "oser2.jpg"
+
+        a[href="http://www.maeci.org"] = image_tag "maeci.jpg"
+
+

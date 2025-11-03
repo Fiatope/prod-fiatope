@@ -1,0 +1,29 @@
+= content_for :title, t('.titre')
+.idee-page.static-page
+  .row
+    .title
+       h2 Culture et Arts
+       = image_tag("panorama_fiatope_eleven.jpg", :align=> "center")
+    .text
+     h5 Chez Fiatope nous pensons que la culture est un maillon essentiel de la chaîne du développement. Léopold Sedar Senghor disait « la culture est au début et à la fin de tout processus de développement » 
+     br
+     h5 Nous sommes engagés à soutenir la création artistique et culturelle africaine ici et là-bas. Nous voulons faire la beauté de l’Afrique en finançant les artistes qui exprimeront toute sa richesse.     
+     br
+     h5 Nous vous accompagnons pour décrire votre projet culturel de façon à ce qu’il soit le plus attractif possible pour vos potentiels donateurs.
+
+     = link_to t('.soumettre votre projet'), new_project_path, class: 'button large-4 medium-4 columns large-centered'
+     br
+
+  .row
+
+    hr
+    .large-4.medium-4.columns.stay-in-touch
+      h6
+        = t('.Likez_Nous')
+        br
+        br
+        .facebook-box
+          .fb-like data-href="#{Configuration['facebook_url']}" data-width="224" data-height="40" data-header="false" data-show-border="false" data-colorscheme="dark" data-layout="standard" data-action="like" data-show-faces="true" data-send="true"
+        br
+        br
+

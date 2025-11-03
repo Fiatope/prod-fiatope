@@ -1,0 +1,389 @@
+<%= content_for :title, t(".title") %>
+<%= content_for :meta_tags do %>
+	<meta name="description" content="<%= t(".meta_description") %>" />
+	<!-- <meta name="turbolinks-visit-control" content="reload"> -->
+	<!-- TrustBox script -->
+	<script type="text/javascript" src="//widget.trustpilot.com/bootstrap/v5/tp.widget.bootstrap.min.js" async></script>
+	<!-- End TrustBox script -->
+<% end %>
+<%= javascript_include_tag "vignette.js", "data-turbolinks-track" => true  %>
+
+<%= render 'carousel' %> 
+
+<!-- <div class="jumbo">
+
+	<div id="homeCarousel" class="carousel slide" data-ride="carousel">
+	<ol class="carousel-indicators">
+		<li data-target="#homeCarousel" data-slide-to="0" class="active"></li>
+		<li data-target="#homeCarousel" data-slide-to="1"></li>
+		<li data-target="#homeCarousel" data-slide-to="2"></li>
+	</ol>
+
+	<div class="carousel-inner">
+		<div class="item active">
+		<div class="carousel-item">
+			<%= image_tag "OrbitAfrica_Image__Entrepreneur_debout_iStock.jpg", :class => "banner_style_image" %>
+		</div>
+		<div class="carousel-caption mb-4">
+			<%= link_to t('.discover_only.button1'), discover_path, class: 'btn-medium-yellow' %>
+			<%= link_to t('.discover_only.button'), start_path, class: 'btn-medium-red'%>
+		</div>
+		</div>
+		
+		<div class="item">
+		<div class="carousel-item">
+			<%= image_tag "Orbit_Africa_Image_Styliste_iStock.jpg", :class => "banner_style_image" %>
+		</div>
+		<div class="carousel-caption mb-4">
+			<%= link_to t('.discover_only.button1'), discover_path, class: 'btn-medium-yellow' %>
+			<%= link_to t('.discover_only.button'), start_path, class: 'btn-medium-red'%>
+		</div>
+		</div>
+		
+		<div class="item">
+		<div class="carousel-item">
+			<%= image_tag "banner_campaign.jpeg", :class => "banner_style_image" %>
+		</div>
+		<div class="carousel-caption mb-4">
+			<%= link_to t('.discover_only.button1'), discover_path, class: 'btn-medium-yellow' %>
+			<%= link_to t('.discover_only.button'), start_path, class: 'btn-medium-red'%>
+		</div>
+		</div>
+	</div>
+
+	<a class="left carousel-control" href="#homeCarousel" data-slide="prev">
+		<span class="glyphicon glyphicon-chevron-left"></span>
+		<span class="sr-only">Previous</span>
+	</a>
+	<a class="right carousel-control" href="#homeCarousel" data-slide="next">
+		<span class="glyphicon glyphicon-chevron-right"></span>
+		<span class="sr-only">Next</span>
+	</a>
+	</div>
+
+</div> -->
+
+<div class="discover text-center">
+	<div class="discover-title">
+             <%= t('.discover_projects') %>
+	</div>
+	<div class="discover-title-project">
+                 <%= t('.discover.titlea') %>
+	</div>
+	<div class="container">
+		<div class="row">
+			<!-- <div class="col-md-4">
+				<div class="project-card">
+					<div class="img-1">
+					</div>
+					<div class="description">
+						DÉVELOPPER LE COLLÈGE SAINT-JEAN BAPTISTE DE BANGOU.
+					</div>
+					<div class="location">
+						<div class="icon">
+							<%= image_tag "placeholder.svg" %>
+						</div>
+						<div class="location-text">
+							Bangou, OUEST
+						</div>
+					</div>
+					<div class="price-day">
+						<div class="price">
+							€120 (6%)
+						</div>
+						<div class="day">
+							16 jours restants
+						</div>
+					</div>
+					<div class="statement">
+						<progress id="avancement" value="30" max="100"></progress>
+					</div>
+					<%= link_to 'Voir le projet', root_path, class:'btn-medium-yellow-w-m btn-block' %>
+				</div>
+			</div>
+			<div class="col-md-4">
+				<div class="project-card">
+					<div class="img-1">
+					</div>
+					<div class="description">
+						DÉVELOPPER LE COLLÈGE SAINT-JEAN BAPTISTE DE BANGOU.
+					</div>
+					<div class="location">
+						<div class="icon">
+							<%= image_tag "placeholder.svg" %>
+						</div>
+						<div class="location-text">
+							Bangou, OUEST
+						</div>
+					</div>
+					<div class="price-day">
+						<div class="price">
+							€120 (6%)
+						</div>
+						<div class="day">
+							16 jours restants
+						</div>
+					</div>
+					<div class="statement">
+						<progress id="avancement" value="30" max="100"></progress>
+					</div>
+					<%= link_to 'Voir le projet', root_path, class:'btn-medium-yellow-w-m btn-block' %>
+				</div>
+			</div>
+			<div class="col-md-4">
+				<div class="project-card">
+					<div class="img-1">
+					</div>
+					<div class="description">
+						DÉVELOPPER LE COLLÈGE SAINT-JEAN BAPTISTE DE BANGOU.
+					</div>
+					<div class="location">
+						<div class="icon">
+							<%= image_tag "placeholder.svg" %>
+						</div>
+						<div class="location-text">
+							Bangou, OUEST
+						</div>
+					</div>
+					<div class="price-day">
+						<div class="price">
+							€120 (6%)
+						</div>
+						<div class="day">
+							16 jours restants
+						</div>
+					</div>
+					<div class="statement">
+						<progress id="avancement" value="30" max="100"></progress>
+					</div>
+					<%= link_to 'Voir le projet', root_path, class:'btn-medium-yellow-w-m btn-block' %>
+				</div>
+			</div> -->
+
+
+                 <%# if @recommended.size > 0 %>
+                     <%# for project in @recommended %>
+                         <%#= render 'project', project: project %>
+                     <%# end %>
+                 <%# end %>
+
+                 <% if @projects_to_show_on_home_page.present? %>
+					<% @projects_to_show_on_home_page.each do |project| %>
+						<%= render 'project', project: project %>
+					<% end %>
+				<% end %>
+
+
+		</div>
+	</div>
+
+	<div class="see-more">
+		<%= link_to t('.discover.button1'), discover_path, class: 'btn-medium-yellow-border' %>
+	</div>
+</div>
+
+<div class="cta-project flex-container text-center">
+	<div class="flex-item">
+		<div class="cta-text">
+                      <%= t('.porteurs.title') %>
+		</div>
+		<div class="cta-btn">
+			<%= link_to 'Proposez un projet', new_project_path, class: 'btn-medium-white-border' %>
+		</div>
+
+	</div>
+</div>
+
+
+<div class="why text-center">
+	<div class="why-text" style="padding-bottom: 10px;">
+		<%= 'Statistiques' %>
+	</div>
+	<div class="container">
+		<div class="row">
+			<div class="col-sm-6 col-lg-3 text-center">
+				<h1 style="color: #DB9500; font-size: 50px; margin-bottom: 20px;">
+					<%= @montant_total_collecte * 2 %> €
+				</h1>
+				<p>
+					Collectés 
+				</p>
+			</div>
+			<div class="col-sm-6 col-lg-3 text-center">
+				<h1 style="color: #DB9500; font-size: 50px; margin-bottom: 20px;">
+					<%= @total_contributeurs * 2 %>
+				</h1>
+				<p>
+					Contributeurs
+				</p>
+			</div>
+			<div class="col-sm-6 col-lg-3 text-center">
+				<h1 style="color: #DB9500; font-size: 50px; margin-bottom: 20px;">
+					<%= @total_projects_accompagnes * 2 %>
+				</h2>
+				<p>
+					Projets accompagnés
+				</p>
+			</div>
+			<div class="col-sm-6 col-lg-3 text-center">
+				<h1 style="color: #DB9500; font-size: 50px; margin-bottom: 20px;">
+					<%= @total_pays %>
+				</h1>
+				<p>
+					Pays
+				</p>
+			</div>
+		</div>
+	</div>
+</div>
+
+
+<div class="why text-center">
+	<div class="why-text">
+		<%= t('.why-fiatope.six.headline') %>
+	</div>
+	<div class="container">
+		<div class="row">
+			<div class="col-sm-6 col-lg-3">
+				<div class="why-icon">
+					<%= image_tag	"securite.svg" %>
+				</div>
+
+				<div class="why-title-item">
+			        <%= t('.why-fiatope.reason.secu.title') %>	
+				</div>
+
+				<p class="why-description">
+                   <%= t('.why-fiatope.reason.secu.content') %>
+				</p>
+			</div>
+
+			<div class="col-sm-6 col-lg-3">
+				<div class="why-icon">
+					<%= image_tag	"fiabilite.svg" %>
+				</div>
+
+				<div class="why-title-item">
+			        <%= t('.why-fiatope.reason.fiab.title') %>
+                </div>
+
+  				<p class="why-description">
+                   <%= t('.why-fiatope.reason.fiab.content') %>
+				</p>
+			</div>
+			<div class="col-sm-6 col-lg-3">
+				<div class="why-icon">
+					<%= image_tag	"professionnalisme.svg" %>
+				</div>
+
+				<div class="why-title-item">
+				        <%= t('.why-fiatope.reason.prof.title') %>
+				</div>
+
+				<p class="why-description">
+                   <%= t('.why-fiatope.reason.prof.content') %>
+				</p>
+			</div>
+			<div class="col-sm-6 col-lg-3">
+				<div class="why-icon">
+					<%= image_tag	"transparence.svg" %>
+				</div>
+
+				<div class="why-title-item">
+					<%= t('.why-fiatope.reason.trans.title') %>
+				</div>
+
+				<p class="why-description">
+                 	<%= t('.why-fiatope.reason.trans.content') %>
+				</p>
+			</div>
+
+	    	<div class="vid">
+				<iframe width="560" height="315" src="https://www.youtube.com/embed/jr1D1w5KCxk?start=12" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+			</div>
+		</div>
+	</div>
+</div>
+
+
+<div class="partnership text-center">
+	<div class="why-text">
+		<%= t('.discover.titleb') %>
+	</div>
+
+	<div class="row partners-slide">
+		<section class="customer-logos slider">
+			<div class='slide'>	
+				<a href="https://www.lamaisondelafrique.com/"> 
+					<!-- <div class="partner2-icon"></div>  -->
+					<img src="https://static.wixstatic.com/media/5f16ed_c8956bf02c4a4c5180f1d15b39f093fd~mv2.png/v1/crop/x_76,y_0,w_466,h_526/fill/w_116,h_131,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/lamaisondelafrique.png" alt="lamaisondelafrique.png" fetchpriority="high">
+				</a>
+			</div>
+
+			<div class='slide'>	
+				<a href="https://www.facebook.com/studioroar/"> 
+					<div class="partner2-icon"></div> 
+				</a>
+			</div>
+			<div class='slide'>	
+				<a href="https:/kwendoo.com">
+					<div class="partner4-icon"></div>
+				</a>
+			</div>
+			
+			<div class='slide'>	
+				<a href="http://obotama.com">
+					<div class="partner6-icon"></div>
+				</a>
+			</div>
+			
+		    <div class='slide'>
+				<a href="https://jabaspace.co/">
+					<div class="partner9-icon"></div>
+				</a>
+		    </div>
+
+		    <div class='slide'>
+				<a href="https://www.facebook.com/Les-films-Awal%C3%A9-1447192712002181"> 
+					<div class="partner10-icon"></div>
+				</a>
+		    </div>  
+		</section>
+	</div>	
+</div>
+
+<div class="presse text-center">
+	<div class="why-text">
+		<%= t('.press') %>
+	</div>
+
+	<div class="container text-center">
+	<% @press_assets.each do |asset| %>
+		<%= link_to asset.url, target: :blank, title: asset.title do %>
+      <%= image_tag asset.image.thumb.url %>
+    <% end %>
+  <% end %>
+	</div>
+</div>
+
+<!-- <div class="container text-center">
+	<h4 class="why-text">
+		Découvrez Kwendoo, une cagnotte internationale !
+		<br>
+		Vous permettant de réaliser des projets à plusieurs en quelques clics !
+	</h4>
+	<p>
+		<%#= link_to 'Découvrir Kwendoo', 'https://www.kwendoo.com/', target: "_blank", class:'btn-medium-yellow-border' %>
+	</p>
+</div> -->
+
+<!-- TrustBox widget - Starter -->
+<!-- <div class="trustpilot-widget" data-locale="fr-FR" data-template-id="5613c9cde69ddc09340c6beb" data-businessunit-id="53f79ec8000064000579e041" data-style-height="100%" data-style-width="100%" data-theme="light">
+  <a href="https://fr.trustpilot.com/review/www.fiatope.com" target="_blank" rel="noopener">Trustpilot</a>
+</div> -->
+<!-- End TrustBox widget -->
+
+
+<!-- Start of HubSpot Embed Code -->
+<script type="text/javascript" id="hs-script-loader" async defer src="//js-eu1.hs-scripts.com/25325120.js"></script>
+<!-- End of HubSpot Embed Code -->

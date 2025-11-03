@@ -1,0 +1,26 @@
+<%= content_for :title, 'Contact us' %>
+
+<%= content_for :meta_tags do %>
+  <meta name="description" content="Contact us for more information" />
+<% end %>
+
+	<div class="background-full flex-container text-center">
+		<div class="background-title flex-item">
+			<h2>Contact us </h2>
+		</div>
+	</div>
+
+	<div class="container">
+		<div class="info text-center">
+			For any request you may have, get in touch with us via SMS from 9am to 8pm, from Monday to Saturday at +33 6 71 54 44 39. We'll reply within minutes.  
+			You can also email us at 
+			<a href='mailto:contact@fiatope.com'> contact@fiatope.com </a>
+			or leave us a message
+
+
+		</div>
+		<%= render 'form', :message => @message %>
+	</div>
+
+
+

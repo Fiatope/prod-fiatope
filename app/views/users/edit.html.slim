@@ -1,0 +1,31 @@
+- content_for :title, "Editing: #{@user.display_name}"
+
+- content_for :meta_tags do
+  meta property="og:title" content=@user.name
+  meta property="og:url" content=="#{Configuration[:base_url]}#{user_path(@user)}"
+  meta property="og:image" content==@user.display_image
+  meta property="og:site_name" content=::Configuration[:company_name]
+  meta property="og:description" content=@user.bio
+  meta property="fb:admins" content=facebook_url_admin
+
+.user-edit-page
+  nav.tabs[data-target-container=".user-edit-page section.content"]
+    ul
+      li = tab_link_to t('.tabs.edit'), edit_user_path(@user)
+      - if @user.projects.any?
+        li = tab_link_to t('.tabs.my_campaigns'), user_projects_path(@user)
+      - if @user.contributions.any?
+        li = tab_link_to t('.tabs.ive_contributed'), user_contributions_path(@user)
+      li = tab_link_to t('.tabs.credits'), credits_user_path(@user)
+      li = tab_link_to t('.tabs.payments'), payments_user_path(@user)
+      li = tab_link_to t('.tabs.mangopay_authentications'), mangopay_authentications_user_path(@user)
+      li = tab_link_to t('.tabs.settings'), settings_user_path(@user)
+  .row.page-main-content
+    section.large-12.columns.main
+      
+
+      section.content        
+        - if content_for? :page_content
+          = yield :page_content
+        - else
+          = render template: 'users/profile', locals: { partial: true }

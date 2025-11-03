@@ -1,0 +1,54 @@
+= content_for :title, "Jobs"
+
+- if request.xhr?
+  a.close-reveal-modal ×
+
+#about-page
+  .row
+    h2.page-headline
+      | CDIs,Missions, Stages et Apprentissage
+      = image_tag("panorama_fiatope_five.jpg", :align=> "center")                                                   
+  .row
+     .page-headline
+
+  .job-description
+    .row
+      h3
+        p Nous recherchons des FreeLancers dans les domaines suivants;
+      h5
+        p Analyse et études de marché 
+      h5
+        p Développement Ruby on Rails Front-End et Back-End
+      h5
+        p Design Web - Graphiste
+      h5
+        p Communication digitale
+      h5
+        p Traduction Français/Anglais(américain)
+      h5
+        p Juridique
+      h5
+        p Gestion administrative et comptable
+  .row
+      h3
+       p Nous recrutons également 
+      h5
+        | Community Manager
+        = link_to t('._Offre_de_Stage'), image_path('Community_Manager.pdf')
+        = link_to t('._Offre_de_Poste'), image_path('Poste_Community_Manager_Fiatope.pdf')
+        |
+      h5
+        | Développeur Front-End
+        = link_to t('._Fiche_de_Stage'), image_path('Développeur_Front-End.pdf')
+        |
+  .row
+    h3 
+     p Contactez-nous
+     h5
+       | Envoyez nous un mail à  
+       a href='mailto:contact@fiatope.com' contact@fiatope.com
+       |
+  .row
+
+
+

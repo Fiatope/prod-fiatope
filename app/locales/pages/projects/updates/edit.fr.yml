@@ -1,0 +1,21 @@
+fr:
+  projects:
+    contributions:
+      edit:
+        title: 'Vous contribuez à %{project_name}'
+        you_are_contributing_to: 'Vous contribuez à'
+        total: 'Total: '
+        i_want_pay_fees: "Je prends en charge les frais de transaction"
+        payment:
+          title: "Vous pourrez bientôt sélectionner un moyen de paiement. Nous intégrons les interfaces de paiement avec Mangopay"
+        reward:
+          title: 'Votre Reward'
+          titles: 'Vos rewards'
+        tooltip-text: "Merci de soutenir <strong>%{project_name}</strong>! Afin de profiter au maximum de votre contribution, nous vous saurons gré si possible de prendre en charge les frais de transaction. Cela fait une grosse différence pour nous et pour l'atteinte de nos objectifs et nous l'apprécirons grandement.<br /><strong>Les frais de transaction sont de 5%.</strong>"
+        tooltip-text-projet: "Merci de soutenir <strong>%{project_name}</strong>!<strong>Les frais de transaction sont de 5%.</strong>"  
+        payment-method:
+          fees: 'Frais:'
+          balanced-creditcard:
+            title: 'Carte de Débit/Crédit'
+          balanced-bankaccount:
+            title: 'Compte en banque'

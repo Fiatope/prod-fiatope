@@ -1,0 +1,81 @@
+fr:
+   static:
+    successful: 
+      title: 'Guide des projets'
+      meta_description: 'Découvrez comment créer un projet et comment en faire une réussite. Fiatope vous livre toutes les astuces.'
+    why_fiatope: 
+      title: "Pourquoi choisir Fiatope ?"
+      meta_description: "N’hésitez plus à lancer votre projet et trouvez des financements au sein de notre communauté: sécurité, fiabilité, professionnalisme et transparence."
+    about:
+      title: 'A propos'
+      meta_description: "Découvrez l’équipe Fiatope et tous leurs projets, ce sur quoi nous travaillons et ce en quoi nous croyons."
+    org_partners_oser: 
+      title: "Oser l'Afrique" 
+      meta_description: "Oser l'Afrique se met au côté de Fiatope pour developper les projets innovants d'Afrique grâce aux levées de fond."
+    org_partners:
+      title: "Devenez partenaire de Fiatope"
+      meta_description: "Fiatope aide des associations locales et entrepreneuriales à se développer grâce au soutien de milliers d'âmes de bonne volonté dans le monde."
+    csr_partners:
+      title: "Partenaires RSE" 
+      meta_description: "Rejoignez l'ensemble des structures qui accompagnent Fiatope dans l'investissement participatif et contribuez aux projets innovants de l'Afrique"
+    article_financement:
+      title: "Financement Participatif en Afrique – Le Jackpot sous certaines conditions"
+      meta_description: "Le financement participatif continue sa croissance de par le monde, comme moyen de financement alternatif aux mécanismes traditionnels que sont les prêts bancaires, les aides et subventions ou encore le financement par les fonds d’investissement pour les projets plus gros"
+    faq:
+      title: "Questions fréquentes sur Fiatope"
+      meta_description: 'Vous avez des questions sur le fonctionnement de Fiatope ? Découvrez toutes les réponses ou contactez-nous directement.'
+    privacy:
+      title: "Politique de confidentialité"
+      meta_description: "Fiatope met tout en oeuvre pour sécuriser vos données et vous donnez une expérience utilisateur parfaite."
+    price:
+      title: "Tarifs"
+      meta_description: "Vous souhaitez créer un projet pour le rayonnement de l’Afrique ? Découvrez tout ce qu’il faut savoir pour la création de votre compte."
+    ambassadors:
+      title: 'Devenez Ambassadeur Fiatope'
+      meta_description: 'Devenez un ambassadeur de Fiatope et aidez les porteurs de projet obtenir la meilleure issue possible pour votre louable initiative'
+    terms:
+      title: "Conditions générales d'utilisation"
+      meta_description: "Vous devez prendre connaissance des conditions et termes d'utilisation de notre plateforme de financement pour profiter au maximum de ses fonctionnalités."
+    values_ethics:
+      title: "Valeurs et éthique"
+      meta_description: 'Découvrez nos valeurs et notre éthique afin de pouvoir travailler ensemble sur vos projets innovants.'
+    how_it_works:
+      title: 'Comment ça marche ?'
+      meta_description: 'Fiatope vous aide à créer ou soutenir le projet qui vous tient à cœur. Retrouvez pas à pas les étapes pour lancer votre campagne de crowfunding.' 
+    start_terms:
+      title: 'Termes'
+      explore_curious: "Juste un coup d'oeil!"
+      explore_projects: "Je souhaite découvrir les projets."
+      submit: "Prochaine Etape!"
+      send_project: "Je voudrais soumettre mon projet."
+    base:
+      title: 'Page statique'
+    idee:
+      title: 'Idée'
+      meta_description: "Fiatope concrétise vos idées en des projets innovants pour l'Afrique et le monde à travers le lancement de votre campagne de financement participatif."
+    medecine:
+      title: 'Médecine' 
+      meta_description: "Nous encourageons les projets qui promeuvent la sécurité sanitaire et le bien-être des populations."
+    education:
+      title: 'Education'
+    technologies:
+      title: 'Technologies'
+    env_agri:
+      title: 'Environnement'
+    fiatope_origin:
+      title: 'L’origine de Fiatope'
+      meta_description: 'Vous ne connaissez pas encore Fiatope ? Venez à notre rencontre et découvrez tous nos projets et ceux de notre communauté.'  
+    selection:
+      title: 'Sélection' 
+    training:
+      title: Sensibilisation'
+    renewable:
+      title: 'Energies renouvelables'
+    culture: 
+      title: 'Culture'
+    development:
+      title: 'Développement'
+    launch:
+      title: 'Lancement'
+    management:
+      title: 'Management'  

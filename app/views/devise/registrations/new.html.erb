@@ -1,0 +1,57 @@
+<%= content_for :title, t('.titles.site') %>
+<link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+<%= render 'layouts/header' %>
+
+<div class="background-img">
+	<div class="filter-hard-black flex-container">
+		<div class="bg-white">
+      <% if params[:from_contribution] %>
+        <h3><%= t('.titles.header_contribution')%> </h3>
+      <% else %>
+        <h2><%= t('.titles.header')%></h2>
+      <% end %>
+
+      <%= render 'devise/shared/omniauth' %>
+      <hr>
+
+      <%= simple_form_for(resource, as: resource_name, url: registration_path(resource_name)) do |f| %>
+      <%= f.label :profile_type, t('.form.labels.type'), class: 'new_profile_type' %>
+      <%= f.hidden_field :newsletter, value: true %>
+      <%= f.input :profile_type, collection: {'Une personne'=> 'Personne', 'Une entreprise | organisation | association'=> 'Une entreprise | organisation | association'}, as: :radio_buttons, label: false %>
+      <div class="form-inputs">
+      <%= f.input :name,     as: :string, required: true, label: false %>
+      <%= f.input :email,    as: :email,  required: true, label: false %>
+      <%= f.input :birthday, as: :string,  required: true, label: false %>
+      <% if params[:from_contribution] %>
+        <%= f.input :password, required: true, label: t('.form.inputs.mdp_contribution') %>
+      <% else %>
+        <%= f.input :password, required: true, label: false %>
+      <% end %>
+      <div class="text-right">
+      <%= t('.form.hint.password_length') %>
+      <% if ENV['RAILS_ENV'] == "production" %>
+        <%= flash[:recaptcha_error] %>
+        <%= recaptcha_tags %>
+      <% end %>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <% if params[:from_contribution] %>
+       <%= f.submit t('.form.inputs.submit_contribution'), class: 'btn btn-block btn-red' %>
+      <% else %>
+       <%= f.submit t('.form.inputs.submit'), class: 'btn btn-block btn-red' %>
+      <% end %>
+    </div>
+
+    <% end %>
+    <div class="sign-up">
+      <%= link_to t('.have_account_html'), new_user_session_path %>
+      
+    </div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+

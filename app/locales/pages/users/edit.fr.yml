@@ -1,0 +1,24 @@
+fr:
+  users:
+    edit:
+      tabs:
+        edit: "profil"
+        my_campaigns: "mes projets"
+        ive_contributed: "mes contributions"
+        credits: 'mes crédits'
+        payments: 'coordonnées bancaires'
+        settings: 'mes configurations'
+        mangopay_authentications: 'mon identité'
+      projects:
+        required: 'Requis pour les créateurs de projet'
+      mangopay:
+        required: 'requis par Mangopay' 
+        birthday: 'date de naissance'
+        nationality: 'nationalité'
+        residence_country: 'pays de résidence'
+        name: 'nom complet (prénom nom)'
+        address_city: 'ville'
+        address_state: 'pays'
+        address_street: 'rue et numéro'
+        address_zip_code: 'code postal'
+        organization_name: "nom de l'organisation"

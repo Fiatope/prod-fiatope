@@ -1,0 +1,60 @@
+= content_for :title, t('.titre')
+- project = @notification.project
+|Bonne nouvelle, #{project.user.display_name}.
+br
+br
+|Votre projet est désormais en ligne sur www.fiatope.com!
+br
+|Voici le lien vers la campagne, à envoyer et partager avec à vos réseaux:
+br
+br
+= link_to(project.name, project_url(project))
+br
+br
+strong Voici quelques astuces pour réussir votre campagne
+ol
+  li 
+    strong Dès le départ: 
+    br
+    | Faites relayez un maximum l'ouverture de la campagne dans les médias 
+    br
+    br
+    strong Mises à jour
+    br
+    | Utilisez l'onglet "Mises à Jour" de votre console de gestion pour apporter de nouvelles informations à vos contributeurs ou potentiels contributeurs. Notre expérience nous montre que les projets qui font l'objet de mises à jour fréquentes atteignent leurs objectifs plus rapidement que les autes.
+    br
+    br
+    strong Commentaires
+    br
+    | Suivez les commentaires sur votre page projet (onglet "commentaires)" et répondez-y. Vous y trouverez des questions, des idées, des conseils qui pourraient vous être utiles.
+    br
+    br
+    strong Widgets
+    br
+    | En cliquant sur "embarquez un widget", vous obtenez le code HTML à insérer sur votre site web ou votre blog (votre administrateur saura le faire) ou à donner à vos partenaires pour rendre votre campagne visible sur autant de blogs, pages et sites web que possible.
+    br
+    br
+    strong Partage Réseaux sociaux
+    br
+    | Les boutons de réseaux sociaux sur votre page de campagne permettent à toute personne de partager votre campagne sur facebook et twitter. Ne vous arrêtez pas à cela. 
+    br
+    br
+  li
+    |Vous pouvez également faire évoluer les aspects suivants de votre projet:
+    ul
+      li La vidéo
+      li La description synthétique du projet
+      li Les Rewards
+      li Modifier la vignette photo du projet ou toute autre information pertinente
+      li 
+        |Par contre, vous ne pourrez pas:
+        ul
+          li Changer la durée de la campagne sans nous en faire la demande
+          li Changer l' objectif financier à atteindre
+          li Changer un reward une fois qu un contributeur l' a sélectionné
+      li Notez que vous devrez être connecté à votre compte de créateur projet pour effectuer toutes ces modifications.
+    li Si vous avez besoin d' aide dans la promotion de votre projet, faites le nous savoir à #{mail_to Configuration[:email_contact]}. Cependant gardez à lesprit que le succès de votre camapagne dépend de vous et de votre capacité à vous connecter à des personnes qui croiront en votre ambition. 
+br
+|Merci beaucoup et bonne chance!
+br
+|L'équipe #{Configuration[:company_name]}

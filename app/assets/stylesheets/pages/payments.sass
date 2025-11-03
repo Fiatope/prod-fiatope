@@ -1,0 +1,236 @@
+.neighborly-balanced-creditcard-form,
+.neighborly-mangopay-creditcard-form,
+.neighborly-balanced-bankaccount-form,
+.neighborly-mangopay-bankaccount-form
+  .card-box:not(.new-card),
+  .bank-box:not(.new-bank)
+    border: 1px solid $border-color
+    border-radius: $global-radius
+    padding: +emCalc(15px)
+    background: white
+    margin-bottom: +emCalc(5px)
+    dt,
+    dd
+      display: inline
+    .expiration dt
+      margin-left: +emCalc(15px)
+    .expiration dd
+      margin-left: +emCalc(40px)
+    &.selected
+      border: 1px solid $primary-color
+
+    input[type="radio"]
+      margin-bottom: +emCalc(5px)
+
+  .submit
+    input
+      width: 100%
+      background-color: #A3320C
+      @media #{$medium}
+        width: auto
+
+  .add-new-creditcard-form.with-others-cards,
+  .add-new-bankaccount-form.with-other-bank
+    margin-top: +emCalc(25px)
+
+  span.checkbox
+    margin-right: +emCalc(5px)
+  .balanced-seal,
+  .mangopay-seal
+    padding-top: +emCalc(5px)
+  .button
+    margin-top: +emCalc(5px)
+  .terms
+    margin-bottom: +emCalc(15px)
+  .update-address
+    margin-bottom: +emCalc(15px)
+    margin-top: +emCalc(-15px)
+
+  .divider
+    font-size: 185%
+    margin-top: +emCalc(2px)
+    color: $secondary-color
+    font-weight: 200
+  .expandable
+    padding-top: +emCalc(15px)
+
+.neighborly-balanced-bankaccount-form
+  .check-numbers
+    margin-bottom: +emCalc(20px)
+    text-align: center
+  .radio_buttons
+    label.radio
+      float: left
+      padding-right: +emCalc(15px)
+      padding-top: +emCalc(15px)
+      input
+        margin-right: +emCalc(5px)
+
+.bankaccount-confirmations-new-page
+  margin-top: +emCalc(20px)
+  .remaining-attempts
+    color: $alert-color
+    margin-top: +emCalc(30px)
+  .pending-contributions
+    .project
+      margin-bottom: +emCalc(15px)
+      .project-image
+        margin-top: +emCalc(20px)
+
+
+#add-new-creditcard-form
+  margin-bottom: +emCalc(-5px)
+
+.payment-method-option
+  float: left
+  width: 100%
+  border: 1px solid $border-color
+  border-radius: $global-radius
+  padding: +emCalc(15px)
+  margin-bottom: +emCalc(15px)
+  background: white
+  &.selected
+    border: 1px solid #A3320C
+  input
+    margin-bottom: 0
+    margin-right: +emCalc(15px)
+    margin-left: +emCalc(5px)
+  .description
+    margin-left: +emCalc(15px)
+    h6
+      margin-top: 0
+      margin-bottom: +emCalc(12px)
+      font-weight: 500
+      text-transform: uppercase
+    small
+      display: block
+      font-size: 85%
+      color: $secondary-color
+
+.payment
+  section
+    margin-bottom: +emCalc(15px)
+    &.highlighted
+      border-top: 1px solid $border-color
+      padding-top: +emCalc(20px)
+    &.use-existing-item
+      margin-bottom: 0
+  .title
+    margin-top: 0
+
+  .container
+    min-height: +emCalc(300px)
+    position: relative
+
+    .loading
+      $img-width: 80px
+      $img-height: 66px
+      position: relative
+      top: +emCalc(150px)
+      bottom: 0
+      left: 0
+      right: 0
+      background-color: rgba(white, .75)
+      z-index: -1
+      opacity: 0
+      +single-transition(opacity .2s)
+      &.show
+        z-index: 201
+        opacity: 1
+      .loader-img
+        @include beating-heart($img-width, $img-height)
+
+.total-value
+  margin-top: +emCalc(25px)
+  font-size: 125%
+  text-align: center
+  input[type="text"]
+    text-align: center
+    width: 76%
+    font-size: 120%
+    height: +emCalc(35px)
+    display: inline-block
+    margin: 0
+  input[type="checkbox"]
+    margin-bottom: 0
+  .fees-info-button
+    margin-left: +emCalc(5px)
+  .custom-tooltip
+    display: inline-block
+    .tooltip-content
+      text-align: left
+      font-size: 85%
+      color: $body-font-color
+      min-width: +emCalc(425px)
+    p
+      margin-bottom: 0
+  .who-pay-fees
+    margin-top: 15px
+    margin-bottom: 5px
+    font-size: 88%
+    input
+      margin-right: +emCalc(5px)
+    label
+      color: white
+      display: inline-block
+
+.border-none 
+  border: none
+
+// IE fixes
+.ie9, .no-ie8compat
+  .total-value
+    input
+      font-size: 100%
+      height: auto
+
+.collapse
+  display: block
+
+.button--orange-money
+  max-width: 100%
+  transition: all 0.5s ease-in-out
+  padding: 0.2em 0.2em 0.2em 0.4em
+  background-color: #212121
+  border: 3px solid #212121
+  opacity: 0.9
+  img
+    display: inline-block
+    height: 2.5em
+    background-color: transparent
+    padding: 0
+  span
+    display: inline-block
+    vertical-align: middle
+    color: white
+    font-size: 1em
+    line-height: 1.2
+    margin-left: 0.5em
+    margin-right: 0.5em
+.button--orange-money:hover
+  border: 3px solid #FE4D0C
+  opacity: 1
+
+.button--payplus-africa
+  max-width: 100%
+  transition: all 0.5s ease-in-out
+  padding: 0.2em 0.2em 0.2em 0.4em
+  background-color: #007bff
+  border: 3px solid #007bff
+  opacity: 0.9
+  img
+    display: inline-block
+    height: 2.5em
+    background-color: transparent
+    padding: 0
+  span
+    display: inline-block
+    vertical-align: middle
+    color: white
+    font-size: 1em
+    line-height: 1.2
+    margin-left: 0.5em
+    margin-right: 0.5em
+.button--payplus-africa:hover
+  opacity: 1
+

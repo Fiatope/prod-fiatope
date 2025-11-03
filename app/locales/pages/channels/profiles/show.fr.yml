@@ -1,0 +1,22 @@
+fr:
+  channels:
+    profiles:
+      show:
+        unfollow: 'Ne plus suivre'
+        follow: 'Nous Suivre'
+        submit: 'Soumettre Maintenant'
+        projects_we_support: 'Les Projets que nous soutenons'
+        see_more: 'En savoir plus'
+        see_less: 'Voir moins'
+        submit_your_project:
+          title: 'Soumettre votre Projet'
+          text: "Vous avez un projet avec des objectifs similaires? Nous le soumettre ici! Les campagnes en ligne avec notre politique seront inclues dans la section des projets que nous soutenons. Vous aurez accès à de nouveaux contributeurs et soutiens."
+          button: 'Soumettre Maintenant'
+        about:
+          title: 'A propos'
+        connect:
+          title: 'Se connecter avec'
+          facebook: 'Facebook'
+          twitter: 'Twitter'
+          email: 'Email'
+          website: 'Website'

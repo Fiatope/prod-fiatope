@@ -1,0 +1,85 @@
+fr:
+  projects:
+    crowdfunding:
+      title: 'Financeme Participatif Afrique'
+      titlebis: Contribuez à l'amorçage des start-ups du Sud!
+      subtitle: 'Participez à la phase Pilote en soutenez un ou plusieurs projets'
+      recommended: 'Recommendé'
+      near: 'Projects Near'
+      channels: 'Partenaires'
+      ending_soon: 'Sur la fin'
+      successful: 'Réussi'
+      coming_soon: 'Bientôt'
+      join:
+        join_the_neighborhood: 'Rejoindre Fiatope'
+        already_joined: 'Déjà Membre? %{link}.'
+        sign_in: 'Se connecter'
+      hero:
+        title: "Permettre une action solidaire à fort impact<strong></strong>"
+        subtitle: "Un monde d'opportunités s'ouvre avec Fiatope. Rejoignez notre newsletter pour rester connectés\n"
+        email_placeholder: 'Mon Email'       
+        submit: 'Rejoindre la Newsletter'
+      teasing:
+        title: "Par le Crowdfunding"
+      how-it-works:
+        title: "Comment ça Marche?"
+        one:
+          headline:  'Cagnottes'
+          text: "Créer une cagnotte pour une action vers une communauté dans un pays d'Afrique. Contribuer à une telle cagnotte."
+          button: "Espace cagnotte"
+        two:
+          headline: 'Projets'
+          text: "Démarrer un projet original de développement local. Contribuer à un tel projet. Avoir de l'impact pour l'Afrique"
+          button: "Espace projet" 
+        three:
+          headline: 'Contributions'
+          text: 'Contribuez à vos projets coup de coeur. Participez à des cagnottes privées. Les cagnotte ne sont pas visibles sur le site.'
+          button: 'Je contribue à un projet'
+        four:
+          button: 'Comment ça marche?'
+      how-it-works-bis:
+        five:
+          headline: 'Comment ça marche?'
+      actualités:
+        title: 'Actualités'
+      paiements:
+        title: 'Paiments Sécurisés' 
+      partenaires:
+        title: 'Partenaires'
+      csr_partners:
+        title: 'Partenaires Financeurs'
+      why-fiatope:
+        six:
+          headline: 'Pourquoi choisir Fiatope?'
+          button: 'Pourquoi choisir Fiatope?'    
+      start-one:
+        seven:
+          headline: ' Un projet à financer?'
+          button: 'Démarrer votre campagne'
+      mission:
+        height:
+          headline: 'Notre mission'
+      channels:
+        there: 'Nous y étions'
+
+      start-one:
+        title: 'Vous avez un projet à financer?'
+        button: 'Soumettez votre projet'
+      register:
+        title: ''
+        button: 'Inscrivez-vous pour suivre les projets'
+      create:
+        title: ''
+        button: 'Démarrer votre projet'
+      discover:
+        title: 'Vous recherchez un coup de coeur?'
+        button: "Financer les projets"
+      discover_only:
+        button: "Découvrir les projets"
+      video:
+        button: 'Voir la vidéo'
+      filters:
+        selection: 'La sélection Fiatope de la semaine'
+        successful: 'Exemple de projet financé avec succès'
+        coming_soon: 'Bientôt sur Fiatope'
+

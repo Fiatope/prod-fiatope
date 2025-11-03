@@ -1,0 +1,7 @@
+en:
+  neighborly:
+    admin:
+      projects:
+        index:
+          wallet_id: wallet key
+          user_key: user key

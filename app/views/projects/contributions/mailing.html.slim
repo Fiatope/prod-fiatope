@@ -1,0 +1,20 @@
+.container.mailing
+  .text-center.name.padding-20= @contribution.project.name
+
+  ul
+    li
+      |Contenu du mail de remerciement pour une contrition 
+      span.button= link_to "L'envoyer", url_for(tips: true), data: { confirm: 'Êtes-vous sûr(e) ?'}
+      div style="background-color: white; padding: 10px;"
+        p= "Bonjour " + @contribution.project.user.name
+        p
+          | Nous vous remercions pour votre contrition faite sur la cagnotte #{ @contribution.project.name}  
+          br
+          | Bien à vous.
+          br
+          br
+          | L'équipe Fiatope.
+
+       
+
+   

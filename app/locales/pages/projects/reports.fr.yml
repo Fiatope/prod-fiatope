@@ -1,0 +1,7 @@
+fr:
+  projects:
+    reports:
+      link_reports: 'Télécharger le rapport de'
+      all_contributions: 'tous les contributeurs'
+      all_contributions_without_reward: "Contributeurs n'ayant pas choisi de reward "
+      link_reward: 'Contributeurs qui ont choisi ce reward '

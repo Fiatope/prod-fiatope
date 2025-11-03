@@ -1,0 +1,28 @@
+.row
+  .large-12.columns
+    h3
+      = t('.title')
+      br/
+      small= t('.subtitle')
+.row
+  .large-12.columns
+    = f.label :address_street, required_by_mangopay(:address_street, t('users.edit.mangopay.address_street').capitalize)
+    = f.input :address_street, as: :string, label: false
+.row
+  .large-8.medium-8.columns
+    .location.location-coordinates.pin-img[data-longitude=resource.longitude data-latitude=resource.latitude data-image-url=image_url('pin.png')]
+
+    = f.label :address_city, required_by_mangopay(:address_city, t('users.edit.mangopay.address_city').capitalize)
+    = f.input :address_city, as: :string, label: false
+
+
+    = f.label :address_state, required_by_mangopay(:address_state, t('users.edit.mangopay.address_state').capitalize)
+    = country_select("user", :address_state, selected: "FR")
+
+  .large-4.medium-4.columns
+    = f.label :address_zip_code, required_by_mangopay(:address_zip_code, t('users.edit.mangopay.address_zip_code').capitalize)
+    = f.input :address_zip_code, as: :string, label: false
+
+/.row
+  .large-12.columns
+    .map-canvas

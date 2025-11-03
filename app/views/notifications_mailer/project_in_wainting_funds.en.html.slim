@@ -1,0 +1,13 @@
+= content_for :title, t('.titre')
+- project = @notification.project
+|Howdy, #{project.user.name},
+br
+|Your project has just ended on Neighbor.ly. There are still a few last minute payments that are currently being verified. This process may take up to seven days to complete.
+br
+br
+|Not to worry. Most of the time, payments are confirmed without issue. This is only a precaution to ensure your campaign closes with the correct amount of funds collected.
+br
+br
+|Thank You,
+br
+|The #{Configuration[:company_name]} Team

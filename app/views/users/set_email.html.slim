@@ -1,0 +1,47 @@
+- if @user
+  - @title = t('.update_email_title')
+  - if @user.email =~ /change-your-email\+[0-9]+@neighbor\.ly/
+    - @user.email = nil
+- else
+  - @title = t('.site_title')
+
+= content_for :title, @title
+
+/= flash_messages
+= render 'devise/shared/header'
+
+.row
+  .large-7.large-centered.columns
+    .login-box.animated.fadeIn
+      h3.text-center
+        - if @user
+          | Howdy, #{@user.display_name}.
+          br/
+          br/
+          |We need some info - please 
+          i add your email address
+          |.
+        - else
+          = @title
+      .separator
+      .clearfix
+
+      .large-12.large-centered.columns
+        - @form_submition ||= {}
+        - if @user
+          - url = update_email_user_path(@user)
+          - method = 'put'
+          - submit_text = t('.submit')
+        - else
+          - url = sign_up_path
+          - method = 'post'
+          - submit_text = t('.create')
+
+        = form_for :user, url: @form_submition.fetch(:url, url), html: { method: @form_submition.fetch(:method, method) } do |f|
+          = render 'devise/shared/alert' if @user.try(:persisted?)
+          p
+            = f.label :email, input_html: { value: @user.try(:email) }
+            = f.text_field :email, required: true
+
+          = f.submit @form_submition.fetch(:submit_text, submit_text), class: [:button, :success, 'large-12', 'columns', 'large-centered']
+      .clearfix

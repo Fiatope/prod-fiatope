@@ -1,0 +1,15 @@
+fr:
+  devise:
+    passwords:
+      new:
+        no_account_html: "Pas de problème!"
+        titles:
+          site: 'Mot de passe oublié?'
+          header: 'Mot de passe oublié?'
+        links:
+          register: "S'inscrire"
+        form:
+          labels:
+            email: 'Votre email ici'
+          inputs:
+            submit: "M'envoyer les instructions"

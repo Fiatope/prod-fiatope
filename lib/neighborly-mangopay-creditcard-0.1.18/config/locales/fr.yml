@@ -1,0 +1,38 @@
+fr:
+  neighborly:
+    mangopay:
+      creditcard:
+        payments:
+          confirm_secured_payment:
+            errors:
+              default: "Erreur lors de la transaction, votre carte n'a pas été débitée"
+              card_invalid: "La carte bancaire est invalide, veuillez réessayer avec une autre carte."
+              transaction_overall: "Le montant de la transaction est supérieur à celui autorisé, vous pouvez lever cette limite en envoyant les documents nécessaire."
+              3ds_failed: "L'authorisation par 3D Secure a échoué."
+          debit:
+            contribution:
+              description: 'Contribution à %{project_name}'
+            match:
+              description: 'Match pour %{project_name}'
+          new:
+            card:
+              title: 'Information de Carte'
+            billing:
+              title: 'Information de Paiement'
+            terms: "En contribuant, j'accepte les %{link}."
+            terms-link: "Termes d'Utilisation"
+            confirm: 'Confirmer le Paiement'
+            proccessing: 'Traitement...'
+            cards:
+              title: 'Cartes Enregistrées'
+              add_new_card: 'Ajouter une nouvelle carte'
+              card_ending_in: '%{brand} %{number}'
+              expiration: 'Expiration:'
+            errors:
+              invalid_card: 'Erreur de carte. Revoir et Essayer à nouveau.'
+              marketplace_uri: "l URI Mangopay URI est incorrecte, contactez le support."
+              card_tokenization_error: 'Erreur de carte. Revoir et Essayer à nouveau.'
+              mangopay: 'Une erreur est survenue de notre côté. Essayer à nouveau.'
+          create:
+            errors:
+              default: "Une erreur est survenue. Essayer à nouveau."

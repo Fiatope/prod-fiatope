@@ -1,0 +1,24 @@
+fr:
+  challenge:
+    index:
+      title: 'Women Challenge 2018'
+      subtitle: ''
+      localisation: 'Les projets sur la carte'
+      empty: 'pas de projet correspondant à votre recherche.'
+      tags: 'Tags populaires:'
+      near: 'Localisation'
+      state: 'Etat'
+      filter: 'Statut'
+      discovera: 'Women Challenge 2018'
+      showing_results_for: 'Résultats pour: '
+      states:
+        active: 'Actif'
+        recommended: 'Recommendé'
+        expiring: 'Presque terminé'
+        recent: 'Récent'
+        successful: 'Réussi'
+        soon: 'Bientôt'
+        match: 'matché'
+        with_active_matches: 'match'
+      localization: 'localisation des projets'
+      channels: 'Nous y étions'

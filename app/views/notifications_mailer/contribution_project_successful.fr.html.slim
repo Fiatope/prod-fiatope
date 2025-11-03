@@ -1,0 +1,57 @@
+= content_for :title, t('.titre')
+- contribution = @notification.contribution
+br
+|Cher(e), #{contribution.user.name}!
+br
+br
+|Grâce à vous et à #{contribution.project.total_contributions - 1} autres soutiens, le projet #{link_to(contribution.project.name, "#{Configuration[:base_url]}/projects/#{contribution.project.to_param}")} a été financé avec succès sur #{Configuration[:company_name]}. Ensembles, vous avez levé #{contribution.project.display_pledged}, totalisant #{contribution.project.progress}% de l'objectif!
+br/
+br/
+|#{contribution.project.user.display_name} vous contactera bientôt pour votre reward. Si vous aviez choisi un reward qui exige d'avoir un supplément d'informations, le porteur de projet vous les demanderont directement.
+br
+br
+|En attendant, partagez ce succès avec votre réseau!
+br
+br
+- fb_img = "<img src=\"#{Configuration[:base_url]}/assets/mails/facebook-icon.png\" title='Facebook' class='social' />".html_safe
+= raw link_to(fb_img, "http://www.facebook.com/share.php?u=#{project_url(contribution.project)}" , target: :blank)
+- twitter_img = "<img src='#{Configuration[:base_url]}/assets/mails/twitter-icon.png' title='Twitter' class='social' />".html_safe
+= raw link_to(twitter_img,"http://twitter.com/?status=#{"Success! J'ai contribué à #{contribution.project.name} sur @#{Configuration[:twitter_username]}! #{project_url(contribution.project)}"}", target: :blank)
+br
+br
+br
+|POur rappel voivi le Récapitulatif de votre contribution:
+br
+br
+|Montant: 
+strong #{number_to_currency contribution.value, precision: 0}
+br
+- if contribution.rewards
+  |Rewards Selectionné: 
+  - for reward in contribution.rewards
+    strong #{number_to_currency reward.minimum_value, precision: 0}
+    - contribution.contribution_rewards.each do |rc| 
+      = "  #{rc.reward_id == reward.id && rc.quantity ? rc.quantity.to_i : '' }"
+    |  &mdash; #{reward.description}
+    br
+- if project.presale?
+  .user-reward = "Articles :"
+  - for article in contribution.articles
+    .user-reward = "- #{article.title}"
+    br
+|Date: 
+strong #{l contribution.created_at.to_date, format: :long}
+br
+|Clé: 
+strong #{contribution.key}
+br
+br
+|Si vous souhaitez contacter #{contribution.project.user.name}, veuillez envoyer un email à #{mail_to contribution.project.user.email}
+br
+br
+|Pour toute autre question, consultez nos  #{link_to('FAQ', "#{Configuration[:base_url]}/faq")}.
+br
+br
+|Bien à vous,
+br
+|l'équipe #{Configuration[:company_name]} 

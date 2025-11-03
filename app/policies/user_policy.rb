@@ -1,0 +1,127 @@
+class UserPolicy < ApplicationPolicy
+  def update?
+    done_by_owner_or_admin?
+  end
+
+  def credits?
+    update?
+  end
+
+  def payments?
+    is_owned_by?(user)
+  end
+
+  def mangopay_authentications?
+    is_owned_by?(user)
+  end
+
+  def settings?
+    update?
+  end
+
+  def update_password?
+    update?
+  end
+
+  def update_bank_information?
+    update?
+  end
+
+  def mangopay_upload_kyc_files?
+    update?
+  end
+
+  def update_email?
+    update?
+  end
+
+  def set_email?
+    update?
+  end
+
+  def delete_recursive?
+    update?
+  end
+
+  def permitted_attributes
+    {
+      user: record.attribute_names.map(&:to_sym) -
+            user_attributes_black_list +
+            additional_user_attributes_white_list
+    }
+  end
+
+  protected
+  def is_owned_by?(user)
+    user.present? && record == user
+  end
+
+  def additional_user_attributes_white_list
+    attrs = [:location, :current_password, :password]
+    attrs += organization_attributes
+    attrs += channel_attributes if record.channel?
+    attrs += [investment_prospect_attributes: [:value]]
+    attrs += [:partner_id] if user.admin?
+    attrs += kyc_attributes
+    attrs
+  end
+
+  def user_attributes_black_list
+    [:confirmed_at,
+     :confirmation_token,
+     :confirmation_sent_at,
+     :unconfirmed_email,
+     :admin,
+     :created_at,
+     :updated_at,
+     :encrypted_password,
+     :reset_password_token,
+     :reset_password_sent_at,
+     :remember_created_at,
+     :sign_in_count,
+     :current_sign_in_at,
+     :last_sign_in_at,
+     :current_sign_in_ip,
+     :last_sign_in_ip,
+     :completeness_progress
+     ]
+  end
+
+  def organization_attributes
+    [{organization_attributes: [
+        :id,
+        :name,
+        :image
+        ]
+    }]
+  end
+
+  def channel_attributes
+    [{channel_attributes:
+      Channel.attribute_names.map(&:to_sym) - [
+        :user_id,
+        :state,
+        :created_at,
+        :updated_at,
+        :video_embed_url,
+        :accepts_projects,
+        :how_it_works_html,
+        :submit_your_project_text,
+        :submit_your_project_text_html,
+        :start_content,
+        :start_hero_image,
+        :success_content
+        ]
+    }]
+  end
+
+  def kyc_attributes
+    [{kycs_attributes: [
+        :uploaded_image,
+        :proof_type,
+        :_destroy,
+        :id
+        ]
+    }]
+  end
+end

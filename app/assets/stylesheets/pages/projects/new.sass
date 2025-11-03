@@ -1,0 +1,106 @@
+.success-project-page
+  min-height: +emCalc(800px)
+.new-project-page, .success-project-page
+  background-size: cover
+  background-position: center
+  background-color: white
+  // -ms-behavior: asset-url('backgroundsize.htc')\8
+  // +single-transition(background-image, 1s)
+
+  // &.category-agriculture
+  //   background-image: image-url('categories/agriculture.jpg')
+  // &.category-culture
+  //   background-image: image-url('categories/culture.jpg')
+  // &.category-développement
+  //   background-image: image-url('categories/développement.jpg')
+  // &.category-education
+  //   background-image: image-url('categories/education.jpg')
+  // &.category-énergies renouvelables
+  //   background-image: image-url('categories/renouvelables.jpg')
+  // &.category-environnement
+  //   background-image: image-url('categories/environment.jpg')
+  // &.category-évènement
+  //   background-image: image-url('categories/event.jpg')
+  // &.category-médecine
+  //   background-image: image-url('categories/default.jpg')
+  // &.category-mode
+  //   background-image: image-url('categories/mode.jpg')
+  // &.category-municipal
+  //   background-image: image-url('categories/municipal.jpg')
+  // &.category-sports
+  //   background-image: image-url('categories/sports.jpg')
+  // &.category-technologies
+  //   background-image: image-url('categories/technology.jpg')
+  
+
+  .new-project-box, .success-project-box
+    margin-top: +emCalc(30px)
+    margin-bottom: +emCalc(100px)
+    background: rgba(255, 255, 255, 0.9)
+
+    hr
+      border-color: #999
+
+    header
+      h3
+        color: $fourth-color
+        font-weight: 500
+        text-align: center
+        padding-top: +emCalc(10px)
+        margin-bottom: 0
+        i
+          width: +emCalc(20px)
+          height: +emCalc(20px)
+          +radius(50%)
+          font-size: 200%
+          background: $fourth-color
+          color: white
+          display: inline-block
+          margin-bottom: +emCalc(5px)
+      p
+        text-align: center
+        margin-bottom: +emCalc(5px)
+        font-size: 90%
+
+    .location
+      input
+        margin-bottom: +emCalc(5px)
+      .map-canvas
+        margin-bottom: +emCalc(20px)
+
+    .text-right, .text-left
+      display: inline-block
+    .counter
+      display: block
+      margin-top: +emCalc(-15px)
+      margin-bottom: +emCalc(15px)
+      text-align: right
+    .terms
+      font-size: 90%
+      margin-bottom: 0
+
+#new_project select
+  border: 2px solid #A3320C
+  color: #A3320C
+  padding: 10px
+
+#new_project label
+  text-align: center
+  font-weight: 500
+  font-size: 20px
+  text-transform: uppercase
+  padding-bottom: 10px
+
+.joyride-tip-guide
+  .button
+    background-color: white
+    color: #333333
+
+#new_project
+  .button
+    background-color: #A3320C
+
+
+.check_data
+  font-weight: bold
+  color: red

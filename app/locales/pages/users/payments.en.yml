@@ -1,0 +1,8 @@
+en:
+  users:
+    payments:
+      advanced:
+        title: "Advanced authorization"
+      submit: 'Save informations'
+      iban: 'Enter your Iban'
+      rib: 'Enter your Rib'

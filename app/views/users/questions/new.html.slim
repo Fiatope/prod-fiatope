@@ -1,0 +1,9 @@
+.new-user-question-page
+  = form_for :question, url: user_questions_path(@user, project_id: params[:project_id]) do |f|
+    a.close-reveal-modal ×
+    h2 = t '.title', project_name: @project.name
+
+    h4 = t '.to', user_name: @user.display_name
+    = f.text_area :body, required: true
+
+    = f.button t('.send'), class: 'button', data: { disable_with: t('words.sending') }

@@ -1,0 +1,60 @@
+- content_for :title, "#{[@partner.name, @partner.headline].join(' - ')}"
+
+- content_for :page_content do
+  .row
+    - if @partner_projects.present?
+      = render @partner_projects
+    - else
+      p = t('.empty')
+
+- if request.xhr?
+  = yield :page_content
+- else
+  .discover-page[data-path=discover_path show-all-projects=true]
+    section.filters.white.
+      - if @partner.hero_image.present?
+        .jumbo[style="background-image:url(#{@partner.hero_image.url});"]
+          .filter-black.flex-container
+            .flex-item.text-center
+              /h1 = @partner.headline
+              br
+      - else 
+        .jumbo
+          .filter-black.flex-container
+            .flex-item.text-center
+              h1 = "Financez des projets innovants et à fort impact social..." || @partner.headline
+              br
+.discover
+  .container
+    .row
+      -if @partner.permalink == 'twi'
+        h3[style="text-align: center; margin-top:50px"] Le partage de compétences 
+        p[style="text-align: justify"] C'est un enjeu important pour une entreprise. Il permet de garantir la continuité des services proposés et d'améliorer en continu ses offres. De nombreux talents entreprennent en Afrique et ont du mal à voir décoller leur business. Les experts manquent cruellement et bon nombre d'entrepreneurs abandonnent ou pensent que la solution serait de developper leur business en Occident pour que cela fonctionne. Qu'advient-il de ceux qui ne peuvent pas partir? Qu'advient-il d'un continent où les talents désertent? 
+        br
+        p[style="text-align: justify"] Les experts peuvent venir à eux, les former, les accompagner et les suivre afin de mettre à la disposition de ceux qui n'ont pas les mêmes moyens et les mêmes chances, du temps, des compétences et de l'énergie positive. Nous donnons la possibilité à des experts de la diaspora de partager leurs compétences avec des entrepreneurs du continent africain et de les accompagner vers l'excellence afin de changer leur vie.
+        br
+        h3[style="text-align: center"] Les entrepreneur selectionnés
+        p[style="text-align: justify"] Dans le cadre des activités qui ont démarré au mois de juin, quatre participants dans le besoin ont été retenus, au sein du reseau TWI, pour jouir de nombreux avantages liés au partage de compétences. Ils sont donc placés sous la tutelle de mentors pour toute la durée du programme. 
+        p[style="text-align: justify"] Découvrez les profils de ces entrepreneurs et de leurs mentors dans les secteurs suivants : restauration, tourisme et stylisme/couture
+      -else 
+        /p.text-center.text-justify.mb-3
+          = @partner.about_html
+
+      / p[style="margin-bottom:2rem;font-size:1.33rem;color:#a70d0d;font-weight:bold;"]
+        /= "Ces jeunes entrepreneurs s'appuient sur la force solidaire du Crowdfunding pour se financer!"
+
+      p[style="font-size: 25px; margin: 25px 0; text-align: center;"]
+        = "Découvrez les projets #{@partner.name} !"
+
+      .row[style="margin-bottom:4rem; margin-top:25px"]
+        div[style="width:30rem;margin:auto;max-width:80%;"]
+          label
+            = "Rechercher une campagne"
+          input.search-input#gadzar-search[name="search" placeholder="Rechercher.." type="text"]
+
+    section.content.projects
+      = yield :page_content
+
+
+    p.h5.text-center.mb-3
+      = link_to t(".top_call_to_action", default: "Soumettre un projet"), main_app.commencer_partner_path(id: @partner.permalink), class: "navbar-wagon-item navbar-wagon-button btn"    

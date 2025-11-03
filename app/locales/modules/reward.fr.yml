@@ -1,0 +1,7 @@
+fr:
+  reward:
+    non_app: "Pas de reward pour cette contribution"
+    dont_want: "Je n'attends pas de Reward."
+    limited: 'Limited'
+    sold_out: 'Sold out'
+    display_remaining: "Only %{remaining} of %{maximum} Available"

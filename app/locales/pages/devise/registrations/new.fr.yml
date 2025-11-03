@@ -1,0 +1,23 @@
+fr:
+  devise:
+    registrations:
+      new:
+        have_account_html: "Déjà Utilisateur? SE CONNECTER"
+        titles:
+          site: "Inscription"
+          header: "S'inscrire"
+          header_contribution: "Renseignez vos Informations"
+        links:
+          login: "Se connecter"
+        form:
+          labels:
+            show_password: 'Mot de passe visible'
+            type: 'Vous êtes?'
+            personne: 'personne'
+          hint:
+            password_length: '*minimum 6 caractères.'
+          inputs:
+            submit: "S'inscrire"
+            submit_contribution: "Valider"
+            facebook: "S'inscire avec Facebook"
+            mdp_contribution: "Créer un mot de passe pour plus tard"

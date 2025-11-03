@@ -1,0 +1,26 @@
+= content_for :title, t('.titre')
+.how-it-works-whitelabel-page
+  .row
+    .title
+       h3 Comment ça Marche?
+       = image_tag("panorama_fiatope_six.jpg", :align=> "center")      
+    .text
+     h4 Pourquoi avoir son propre site de crowdfunding?
+     h5 Il est souvent plus pratique pour une organisation qui opère ou compte opérer plusieurs campagnes de levée de fonds en parallèle, de pouvoir gérer cette activité financière avec plus d'autonomie.  
+     h5 Un site de financement participatif en marque blanche est la solution la mieux adaptée
+     h5 Les avantages pour l'organisation sont nombreuses:
+     ul 
+      li Ne pas avoir à être soumis à une procédure d'approbation de la part du site de financement participatif et donc décider seul de la pertinence de sa campagne
+      li Mieux guider sa base de contributeurs et cibler les priorités du moment entre plusieurs camapgnes
+      li Gérer ses projets à sa guise
+     
+     h4 Quelle niveau de sécurité est garanti?
+     h5 Vous bénéficiez de notre infrastructure de sécurité
+     h5 Votre site de crowdfunding est hébergé sur notre domaine entièrement sécurisé en https par certificat Geotrust
+     h5 Les fonds de vos campagnes sont cantonnés et gardés en sécurité par nos intermédiaires (Mangoapy et le Crédit Mutuel Arké)a.
+
+     h4 Comment gérer ses projets?
+     h5 Vous disposez d'une interface administrateur qui vous permet de gérer vos campagnes et vos utilisateurs
+     
+     h4.text-center
+        = link_to t('.Démarrer'), new_whitelabel_path, class: 'button medium-4 columns'

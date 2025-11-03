@@ -1,0 +1,176 @@
+- content_for :title, t('.title')
+.crowdfunding-page
+  header.hero.center[data-image-url=image_path('panorama_fiatope_height.jpg')]
+    .row
+      .small-12.medium-12.medium-centered.columns
+        h2 = t('.titlebis').html_safe
+
+        = link_to new_project_path do
+             h3 = t('.create.title')
+             span.button.medium = t('.create.button') 
+  br   
+  section.teasing
+    .row
+      h4.text-center
+        | 6 thèmes prioritaires: 
+        a href='https://www.fiatope.com/médecine' la médecine, 
+        a href='https://www.fiatope.com/technologies' les technologies, 
+        a href='https://www.fiatope.com/environnement' l'environnement, 
+        a href='https://www.fiatope.com/renouvelables' les énergies renouvelables, 
+        a href='https://www.fiatope.com/éducation' l'enseignement supérieur, 
+        a href='https://www.fiatope.com/culture' la culture
+  
+  .row
+      .large-12.columns.large-centered
+        hr
+
+  section.how-it-works
+    .row
+      h3.text-center
+        = t('.how-it-works.title')
+        br
+        br
+        iframe width="633" height="380" src="//www.youtube.com/embed/jy6Dbcvgass?rel=0&modestbranding=1&theme=light&autoplay=0" frameborder="0" allowfullscreen=''
+
+      h4.text-center  
+        | Les porteurs de projets offrent aux mécènes des contreparties attrayantes
+      h5.text-center
+        = link_to t('.découvrir les projets'), discover_path, class: 'button medium-4 columns large-centered'
+
+
+  .row
+      .large-10.columns.large-centered
+        hr
+
+
+  /section.a-propos
+  /  .row
+  /    h3.text-center
+  /      | Financez un des <strong>
+  /      = @projects.projets.size
+  /      | </strong> projets en ligne
+  /    h3.text-center
+      = link_to t('.discover_only.button'), discover_path, class: 'button large-12 columns large-center'
+
+
+  section.secure.white
+    .row
+      h3.text-center
+        = t('.paiements.title')
+      h4.text-center
+        | Vos contributions et vos cagnottes sont sécurisées (3D Secure) par nos partenaires de confiance
+        br
+        = image_tag "Mangopay.jpg"
+        = image_tag "Credi_Mutuel_Arkea.jpg"
+        = image_tag "Payline.jpg"     
+    .row
+      h4.text-center
+        | Fiatope est autorisé à afficher le label de financement participatif de la Banque de France
+        = image_tag "Label_Financement_Participatif.jpg"   
+    .row
+      h4.text-center
+        | L'ensemble de votre activité sur Fiatope.com est sécurisée par chiffrement
+        = image_tag "Chiffrement_HTTPS.jpg"
+        | certifié par
+        = image_tag "Geotrust.jpg"
+    .row
+      h4.text-center
+        | Nous acceptons les cartes bancaires Visa et Master Card. Nous allons bientôt accepter Sofort
+        = image_tag "Visa_Master_Card_2.jpg"
+
+  .row
+    .large-12.columns.large-centered
+      hr  
+      
+  section.csr_partners
+    .row
+      h3.text-center
+        = t('.csr_partners.title')
+        br
+      h5.text-center
+        = link_to t('Devenez-en un'), csr_partners_path, class: 'button medium-4 columns large-centered'
+                   
+
+
+  section.projects
+    .row
+      - if @recommended.any?
+        section.successful
+          .small-12.columns
+            h3
+              = link_to discover_path(filter: 'recommended_and_cagnotte') do
+                i.icon-et-heart
+                = t('.filters.selection')
+
+          - if @recommended.present?
+            - for project in @recommended
+              = render 'project', project: @recommended.first, large: !browser.device.mobile? if @recommended.any?
+              = render 'project', project: @recommended.shift if @recommended.any?
+
+          /- if @recommended.size > 4
+            .text-right
+              = link_to discover_path(filter: 'recommended_and_cagnotte'), class: 'see-more' do
+                = t('.words.discover')
+                i.icon-et-right-circled
+
+
+      - if @successful.any?
+        section.successful
+          .small-12.columns
+            h3
+              = link_to discover_path(filter: 'successful_and_cagnotte') do
+                i.icon-et-thumbs-up
+                = t('.filters.successful')
+
+          - for project in @successful
+            p = render 'project', project: @successful.first, large: !browser.device.mobile? if @successful.any?
+
+          - if @successful.size >= 4
+            .text-right
+              = link_to discover_path(filter: 'successful_and_cagnotte'), class: 'see-more' do
+                = t('words.see_more')
+                i.icon-et-right-circled
+
+      /- if @coming_soon.any?
+        section.coming-soon
+          .small-12.columns
+            h3
+              = link_to discover_path(filter: 'soon_and_cagnotte') do
+                i.icon-et-clock
+                = t('.filters.coming_soon')
+
+          - for project in @coming_soon
+            p = render 'project', project: project
+
+          - if @coming_soon.size >= 4
+            .text-right.text-right.small-12.columns
+              = link_to discover_path(filter: 'soon_aand_cagnotte'), class: 'see-more' do
+                = t('words.voir_plus')
+                i.icon-et-right-circled
+
+    section.start-one
+      .row
+        /= link_to t('.discover.button'), discover_path, class: 'button large-5 columns large-left'
+        /= link_to t('.start-one.button'), new_user_registration_path, class: 'button large-5 columns large-right'
+        /.small-6.columns.centered
+        /  = link_to start_path do
+        /    h3 = t('.start-one.title')
+        /    span.button.columns.medium = t('.start-one.button')
+        /  = link_to start_path do
+        /    h3 = t('.start-one.title')
+            /span.button.columns.medium = t('.start-one.button')
+             h6  = link_to t('.start-one.button'), start_path, class: 'button columns medium'
+
+
+
+  section.press
+    .row
+      h3.text-center
+      /  | Le Crowdfunding pour l'Afrique dans la Presse
+      ul.list-inline
+      - @press_assets.each do |asset|
+        li.large-3.columns
+           = link_to asset.url, target: :blank, title: asset.title do
+             = image_tag asset.image.thumb.url
+
+

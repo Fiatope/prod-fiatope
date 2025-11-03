@@ -1,0 +1,11 @@
+fr:
+  facebook_locale: 'fr_FR'
+  site:
+    title: "Financement Participatif Afrique"
+    meta_title:  "%{title} · %{company_name}"
+    description: "Fiatope est une plateforme de financement participatif par dons qui oeuvre au développement économique et social de l'Afrique."
+    keywords: " financement participatif, crowdfunding, développement, afrique, projets, financement, crowdfunding, financement participatif, digital, cagnotte en ligne, communautés "
+    email:
+      contact: 'contact@fiatope.com'
+    ograph:
+      description: "Plateforme de financement participatif pour l' Afrique"

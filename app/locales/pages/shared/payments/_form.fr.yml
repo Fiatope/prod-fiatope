@@ -1,0 +1,13 @@
+fr:
+  shared:
+    payments:
+      form:
+        title: 'Sélectionner un moyen de paiement'
+        payment-method:
+          fees: 'Frais'
+          balanced-creditcard:
+            title: 'Carte de crédit / débit'
+          balanced-bankaccount:
+            title: 'Compte Banque'
+          mangopay-creditcard:
+            title: 'Carte de crédit / débit'

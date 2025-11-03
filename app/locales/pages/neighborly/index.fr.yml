@@ -1,0 +1,277 @@
+fr:
+  neighborly:
+    admin:
+      confirm_dialog: Êtes-vous sur(e) ?
+      dashboard:
+        index:
+          title: Tableau de bord
+          menu: Tableau de bord
+          download_statistics_report: Télécharger le rapport statistique
+          download_funding_raised_per_project_report: Télécharger le rapport sur les fonds recueillis par projet
+          total_users:
+            title: Total Utilisateurs
+            hint: Nombre de presonnes engagées sur la plateforme
+          total_organization_users:
+            title: Total Companies/Organisations
+            hint: Nombre de companies/organisations engagées sur la plateforme
+          total_communities:
+            title: Total Communautés
+            hint: Nombre de Communautés désservies
+          total_projects:
+            title: Total Projets
+            hint: Nombre de projets sur la plateforme
+          total_projects_draft:
+            title: "Total des projets en cours d'élaboration"
+            hint: "Nombre de projets en cours d'élaboration"
+          total_projects_online:
+            title: Total de projets en ligne
+            hint: Nombre de projets en ligne
+          total_contributions:
+            title: Total Contributions
+            hint: Nombre de contributions
+          total_contributors:
+            title: Total Contributeurs
+            hint: Nombre de contributeurs
+          total_contributed:
+            title: Total Contribué
+            hint: Financement recueilli
+          total_subscribers:
+            title: Total adeptes
+            hint: "Nombre d'adeptes"
+      contacts:
+        index:
+          menu: Contacts
+          title: Contacts des companies
+          first_name: Prénom
+          last_name: Nom
+          email: Adresse email
+          company_name: Nom de la companie
+          created_at: Créé(e) à
+          no_records: Pas encore de contact
+          details: Détails
+        show:
+          title: 'Companies Contact - Details'
+          first_name: Prénom
+          last_name: Nom
+          phone: Téléphone
+          email: Adresse email
+          company_name: Nom de la companie
+          company_website: 'Company Website'
+          message: Message
+          created_at: 'Contact envoyé le %{date}'
+          back: Retour
+      tags:
+        index:
+          menu: Tags
+          title: 'Tags management'
+          name: Nom
+          total_projects_using: 'Total projects using'
+          no_tags: 'No tags yet'
+          edit: Modifier
+          destroy: Supprimer
+          new: Ajouter un nouveau tag
+          only_polular: 'Show only popular tags'
+          submit: Rechercher
+        new:
+          title:
+            Ajouter un nouveau tag
+        edit:
+          title: Modifier le tag
+      channels:
+        messages:
+          successful:
+            push_to_draft: 'The channel is no longer visible!'
+            push_to_online: 'The channel is now visible!'
+        index:
+          menu: Channels
+          title: 'Channels management'
+          manage_members: 'Manage'
+          name: Nom
+          members: Membres
+          permalink: Permalink
+          created_at: 'Created at'
+          state: Etat
+          no_chaneels: 'No channels yet'
+          edit: Modifier
+          destroy: Supprimer
+          new: 'Add new channel'
+          push_to_draft: 'Send to draft'
+          push_to_online: 'Make it visible'
+        new:
+          title:
+            Ajouter une nouvelle chaîne
+        edit:
+          title: Modifier le channel
+        form:
+          associate_existing_user: 'Associate an existing user'
+          create_new_channel_user: 'Create a new user'
+          start_content: 'Content for Start Page'
+          success_content: 'Content for Successfully Submitted Page'
+        members:
+          messages:
+            removed: 'Successfully removed!'
+            success: 'Success! Now the user owns this channel.'
+            user_not_found: 'User not found.'
+            already_a_member: "This user already owns a channel."
+          index:
+            title: 'Manage %{channel_name} Members'
+            no_members: 'No memberts yet.'
+            id: 'User ID'
+            name: Nom
+            email: Email
+            destroy: Supprimer
+            new: 'Add new Member'
+          new:
+            title: 'Add new Member'
+            user_id: 'User ID'
+
+      press_assets:
+        index:
+          menu: Actifs de presse
+          page_title: Gestion des actifs de presse
+          no_press_assets: "Pas d'actifs de presse"
+          title: Titre
+          url: URL
+          image: Image
+          edit: Modifier
+          destroy: Supprimer
+          new: 'Add new press asset'
+        new:
+          title: 'Add new press asset'
+        edit:
+          title: 'Edit press asset'
+      projects:
+        index:
+          by_state: Par état
+          between_created_at: 'Created at between'
+          between_expires_at: 'Expires at between'
+          between_online_date: 'Between online date'
+          project: Rechercher
+          with_state: Par état
+          by_category: Par catégorie
+          user: "Nom d'utilisateur"
+          by_user_email: "Par email d'utilisateur"
+          id: ID
+          name: Nom
+          populate_contribution: Prepopulate contribution
+          send_mail: Envoyer un mail au client
+          send_to_trash: Send to TRASH
+          send_to_draft: Send to DRAFT!
+          approve: 'Approve!'
+          reject: 'Reject!'
+          launch: 'Launch!'
+          user_id: 'User ID'
+          goal: 'Goal'
+          total_contributions: Contributions
+          online_date: 'Online date'
+          pledged: 'Pledged'
+          recommended: 'Recommended?'
+          state: Etat
+          menu: Projets
+          title: Gestion des projets
+          total_projects: projets
+          submit: Filtrer
+          no_projects: Pas de projet
+          expires_at: 'Expires at'
+          category: Catégorie
+          order_table: 'Order table'
+          order_date: 'Send date'
+          order_asc: 'Goal asc'
+          order_desc: 'Goal desc'
+          order_created_at: Date de soumission
+          featured: 'Featured?'
+          home_page: "Page d'accueil ?"
+      financials:
+        index:
+          menu: Rapports financiers
+          title: Rapports financiers
+          submit: Filtrer
+          with_state: Par état
+          by_progress: Par progression
+          user: "Nom d'utilisateur"
+          project: Nom du projet
+          download_search_report: Télécharger le rapport des résultats
+          no_contributions: Pas de contributions
+      users:
+        index:
+          title: Gestion utilisateurs
+          menu: Utilisateurs
+          credits: Crédits
+          credits_view: Crédits calculés
+          id: ID
+          key: Clé
+          submit: Rechercher
+          has_credits_difference: Écart dans les crédits
+          total_contributed: contribués
+          total_contributors: contributeurs
+          total_contributions: contributions
+          total_users: utilisateurs
+          total_credits: crédits
+          total_credits_view: crédits calculés
+          user: Utilisateur
+          value: Valeur
+          provider: Provider
+          edit: Modifier
+      contributions:
+        messages:
+          successful:
+            confirm: Contribution confirmée !
+            pendent: Contribution non confirmée !
+            refund: Contribution remboursée !
+            change_reward: Récompense modifiée
+            hide: Contribution cachée !
+            cancel: Contribution annulée !
+            push_to_trash: Contribution supprimée !
+        index:
+          push_to_trash: Supprimer la contribution
+          cancel: Annuler la contribution
+          refund_and_hide: Rembourser et cacher
+          contribution_info: 'Info of contribution %{key}'
+          payment_id: ID de paiement
+          payment_method: Méthode de paiement
+          payment_fee: Frais de mode de paiement
+          fee_paid_by_user: 'Fee paid by user?'
+          user_email: Email utilisateur
+          pending_to_refund: En attente de remboursement
+          created_at: Créée à
+          title: Gestion des contributions
+          menu: Contributions
+          anonymous: Anonymous?
+          confirmed: Confirmed?
+          credits: "Used credits?"
+          id: ID
+          key: Clé
+          no_contributions: Pas de contributeurs trouvés
+          project: Projet
+          refunded: Refunded?
+          requested_refund: "Requested refund?"
+          reward: Récompense
+          no_reward: Pas de récompense
+          submit: Rechercher
+          total_contributed: contribué
+          total_contributors: contributeurs
+          total_contributions: contributions
+          total_users: Utilisateurs
+          user: Utilisateur
+          value: Valeur
+      statistics:
+        index:
+          menu: Statistiques
+          title: Statistiques
+          total_users: Utilisateurs
+          total_contributions: Contributions
+          total_contributors: Contributeurs
+          total_contributed: Contribué
+          total_projects: Projets
+          total_projects_success: Successful
+          total_projects_online: En ligne
+        projects_by_week:
+          title: Projets envoyés par semaine
+          current_period: 8 dernières semaines
+          previous_period: 8 semaines suivantes
+          last_year: Année dernière
+        contributions_by_week:
+          title: Valeur garantie confirmée par semaine
+          current_period: 8 dernières semaines
+          previous_period: 8 semaines suivantes
+          last_year: Année dernière

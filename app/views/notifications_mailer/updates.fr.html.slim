@@ -1,0 +1,16 @@
+= content_for :title, t('.titre')
+- update = Update.find @notification.update_id
+br
+br
+|Chèr(e), #{@notification.user.display_name}, une mise à jour a été apportée au projet #{update.project.name} sur #{Configuration[:company_name]}!
+br
+/| La #{link_to "voici", project_url(update.project, anchor: "updates")}
+br
+h2 #{link_to update.title, project_url(update.project, anchor: "/updates")}
+= update.comment_html
+br
+br
+br
+| Bien à vous,
+br
+|L équipe #{Configuration[:company_name]}

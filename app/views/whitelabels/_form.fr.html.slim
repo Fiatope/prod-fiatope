@@ -1,0 +1,47 @@
+.row
+  .large-10.small-11.columns.centered
+
+    = form_for @whitelabel do |f|
+
+ 
+       = f.label :"Nom de l'Organisation"
+       = f.text_field :name 
+
+       = f.label :"Domicile légal"
+       = f.text_field :addr 
+ 
+       = f.label :"Nom du Représentant légal"
+       = f.text_field :rep_name 
+
+       = f.label :Email
+       = f.text_field :email 
+
+       = f.label :Télépgone
+       = f.text_field :telephone
+
+       /= f.label :"Adresse souhaitée du site (le nom de domaine doit appartenir à l'organisation)"
+       /= f.text_field :domain_name 
+
+       /= f.label :"Monnaie dans laquelle les collectes seront réalisées"
+       /= f.text_field :currency
+
+       /= f.label :"Adresse de la Page Facebook de l'Organisation"
+       /= f.text_field :facebook_url
+
+       /= f.label :"Adresse Twitter"
+       /= f.text_field :twitter_url
+
+       /= f.label :"Email de contact de l'Organisaiton"
+       /= f.text_field :contact_email
+ 
+       = f.label :"Vous voulez rajouter d'autres précisions"   
+       = f.text_area :message
+
+       /= f.hidden_field :type, value:nil
+
+       h5.text
+         | En soumettant vous acceptez les 
+         a href="https://www.fiatope.com/assets/CGV_Fiatope_v1.pdf" Conditions d'utilisation
+
+       = f.button :Soumettre
+

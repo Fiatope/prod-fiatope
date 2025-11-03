@@ -1,0 +1,102 @@
+.new-contribution-page
+  padding-bottom: 40px
+  header.hero
+    min-height: emCalc(260px)
+  .share-white
+    .button
+      width: 100%
+      background: white
+      color: $primary-color
+      border-bottom-color: darken($border-color, 10%)
+      &:after
+        border-left-color: darken($border-color, 10%)
+      &.embed:after
+        @extend .icon-et-code
+
+  .name
+    text-align: center
+  .subtitle
+    text-align: center
+    margin-top: emCalc(35px)
+    margin-bottom: emCalc(35px)
+    h4
+      font-weight: 500
+  span.prefix, span.postfix
+    font-size: 200%
+    height: 100%
+    line-height: 170%
+    text-shadow: none
+
+  span.prefix
+    color: #A3320C
+  span.postfix
+    color: $secondary-color
+
+  #contribution_form_value
+    color: $secondary-color
+    font-weight: normal
+    font-size: 200%
+    height: 100%
+    height: +emCalc(28px)
+    padding: 0
+    text-align: center
+    margin-bottom: 0
+  .value-wrapper
+    margin-top: emCalc(35px)
+  .minimum-value
+    // margin-top: +emCalc(10px)
+
+  .reward-option
+    border: 1px solid $border-color
+    +radius($input-radius)
+    background: white
+    color: $secondary-color
+    &.row
+      min-height: emCalc(85px)
+      margin-bottom: emCalc(20px)
+      margin-right: emCalc(0)
+      margin-left: 0
+    &.selected
+      border-color: #A3320C
+    .minimum-value
+      padding-bottom: emCalc(15px)
+      // padding-top: emCalc(15px)
+      // text-transform: uppercase
+      font-size: 140%
+    .reward-image
+      margin-left: 0
+      img
+        width: emCalc(100px)
+        height: auto
+    .title
+      font-weight: bold
+      font-size: 120%
+      padding-top: 1em
+    .description
+      padding-bottom: emCalc(15px)
+      padding-top: emCalc(10px)
+      margin-bottom: 0
+    input[type="radio"]
+      position: absolute
+      display: block
+      top: 0.6em
+      left: 2em
+      z-index: 999
+      // margin-top: emCalc(-16px)
+
+  .contribution_form_anonymous
+    margin-bottom: emCalc(20px)
+    input
+      margin-bottom: emCalc(5px)
+
+  .radio
+    position: initial
+    display: block
+
+  .button
+    width: 100%
+    background-color: #A3320C
+
+button.disabled, button[disabled], .button.disabled, .button[disabled]
+  background-color: #A3320C
+  border-color: #A3320C

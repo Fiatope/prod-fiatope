@@ -1,0 +1,27 @@
+en:
+  projects:
+    contributions:
+      edit:
+        title: 'You are contributing to %{project_name}'
+        you_are_contributing_to: 'You are contributing to'
+        you_are_presale_to: 'Vous précommandez à'
+        cfa_equivalent_html: 'Equivalent: %{cfa_value} CFA Francs'
+        total: 'Total: '
+        i_want_pay_fees: "I'll cover the transaction fees"
+        payment_form_title: 'Please select a payment method'
+        payment:
+          title: 'You will very soon be able to select a payment method. We ware working to integrate the payment interfaces with Mangopay.'
+        reward:
+          title: 'Your Perk'
+        tooltip-text: "Thank you for supporting <strong>%{project_name}</strong>! In order to make the most of your contribution, we ask that you please consider covering the electronic transaction fees. Though entirely optional, doing so makes a big difference and is greatly appreciated.<br />"
+        payment-method:
+          fees: 'Fees:'
+          balanced-creditcard:
+            title: 'Debit/Credit Card'
+          balanced-bankaccount:
+            title: 'Bank Account'
+
+
+
+
+

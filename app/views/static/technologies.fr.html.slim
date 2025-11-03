@@ -1,0 +1,15 @@
+= content_for :title, t('.titre')
+.idee-page.static-page
+  .row
+    .title
+       h3 Technologies
+       = image_tag("panorama_fiatope_eleven.jpg", :align=> "center")
+    .text
+     h5 Chez Fiatope nous pensons que les nouvelles technologies de l’information  et l’économie digitale vont jouer une grande partition dans le réveil à venir du continent.
+     h5 Nous nous efforçons avec Fiatope de montrer l’exemple en mettant le digital au cœur d’une des problématiques clé de l’Afrique, le financement de son économie
+     h5 Nous travaillons avec des incubateurs sur l’ensemble du continent pour identifier les meilleurs projets et accompagner les porteurs vers la réussite
+     br
+
+     = link_to t('.soumettre votre projet'), new_project_path, class: 'button large-4 medium-4 columns large-centered'
+
+

@@ -1,0 +1,21 @@
+.row
+  .large-10.small-11.columns.centered
+
+    = form_for @message do |f|
+
+ 
+       /= f.label :Nom 
+       = f.hidden_field :name 
+ 
+       /= f.label :email 
+       = f.hidden_field :email
+
+       /=f.label :objet
+       =f.hidden_field :subject
+
+       /= f.label :message   
+       = f.hidden_field :message 
+
+       = f.hidden_field :type, value: "fund"
+
+       = f.button :Soumettre, :disabled => @project.user.bank_information.blank? 

@@ -1,0 +1,21 @@
+en:
+  devise:
+    sessions:
+      new:
+        no_account_html: "Not with Fiatope yet? <strong>Sign Up</strong>"
+        titles:
+          site: 'Log in'
+          header: 'Log in'
+        links:
+          register: "Go join <i class='icon-et-right-circled'></i>"
+          forgot_password: "Did you forget your password?"
+          new_user_confirmation: "Confirm Email"
+        form:
+          labels:
+            remember_me: 'Remember me'
+            email: 'Email'
+            password: 'Password'
+          inputs:
+            submit: 'Log in'
+            facebook: 'Facebook'
+            google: 'Google'

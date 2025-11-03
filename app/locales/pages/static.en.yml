@@ -1,0 +1,42 @@
+en:
+  static:
+    faq:
+      title: "Frequently asked questions"
+      meta_description: 'Do you have questions about how Fiatope works or how to manage your crowdfunding campaigns? Find out all the answers or contact us directly.'
+    privacy:
+      title: "Privacy Policy"
+      meta_description: "Fiatope makes every effort to secure your data and give you a perfect user experience."
+    about:
+      titLe: 'About us'
+      meta_description: "Discover the Fiatope team and all their projects, what we are working on and what we believe in."
+    why_fiatope:
+      title: 'Why choose us ?'
+      meta_description: 'Do not hesitate to launch your project and find funding within our community: security, reliability, professionalism and transparency.'
+    fiatope_origin:
+      title: 'Fiatope origin'
+      meta_description: "You don't know Fiatope yet? Come and meet us and discover all of our projects and those of our community."
+    successful:
+      title: 'Build a successful campaign'
+      meta_description: 'Find out how to create a crowdfunding campaign and how to make it a success. Fiatope gives you all the tips.'
+    price: 
+      title: "Prices"
+      meta_description: "Do you want to create a project for the influence of Africa? Find out everything you need to know to launch a participatory investment campaign"
+    terms:
+      title: "Terms of use"
+    ambassadors: 
+      title: 'Become Fiatope Ambassador'
+      meta_description: 'Become a Fiatope ambassador and help project leaders get the best possible outcome for your laudable initiative'
+    how_it_works:
+      title: 'How it works ?'
+      meta_description: 'Fiatope helps you create or support the project that is close to your heart. Find all the steps to create a crowfunding campaign'
+    values_ethics:
+      titre: 'Values and ethic'
+      meta_description: 'Discover our charter of values ​​and our ethics in order to be able to work together on the financing of your innovative projects.'    
+    start_terms:
+      title: 'Terms'
+      explore_curious: "Just looking around!"
+      explore_projects: "I want to explore the projects."
+      submit: "Next step!"
+      send_project: "I want to submit my project."
+    base:
+      title: 'This is the base of a static page'

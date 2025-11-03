@@ -1,0 +1,19 @@
+= content_for :title, t('.titre')
+- project = @notification.project
+- user = @notification.user
+|Cher(e), #{user.display_name}.
+br
+br
+| #{project.user.display_name} vient de de démarrer un nouveau projet sur #{Configuration[:company_name]} et nous souhaitions vous en informer! Jetez-y un coup d oeil.
+br
+br
+
+table border="0" cellpadding="3" cellspacing="0" width="220" align="center"
+  tr
+    td width="220" valign="top" style="text-align: center;"
+      = link_to project.name, project_url(project), style: 'text-decoration: none; color: #333; font-size: 16px; text-align: center;'
+
+br
+|Bien à vous,
+br
+| L équipe #{Configuration[:company_name]} 

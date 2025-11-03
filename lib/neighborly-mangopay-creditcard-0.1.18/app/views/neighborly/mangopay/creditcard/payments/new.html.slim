@@ -1,0 +1,89 @@
+= initjs_tag app_name: 'Neighborly', partial: true
+
+.neighborly-mangopay-creditcard-form[data-mangopay-credit-card-form]
+  = simple_form_for :payment, url: payments_path, html: { novalidate: '' } do |f|
+    - if params[:match_id].present?
+      = f.input :match_id, as: :hidden, input_html: { value: params[:match_id] }
+    - else
+      = f.input :contribution_id, as: :hidden, input_html: { value: params[:contribution_id] }
+
+    = f.input :pay_fee, as: :hidden, input_html: { value: 1, 'data-pay-payment-fee' => '' }
+    section.highlighted[class="#{'use-existing-item' if @cards.any?}"]
+      - if @cards.any?
+        section.use-existing-item.row
+          .large-12.columns.title
+            h4 = t('.cards.title')
+
+          - @cards.reverse_each.with_index do |card,index|
+            .large-12.columns
+              .card-box
+                label.row[style="position:relative;"]
+                  - if card.kwendoo_id
+                    span.delete-card.pull-right[style="font-size:24px;position:absolute;top:-7px;right:14px;z-index:99" data-card-id=card.kwendoo_id] ×
+                  dl
+                    .large-1.columns
+                      = f.radio_button :use_card, card.try(:Id), { checked: index.zero?, label: false }
+                    .large-5.columns
+                      dt.hide
+                      dd = t('.cards.card_ending_in', brand: card.try(:CardProvider), number: card.try(:Alias))
+                    .large-5.columns.expiration
+                      dt = t('.cards.expiration')
+                      dd = sprintf('%02i/%i', card.try(:ExpirationDate)[0..1].to_i, card.try(:ExpirationDate)[2..4].to_i)
+      - else
+        = f.input :use_card, as: :hidden
+
+        .row
+          .large-12.columns.title
+            h4 = t('.card.title')
+
+
+    section.row
+      .large-12.columns
+        .card-box[class="#{'new-card' unless @cards.any?}"]
+          .row
+            - if @cards.any?
+              label
+                .large-1.columns
+                  = f.radio_button :use_card, 'new', { checked: false, label: false }
+                .large-8.columns
+                  = t('.add_new_card')
+                .large-3.columns.expiration
+
+            .large-12.columns.add-new-creditcard-form[class="#{'hide with-others-cards' if @cards.any?}"]
+              .row
+                = hidden_field_tag :card_id, @new_card_request.try(:Id)
+                = hidden_field_tag :access_key, @new_card_request.try(:AccessKey)
+                = hidden_field_tag :preregistration_data, @new_card_request.try(:PreregistrationData)
+                = hidden_field_tag :card_registration_url, @new_card_request.try(:CardRegistrationURL)
+
+                .large-5.columns
+                  = f.input :card_number, input_html: { 'data-mangopay-credit-card-input' => '' }
+                .large-2.columns
+                  = f.input :security_code, maxlength: 4, input_html: { 'data-mangopay-credit-card-input' => '' }
+                .large-5.columns
+                  - date = Date.today + 1.month
+                  = f.label :expiration
+                  .row.collapse
+                    .large-5.small-5.columns
+                      = select_month date, { use_two_digit_numbers: true }, { name: 'payment[expiration_month]', id: 'payment_expiration_month', 'data-mangopay-credit-card-input' => '' }
+                    .large-1.small-1.columns.text-center.divider
+                      | /
+                    .large-6.small-6.columns
+                      = select_year date, { start_year: date.year, end_year: date.year+15 }, { name: 'payment[expiration_year]', id: 'payment_expiration_year', 'data-mangopay-credit-card-input' => '' }
+
+    section.user-informations.highlighted
+      = f.simple_fields_for :user do |fu|
+
+
+    section
+      .row
+        .large-12.columns.terms
+          = t('.terms', link: link_to(t('.terms-link'), main_app.terms_path(), data: { 'reveal-id' => 'terms-modal', 'reveal-ajax' => true })).html_safe
+
+      .row
+        .large-6.columns.submit
+          = f.button :submit, t('.confirm')
+        .large-6.columns.text-right.mangopay-seal
+          /= link_to image_tag('neighborly/mangopay/creditcard/mangopay-creditcard.png'), 'https://www.mangopay.com/', target: :blank
+
+  #terms-modal.reveal-modal.small.fixed

@@ -1,0 +1,163 @@
+<%= content_for :title, t('.title') %>
+<div class="footer text-center">
+	<div class="secure">
+		<div class="container">
+			<div class="row">
+				<div class="col-md-4">
+					<div class="pay-title">
+						<%= t('.securise') %>
+
+						
+					</div>
+					<div class="pay-icon">
+						<%= image_tag 'mangopay.png' %>
+					</div>
+					<div class="pay-icon-small">
+						<%= image_tag 'arkea.png' %>
+						<%= image_tag 'payline.png' %>
+					</div>
+				</div>
+				<div class="col-md-4">
+					<div class="crowdfunding">
+						<%= image_tag	'Logo_Orias.png' %>
+					</div>
+				</div>
+				<div class="col-md-4">
+					<div class="pay-title">
+						<%= t('.autorise') %>
+					</div>
+					<div class="pay-icon-small">
+						<%= image_tag 'visa.png' %>
+					</div>
+					<div class="secure-title">
+					        <%= t('.encryption') %>
+						
+
+					</div>
+					<div class="pay-icon-small">
+						<%= image_tag 'logo-geotrust-3.png' %>
+					</div>
+
+				</div>
+
+			</div>
+		</div>
+	</div>
+	<div class="main-footer">
+		<div class="container">
+			<div class="row social-section">
+				<div class="social-link text-center">
+					<div class="facebook">
+						<%= link_to "https://www.facebook.com/Fiatope-823426137691049/", :target => "_blank" do %>
+						<%= image_tag 'facebook_rounded.svg' %>
+						<% end %>
+					</div>
+					<div class="twitter">
+						<%= link_to "https://twitter.com/Fiatope_", :target => "_blank" do %>
+						<%= image_tag 'twitter_rounded.svg' %>
+						<% end %>
+					</div>
+					<div class="linkedin">
+						<%= link_to "https://www.linkedin.com/company/fiatopeafrique/", :target => "_blank" do %>
+						<%= image_tag 'linkedin.png' %>
+						<% end %>
+					</div>
+
+					<div class="newsletter">
+						<%= render 'layouts/newsletter' %>
+					</div>
+				</div>
+			</div>
+
+			<div class="row">
+				<div class="col-sm-4">
+					<%= t('.quick_links') %>
+					<ul>
+						<li><%= link_to t('.about'), main_app.about_path %></li>
+						<li><%= link_to t('.contact'), main_app.new_message_path  %></li>
+						<li><%= link_to t('.fiatope_origin'), main_app.fiatope_origin_path %></li>
+						<li><%= link_to t('.why_fiatope'), main_app.why_fiatope_path %></li>
+						<li><%= link_to t('.values_ethics'), main_app.values_ethics_path %></li>
+						<li><%= link_to t('.faq'), main_app.faq_path %></li>
+					</ul>
+				</div>
+				<div class="col-sm-4">
+					<%= t('.more_quick_links') %>
+					<ul>
+						<li><%= link_to t('.how_it_works'), main_app.how_it_works_path %></li>
+						<li><%= link_to t('.how_to_submit_a_project'), image_path(' ') %></li>
+						<li><%= link_to t('.successful'), main_app.successful_path%></li>
+						<!-- <li><%= link_to t('.org_partners'), main_app.successful_path %></li> -->
+						<li><%= link_to t('.ambassadors'), main_app.ambassadors_path %> </li>
+						<li><%=  link_to t('.article_financement'), main_app.article_financement_path%></li>
+						<li><%= link_to t("Prix Fiatope de l'entrepreneur social et innovant"), main_app.prix_fiatope_path %></li>
+						<!-- <li>
+							<%#= link_to t('Fiatope Accélération'), main_app.fiatopaccelerator_path %>
+						</li> -->
+					</ul>
+				</div>
+				<div class="col-sm-4">
+					<%= t('.terms') %>
+					<ul>
+						<li><%=  link_to t('.legal'), main_app.privacy_path%></li>
+						<li><%=  link_to t('.CGU'), image_path('CGUFiatope-revues.pdf') %>   </li> 
+						<li><%=  link_to t('.CGU MANGOPAY'), image_path('PSP_MANGOPAY_FR.pdf') %>   </li>   
+						<li><%=  link_to t('.how_does_it_cost'), main_app.price_path %></li>
+						<li><%=  link_to t('.sitemap'), main_app.sitemap_path %></li>
+					</ul>
+				</div>
+			</div>
+
+			<div class="row">
+				<div class="designed-by">
+					<%= link_to "https://www.hopwork.fr/profile/florianmaneyrol", :target => "_blank" do %>
+					<p>Designed by Florian M.</p>
+					<% end %>
+				</div>
+			</div>
+		</div>
+	</div>
+
+</div>
+
+<div id="cookieConsent">
+	En cliquant sur le bouton « J'accepte », vous acceptez que Kwendoo et ses partenaires utilisent des cookies et traitent vos données à caractère personnel afin de réaliser des mesures d’audience et vous permettre de partager les contenus proposés sur vos réseaux sociaux.
+	En cliquant sur « Je refuse », vous indiquez votre refus et seuls les cookies strictement nécessaires au fonctionnement du site (adresse email, nom d'utilisateur, coordonnées bancaires...) seront déposés. 
+	Pour plus d'infos, consultez nos <%=  link_to t('.CGU'), image_path('CGUKwendoo-revues.pdf') %>
+    <!-- <div id="closeCookieConsent">x</div> -->
+    <a href="#cookieConsentModal" role="button" class="openCookieConsentModal"></a><a class="cookieConsentOK">J'accepte</a> <a class="cookieConsentKO" id="cookie_google_analytics">Je refuse</a> <span class="noticeCookieConsent"></div></span>
+</div>
+
+<!-- Modal HTML -->
+<!-- <div id="cookieConsentModal" class="modal fade">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title">Respect de votre vie privée</h4>
+            </div>
+            <div class="modal-body">
+				<span class="noticeCookieConsent"> </span>
+
+				<form class="form-horizontal">
+					<div class="form-group">
+						<div class="col-xs-12">
+							<div class="checkbox">
+								<label><input type="checkbox" id="cookie_session" checked> Cookies Session</label>
+							</div>
+						</div>
+						<div class="col-xs-12">
+							<div class="checkbox">
+								<label><input type="checkbox" id="cookie_google_analytics" checked> Cookies Google Analytics</label>
+							</div>
+						</div>
+					</div>
+				</form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal" data-accepte="no">Je refuse</button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal" data-accepte="yes">J'accepte</button>
+            </div>
+        </div>
+    </div>
+</div> -->

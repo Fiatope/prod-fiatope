@@ -1,0 +1,33 @@
+en:
+  layouts:
+    footer:
+      quick_links: 'Good to know...'
+      securise: 'Secure payment via:'
+      autorise: 'Authorized Payment:'
+      encryption: 'Site secured by encryption https:'
+      more_quick_links: 'More to know...'
+      about: 'about us'
+      discover: 'Find projects to fund'
+      tofollow: 'Find projects to follow'
+      start_campaign: 'Start a Campaign'
+      how_it_works: 'How It Works'
+      how_does_it_cost: 'How does it cost'
+      contact: 'Contact Us'
+      faq: 'FAQ / Help'
+      statistics: 'Statistics'
+      legal: 'Privacy Policy'
+      terms: 'Terms of Use'
+      successful: 'Build a successful campaign'
+      csr_partners: 'Partners companies'
+      org_partners: 'Partners Organizations'
+      outlet: 'Fiatope pdf outlet'
+      sitemap: 'Site map'
+      jobs: 'Fiatope jobs'
+      ambassadors: 'Ambassadors'
+      opportunities: 'A world of opportunities'
+      stay_in_touch: "Won't you be one of us?"
+      built_with_love: ''
+      article_financement: "Crowdfunding in Africa"
+      now_accepting_proposals: 'Now accepting proposals!'
+      now_accepting_proposals_text: 'Need funding to start your business over there, Want to have impact and/or help home. Care for the emergence of Africa. Fiatope is for you...'
+      we_want_to_help: 'We want to help!'

@@ -1,0 +1,7 @@
+fr:
+  projects:
+    embed_panel:
+      title: 'Aidez à faire connaître cette campagne sur le web!'
+      subtitle: "Copier-Coller le code ci-dessous sur votre site web afin d'y insérer la vignette de la campagne."
+      campaign_progress: 'Evolution de la campagne'
+      campaign_video: 'Video de la campagne'

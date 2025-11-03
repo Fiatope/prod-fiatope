@@ -1,0 +1,3 @@
+= form_tag Configuration['mailchimp_url'], method: 'post', class: 'newsletter' do
+  /= email_field_tag 'EMAIL', nil, placeholder: t('.email'), label: 'email', class: 'newsletter-input'
+  = submit_tag "S'inscrire à notre newsletter", class: 'btn btn-medium-red-border'

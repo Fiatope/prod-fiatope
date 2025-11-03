@@ -1,0 +1,15 @@
+fr:
+  tofollow:
+    index:
+      title: 'Découvrez des projets à suivre'
+      subtitle: ''
+      localisation: 'Les projets sur la carte'
+      empty: 'pas de projet correspondant à votre recherche.'
+      tags: 'Tags populaires:'
+      near: 'Localisation'
+      category: 'Catégorie'
+      filter: 'Statut'
+      tofollowa: 'Découvrez des projets innovants et à firt impact'
+      showing_results_for: 'Résultats pour: '
+      localization: 'localisation des projets'
+      channels: 'Nous y étions'

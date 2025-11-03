@@ -1,0 +1,44 @@
+- content_for :title, "Authentication Info: #{current_user.display_name}"
+
+- content_for :page_content do
+  .user-payments-content.row
+    .large-12.columns
+      .existing_documents
+
+        p= t('users.settings.kyc.intro_text')
+        - @user.kycs_displayable_elements.each do |kyc_displayable|
+          .existing_document
+            .status_doc
+              = kyc_translated_status(kyc_displayable.proof_type)
+            .image_doc
+              - if kyc_displayable.uploaded_image_url.include?('.pdf')
+                = image_tag 'pdf_icon.png'
+              - else
+                = image_tag (kyc_displayable.uploaded_image_url(:thumb))
+      .clearfix
+      = simple_form_for(@user, url: { action: :mangopay_upload_kyc_files }, html: { method: :put }) do |f|
+
+        div#kycs
+          = f.simple_fields_for :kycs, @kycs do |k|
+
+            - if !k.object.new_record?
+              - if Neighborly::Mangopay::Kyc.natural_document_type.include?(k.object.proof_type) ||  Neighborly::Mangopay::Kyc.legal_document_type.include?(k.object.proof_type)
+                span = t("users.settings.kyc.type.#{k.object.proof_type.downcase}")
+                .image-preview
+                  = image_tag k.object.uploaded_image_url(:thumb)
+              - else
+                span = t("users.settings.kyc.type.#{k.object.proof_type.downcase}")
+                .document-preview
+                  = link_to k.object.uploaded_image.filename, k.object.uploaded_image.url
+
+            = render 'kyc_fields', :f => k
+          .links
+            = link_to_add_association t('users.settings.add_document'), f, :kycs
+
+        = f.button :submit, class: 'btn btn-medium-red'
+
+- if request.xhr?
+  = initjs_tag app_name: 'Neighborly', partial: true
+  = yield :page_content
+- else
+  = render template: 'users/edit'

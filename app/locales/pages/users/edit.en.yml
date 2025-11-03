@@ -1,0 +1,24 @@
+en:
+  users:
+    edit:
+      tabs:
+        edit: "Profile"
+        my_campaigns: "My Campaigns"
+        ive_contributed: "Campaigns I've Contributed To"
+        credits: 'Credits'
+        payments: 'Payment Info'
+        settings: 'Settings'
+        mangopay_authentications: 'Mangopay Authorization'
+      projects:
+        required: 'Required for project owner' 
+      mangopay:
+        required: 'Required by Mangopay'
+        birthday: 'birthday'
+        nationality: 'nationality'
+        residence_country: 'country of residence'
+        name: 'fullname (firstname lastname)'
+        address_city: 'city'
+        address_state: 'country'
+        address_street: 'street'
+        address_zip_code: 'zip code'
+        organization_name: 'organization name'

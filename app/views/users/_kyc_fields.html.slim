@@ -1,0 +1,10 @@
+.nested-fields
+  = f.input :proof_type,
+            as: :select,
+            collection: kycs_available_type_to_display(@user),
+            label: t('users.settings.kyc.proof_type'),
+            include_blank: false
+
+  = f.input :uploaded_image, as: :file, input_html: { class: 'fallback' }, label: t('users.settings.kyc.uploaded_image')
+
+  = link_to_remove_association t('users.settings.remove_document'), f

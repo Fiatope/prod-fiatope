@@ -1,0 +1,10 @@
+fr:
+  activerecord:
+    errors:
+      models:
+        match:
+          attributes:
+            starts_at:
+              must_be_in_active_period_of_project: "doit être entre aujourd'hui et la date de fin du projet"
+            finishes_at:
+              must_be_after_starts_at_and_in_active_period_of_project: 'La date doit être égale ou inférieur à la date de fin du projet.'

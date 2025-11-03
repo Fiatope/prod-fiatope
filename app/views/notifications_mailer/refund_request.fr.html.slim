@@ -1,0 +1,22 @@
+- project = @notification.project
+|Cher(e),#{project.user.display_name}.
+br
+br
+|Nous avons bien recu votre demande  paiement pour la cagnotte #{project.name}.
+br
+|Pour rappel, voici les elements recapitulatifs de votre collecte.
+br
+|Somme collectee : #{project.display_pledged}
+|Montant verse sur le compte de l'initiateur : #{project.display_net_amount}
+|Frais appliques : #{Configuration[:platform_fee_percentage% 0,%
+br
+|Le montant de la cagnottvous sera versee dans un delai de 5 jours ouvrables. Le virement apparaitra sur votre compte avec l'intitule MANGOPAY.
+br
+|Si toutefois vous ne receviez pas de virements de notre part sous 8 jours, veuillez-nous contacter #mail de contact .env#
+br
+br
+|Nous vous remercions a nouveau de votre confiance.
+br
+|Parlez de Kwendoo autour de vous! Devenez Fan sur Facebook
+br
+|L'equuipe #{Configuration[:company_name]}

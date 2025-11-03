@@ -1,0 +1,14 @@
+= content_for :title, t('.titre')
+.idee-page.static-page
+  .row
+    .title
+       h3 Médecine
+       = image_tag("panorama_fiatope_eleven.jpg", :align=> "center")
+    .text
+     h5 Chez Fiatope, nous pensons que des personnes en bonne santé et bien soignées sont plus fortes pour adresser les challenges socio-économiques sans cesse croissants des sociétés africaines.
+     h5 Les solutions pour apporter la santé aux personnes doivent prendre en compte la riche biodiversité locale et tenir forcément compte de nos traditions socio-culturelles. En effet résoudre le problème de la santé en Afrique ne se résume pas à faire venir du matériel médical, des médicaments et du personnel qualifié. 
+     br
+
+     = link_to t('.soumettre votre projet'), new_project_path, class: 'button large-4 medium-4 columns large-centered'
+
+

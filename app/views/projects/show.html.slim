@@ -1,0 +1,195 @@
+- content_for :title, @project.name
+= render partial: 'layouts/disqus_count'
+= render 'projects/meta_tags'
+
+.project-page
+  = render 'projects/header'
+  = render 'projects/status_bar'
+
+  .row.padding-20
+    .status.col-md-12.text-center.padding-20.prog
+      - if !@project.featured?
+        - if @project.presale?
+          = @project.progress_bar_presale
+        - else
+          = @project.progress_bar
+        .pledged.hide-for-medium
+          = @project.presale? ? @project.total_contributions : @project.display_pledged
+          small = @project.presale? ? t('.so_far_presale').html_safe : t('.so_far').html_safe
+          - if @project.presale?
+            / = @project.display_goal_presale
+            = @project.presale_goal
+          - else
+            = @project.display_goal
+        .pledged.show-for-medium
+          = @project.display_pledged
+          small = t('.reached_goal_small_separator_html')
+          = @project.display_goal
+    
+      - if @project.has_at_least_one_cfa_contribution?
+        div[style="font-size:16px;margin:5px;"]
+          = t(".cfa_ratio_info", percent: (100 * @project.cfa_ratio).round)
+        = @project.cfa_progress_bar
+
+
+  .row.padding-20
+    .col-md-5
+    	= render 'projects/share'
+
+    .col-md-2
+      .row
+        .col-md-2.mb-2
+          a.btn.btn-block.btn-sucess href="whatsapp://send?text=#{project_url(@project)}"
+            |Whatsapp
+            i.fa.fa-whatsapp.pl-2
+        - if user_signed_in? || current_user.try(:admin?)
+
+    .col-md-5
+      - if @project.online? && !@project.expired?
+        = render 'projects/noscript'
+        - if @project.presale?
+          = link_to t('.precommander'), new_project_contribution_url(@project), class: "btn btn-block btn-medium-orange-w-m"
+        - else
+          = link_to t('.contribute'), new_project_contribution_url(@project), class: "btn btn-block btn-medium-yellow-w-m"
+        /- if current_user && (current_user.organization? || current_user.channel? || current_user.admin?)
+        /= link_to t('.create_match'), new_project_match_url(@project), class: "button with-icon create-match hide-for-small"
+      - else
+        .alert-box.secondary.status-description
+          = display_status(@project)
+
+  .row.page-main-content
+    .large-8.medium-8.columns.no-padding-for-small
+      .flex-video.widescreen.vimeo
+        iframe src="#{@project.display_video_embed_url}" width="636 " style="max-width:100%" height="358" frameborder="0" webkitAllowFullScreen mozallowfullscreen allowFullScreen
+      /.row.hide-for-medium-down
+        /.large-6.small-8.columns.share-small
+          = render 'projects/share'
+        /.large-6.small-4.columns.time-remaining
+          i.icon-et-clock
+          = remaining_days(@project)
+
+    
+    .large-4.medium-4.columns
+      .subtitle
+        - if !@project.featured?
+          - if @project.presale?
+            i.fa.fa-clock-o.orange[aria-hidden="true"]
+          - else
+            i.fa.fa-clock-o[aria-hidden="true"]
+          |&nbsp;&nbsp;
+          = remaining_days(@project)
+          br
+          br
+          
+        - if !@project.featured?
+          - if @project.presale?
+            i.fa.fa-users.orange[aria-hidden="true"]
+          - else
+            i.fa.fa-users[aria-hidden="true"]
+          |&nbsp;
+          - if @project.presale?
+            = link_to pluralize(@project.total_contributions, t('words.neighbor_presale_singular'), t('words.neighbor_presale_plural')), project_contributions_path(@project)
+          - else
+            = link_to pluralize(@project.total_contributions, t('words.neighbor_singular'), t('words.neighbor_plural')), project_contributions_path(@project)
+          br
+          |&nbsp;
+          - if @project.presale?
+            i.fa.fa-map-marker.orange[aria-hidden="true"]
+          - else
+            i.fa.fa-map-marker[aria-hidden="true"]
+          |&nbsp;  
+          = @project.display_address_formated
+          br
+          |&nbsp;
+          - if @project.presale?
+            i.fa.fa-tags.orange[aria-hidden="true"]  
+          - else
+            i.fa.fa-tags[aria-hidden="true"]  
+          = link_to(@project.category, discover_path(category: @project.category.to_s.downcase))
+
+    .col-md-12
+      hr
+      /.headline
+        /p = @project.headline
+    section.large-8.medium-8.columns.main
+      = render 'projects/draft_warning' if @project.draft?
+      = render 'projects/rejected_warning' if @project.rejected?
+      /= render 'projects/matches'
+      = link_to t('.edit'), edit_project_path(@project), class: 'button edit show-for-small' if policy(@project).update?
+      = render 'projects/tabs'
+
+      section.content
+        - if content_for? :page_content
+          = yield :page_content
+        - else
+          = render template: 'projects/about', locals: { partial: true }
+
+      /= render 'projects/author' unless browser.device.mobile?
+
+    aside.large-4.medium-4.columns.sidebar
+      .call-to-action
+        - if @project.online? && !@project.expired?
+          - if !@project.featured?
+            = render 'projects/noscript'
+            - if @project.presale?
+              = link_to t('.precommander'), new_project_contribution_url(@project), class: "btn btn-block btn-medium-orange-w-m  contribute"
+            - else
+              = link_to t('.contribute'), new_project_contribution_url(@project), class: "btn btn-block btn-medium-yellow-w-m  contribute"
+          - else
+            /= link_to t('.like'), current_user.like!(@project), class: "btn btn-block btn-medium-yellow-w-m  contribute" 
+          /- if current_user && (current_user.organization? || current_user.channel? || current_user.admin?)
+          /  = link_to t('.create_match'), new_project_match_url(@project), class: "btn btn-block btn-medium-yellow-border contribute"
+        - else
+          .alert-box.secondary.status-description
+            = display_status(@project)
+
+        - if @project.presale?
+          = link_to t('.edit'), edit_project_path(@project), class: 'btn btn-block btn-medium-orange-border contribute' if policy(@project).update?
+        - else
+          = link_to t('.edit'), edit_project_path(@project), class: 'btn btn-block btn-medium-yellow-border contribute' if policy(@project).update?
+
+        /= render 'projects/matches_aside' unless browser.device.mobile?
+
+        - if @project.successful?  
+          - if !(@project.state == 'request_funds') && !(@project.state == 'draft') && !(@project.state == 'fraud_suspiscion')
+
+            = link_to t('.pay'), pay_project_path(@project), class: "button" if policy(@project).update?
+
+
+      /= simple_form_for(current_user, url: user_unsubscribes_path(user_id: current_user.id), html:{ method: :post}) do |f|
+      /  .large-8.columns
+      /    .row
+      /     .large-12.columns
+      /       = f.fields_for :unsubscribes, @subscribed_to_updates do |u|
+      /         - u.object.created_at.nil? ? (checked = { checked: 'checked' }) : (checked = {})
+      /         = u.hidden_field :subscribed, value: true
+      /  = f.button :submit, t('.unsub_submit'), data: { disable_with: t('words.sending') }
+
+
+
+      - if @project.last_channel
+        section.channel
+          = link_to root_url(subdomain: @project.last_channel.permalink, protocol: :http) do
+            .row
+              .large-12.columns.large-centered
+                h5 = t('.in_partnership_with')
+                = image_tag @project.last_channel.image.large.url
+
+      - if @project.total_contributions_without_matches > 0
+        section.custom.neighbors-behind-this.hide-for-medium-down
+          .title = t('.neighbors_behind_this')
+          .list
+            - for contribution in @project.contributions.available_to_display.includes(:user).where(matching_id: nil).order("RANDOM()").limit(15)
+              - if contribution.anonymous
+                = link_to image_tag('anonymous-user.png'), '#', title: t('.anonymous_contribution'), class: 'has-tip', data: { tooltip: '' }
+              - else
+                = link_to image_tag(contribution.user.display_image), user_path(contribution.user), title: contribution.user.display_name, class: 'has-tip', data: { tooltip: '' }
+          .more
+            - if @project.presale?
+              = link_to pluralize(@project.total_contributions, t('words.neighbor_presale_singular'), t('words.neighbor_presale_plural')), project_contributions_path(@project)
+            - else
+              = link_to pluralize(@project.total_contributions, t('words.neighbor_singular'), t('words.neighbor_plural')), project_contributions_path(@project)
+
+      section.rewards[data-rewards-path=project_rewards_path(@project) data-can-update="#{policy(@project).update?}"]
+
+      = render 'projects/author' 

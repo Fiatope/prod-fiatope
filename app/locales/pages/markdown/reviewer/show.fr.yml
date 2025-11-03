@@ -1,0 +1,7 @@
+fr:
+  markdown:
+    previewer:
+      show:
+        title: 'Previewer'
+        nothing_to_preview: 'Nothing to preview.'
+        close: 'Close Preview'

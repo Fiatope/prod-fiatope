@@ -1,0 +1,40 @@
+= hero_header_tag @project, class: ('no-image' if browser.device.mobile?) do
+  .row
+    .large-12.columns
+      .name
+        h3 = @project.name
+    /.large-8.medium-8.columns.no-padding-for-small
+    .large-4.medium-4.columns
+      /.subtitle
+      /  h5= t(".subtitle.#{@project.campaign_type}", category_name: link_to(@project.category, discover_path(category: @project.category.to_s.downcase)), city: @project.display_address_formated, author: link_to(@project.user.display_name, user_path(@project.user))).html_safe
+      /hr
+      .headline
+        p = t('words.cagnotte_for').html_safe
+        p = @project.headline
+      .status
+        = @project.progress_bar
+        .pledged.hide-for-medium
+          = @project.display_pledged
+          small = t('words.harvested_on').html_safe
+          = @project.display_goal
+        .pledged.show-for-medium
+          = @project.display_pledged
+          small = t('words.reached_goal_small_separator_html')
+          = @project.display_goal
+      - if @project.online? && !@project.expired?
+        .show-for-small
+          .contribute-top
+            = link_to t('words.contribute'), new_project_contribution_url(@project), class: "button with-icon contribute"
+
+    .large-4.columns
+      .paltform_fee
+          = t('words.fees_kwendoo').html_safe
+          br
+          h4 = Configuration[:PLATFORM_FEE] + '%' + ' + ' +  Configuration[:PLATFORM_FIX_FEE] + @project.currency_sym
+      
+          = t('.%').html_safe
+      br
+      .payout_amount
+          = t('words.total_to_be_paid').html_safe
+          br
+          /h4 = @project.display_net_amount 

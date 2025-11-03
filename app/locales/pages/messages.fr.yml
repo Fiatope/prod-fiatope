@@ -1,0 +1,7 @@
+fr:
+  messages:
+    form:
+      title: 'Nous contacter'
+    new: 
+      title: 'Nous contacter'
+      meta_description: 'Besoin d’aide ou simplement besoin d’informations pour créer ou soutenir un projet ? Envoyez un message à notre équipe.'

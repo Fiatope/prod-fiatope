@@ -1,0 +1,4 @@
+en:
+  partners:
+    show:
+      empty: "There is no project for this partner for now."

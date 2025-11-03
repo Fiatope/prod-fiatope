@@ -1,0 +1,25 @@
+fr:
+  discover:
+    index:
+      title: 'Découvrez des projets originaux'
+      subtitle: ''
+      localisation: 'Les projets sur la carte'
+      empty: 'pas de projet correspondant à votre recherche.'
+      tags: 'Tags populaires:'
+      near: 'Localisation'
+      category: 'Catégorie'
+      state: 'Etat'
+      filter: 'Statut'
+      discovera: 'Découvrez des projets innovants et à fort impact social'
+      showing_results_for: 'Résultats pour: '
+      states:
+        active: 'Actif'
+        recommended: 'Recommendé'
+        expiring: 'Presque terminé'
+        recent: 'Récent'
+        successful: 'Réussi'
+        soon: 'Bientôt'
+        match: 'matché'
+        with_active_matches: 'match'
+      localization: 'localisation des projets'
+      channels: 'Nous y étions'

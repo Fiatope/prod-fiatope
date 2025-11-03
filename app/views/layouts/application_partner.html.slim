@@ -1,0 +1,67 @@
+doctype html
+/ http://paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/
+/[if lte IE 8 ]
+  |<html class="lt-ie9" lang="fr">
+/[if IE 9 ]
+  |<html class="ie9" lang="fr">
+/[if (gt IE 9)|!(IE)]
+  |<html lang="fr">
+
+head
+  title= t('site.meta_title', title: (@title || yield(:title)), company_name: ::ENV['COMPANY_NAME'])
+  meta[charset="utf-8"]
+  meta name="robots" content="index, follow"
+  meta[name="viewport" content="width=device-width, initial-scale=1.0"]
+  meta name="google-site-verification" content="GXYb8bqMCNhg9de5GL93-jGsW8ERmn9LVgymTgW5RRw" 
+  /<link href=”https://plus.google.com/b/111003676284951831160” rel=”publisher” />
+
+  -# Stylesheets & Favicon
+  = favicon_link_tag 'favicon.ico'
+  /= favicon_link_tag 'giftify_logo.png'
+  = stylesheet_link_tag :normalize, 'data-turbolinks-track' => false
+  = stylesheet_link_tag :animate, 'data-turbolinks-track' => false
+  = stylesheet_link_tag :cookies, 'data-turbolinks-track' => false
+  = stylesheet_link_tag :application, 'data-turbolinks-track' => false, media: 'screen,print'
+  = stylesheet_link_tag '//fonts.googleapis.com/css?family=Lato:300,400,700', 'data-turbolinks-track' => false
+
+  -# CSRF protection
+  = csrf_meta_tag
+
+  - if content_for? :meta_tags
+    /project specific meta tags
+    = yield :meta_tags
+  - else
+    /meta tags for the whole site
+    meta name="description"         content=t('site.description')
+    meta name="keywords"            content=t('site.keywords')
+    meta property="og:title"        content=t('site.title')
+    meta property="og:type"         content=:cause
+    meta property="og:url"          content=url_for(only_path: false)
+    meta property="og:image"        content=image_url('Logo_Fiatope2.jpg')
+    meta property="og:site_name"    content=::Configuration[:company_name]
+    meta property="fb:app_id"       content=::Configuration[:facebook_app_id]
+    meta property="og:description"  content=t('site.description')
+    meta property="og:description"  content=t('site.ograph.description')
+
+body.f-topbar-fixed#partner-layout
+  = render 'layouts/analytics'
+  = initjs_tag app_name: 'Neighborly'
+
+  /= link_to_unless I18n.locale == :fr, t('shared.french'), locale: :fr
+  /= link_to_unless I18n.locale == :en, t('shared.english'), locale: :en
+
+  /= render_facebook_sdk
+  = render 'layouts/loader'
+  = render 'layouts/header_partner'
+  = flash_messages
+  = yield
+  /= render 'layouts/footer'
+  = render 'layouts/footer_partner'
+  = yield :modals
+
+  /[if lt IE 9]
+    = javascript_include_tag "http://html5shiv.googlecode.com/svn/trunk/html5.js", 'data-turbolinks-eval' => false
+  = javascript_include_tag 'vendor/custom.modernizr', 'data-turbolinks-eval' => false
+  = javascript_include_tag :application, 'data-turbolinks-eval' => false
+  //= render 'layouts/uservoice'
+|</html>

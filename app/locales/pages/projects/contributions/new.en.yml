@@ -1,0 +1,13 @@
+en:
+  projects:
+    contributions:
+      new:
+        title: "Contribute to this campaign"
+        minimum_value: 'Contribute any amount as little as $10'
+        cfa_equivalent_html: 'Equivalent: <span id="cfa-value">0</span> CFA Francs'
+        subtitle: "Select your amount or select your reward."
+        subtitle_presale: "Select the pack that corresponds to your contribution, then check the article you will like to have."
+        contribute: "Contribute to <strong>%{project_name}</strong>"
+        precommander: "Précommander à <strong>%{project_name}</strong>"
+        submit: 'Review & Proceed'
+        not_mangopay_ready: 'validate below'

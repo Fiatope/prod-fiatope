@@ -1,0 +1,28 @@
+- content_for :title, "Payment Info: #{@user.display_name}"
+
+- content_for :page_content do
+  .user-payments-content.row
+    .large-12.columns
+
+      p= t('users.settings.payments.intro_text')
+  
+      = simple_form_for(@bank_information, url: { action: :update_bank_information }, html: { method: :put }) do |f|
+        = f.input :owner_address, label: false, placeholder: t("users.settings.payments.owner_address"), as: :string, value: @user.bank_information.try(:owner_address), required: true
+        = f.input :owner_city, label: false, placeholder: t("users.settings.payments.owner_city"), as: :string, value: @user.bank_information.try(:owner_city), required: true
+        = f.input :owner_region, label: false, placeholder: t("users.settings.payments.owner_region"), as: :string, value: @user.bank_information.try(:owner_region), required: true
+        = f.input :owner_postal_code, label: false, placeholder: t("users.settings.payments.owner_postal_code"), as: :string, value: @user.bank_information.try(:owner_postal_code), required: true
+
+        h4 = t('users.settings.payments.fr_header')
+
+        = hidden_field_tag :redirect_url, params[:redirect_url] if params[:redirect_url].present?
+        = f.input :iban, as: :string, value: @user.bank_information.try(:iban), label: false, placeholder: t('.iban')
+        = f.input :bic, as: :string, value: @user.bank_information.try(:bic), label: false, placeholder: t('.rib')
+        = f.button :submit, t('.submit'), class: 'btn btn-medium-red'
+
+- if request.xhr?
+  = initjs_tag app_name: 'Neighborly', partial: true
+  = yield :page_content
+- else
+  = render template: 'users/edit'
+
+

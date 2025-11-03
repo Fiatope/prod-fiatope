@@ -1,0 +1,16 @@
+= content_for :title, t('.titre')
+.idee-page.static-page
+  .row
+    .title
+       h3 Environnement et Agriculture
+       = image_tag("panorama_fiatope_eleven.jpg", :align=> "center")
+    .text
+     h5 Chez Fiatope nous pensons qu’il n’y aura pas d’Afrique prospère sans une adresse appropriée des problèmes environnementaux qui se posent à l’Afrique : déforestation, pollution des sols, des nappes phréatiques et des milieux aquatiques, pêche industrielle, gestion des déchets urbains et du littoral…
+     br
+     h5 De la même façon, les chantiers de l’agriculture africaine sont nombreux et elle nourrira durablement l’Afrique à condition que les africains embrassent ou renouent de façon intensive avec le travail de la terre, en privilégiant le respect de son exploitation, et avec une logique de production à échelle raisonnable c’est-à-dire pour nourrir des communautés locales. 
+     br
+     h5 Nous sommes engagés à soutenir des projets de sauvegarde de l’environnement montés par des structures qui opèrent à partir de l’Europe et de l’Afrique.
+
+     = link_to t('.soumettre votre projet'), new_project_path, class: 'button large-4 medium-4 columns large-centered'
+
+

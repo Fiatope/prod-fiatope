@@ -1,0 +1,47 @@
+fr:
+  controllers:
+    unauthorized: "Vous n'êtes pas autorisé à afficher cette page."
+    unsubscribes:
+      create:
+        success: 'Vos informations ont été mises à jour.'
+    messages:
+      create:
+        success: 'Demande envoyée!'
+    projects:
+      contributions:
+        new:
+          no_reward: "Je contribue juste."
+        create:
+          error: 'Nous avons rencontré un problème lors du traitement de votre contribution. Veuillez ré-essayer.'
+        credits_checkout:
+          no_credits: "Vous n'avez pas assez de crédits pour contribuer à ce projet."
+          success: "Vous avez contribué avec succès via vos crédits."
+        pay:
+          credit_card_description: "Soutenez %{project_name} avec %{value}"
+          echeck_description: " Soutenez %{project_name} avec %{value}"
+          paypal_description: " Soutenez %{project_name} avec %{value}"
+          no_credits: "Vous n'avez pas assez de credits pour contribuer à ce projet."
+          success: "Votre contribution a été effectuée avec success. Merci !"
+        orange_money_payment_confirmation:
+          success: "Paiement Orange Money effectué avec succès. Votre contribution a été validée."
+          error: "La transaction a été refusée et vous n'avez pas été débité. (%{status})"
+        pay_plus_africa_payment_confirmation:
+          success: "Paiement Pay Plus Africa effectué avec succès. Votre contribution a été validée."
+          error: "La transaction a été refusée et vous n'avez pas été débité. (%{status})"
+
+    users:
+      completeness_progress: 'Pensez à <a href="%{link}">compléter votre profil </a>'
+      update:
+        success: 'Vos informations ont été mises à jour!'
+      contributions:
+        request_refund:
+          refunded: "Demande de remboursement effectuée avec succès. Nous vous contacterons sous trois jours ouvrés."
+          insufficient_credits: "Vous n'avez pas assez de crédits."
+    channels_subscribers:
+      created: 'Vous suivez maintenant %{channel}'
+      deleted: 'Vous ne suivez plus %{channel}'
+    companies:
+      contacts:
+        create:
+          success: 'Merci de votre intérêt! Nous reviendrons vers vous bientôt.'
+

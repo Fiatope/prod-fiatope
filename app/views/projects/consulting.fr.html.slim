@@ -1,0 +1,69 @@
+- content_for :title, t('.title')     
+
+- if request.xhr?
+  a.close-reveal-modal ×
+
+#training-page
+  .row
+    h3.text
+      | Nous sommes à votre écoute pour vous aider à gagner en performance opérationnelle
+
+.consulting-page.static-page
+  .row
+       = image_tag("panorama_fiatope_twelve.jpg", :align=> "center")
+
+
+  section.debut
+
+  hr
+  section.teasing
+    .row
+      h5.text-center
+        br
+      h5.text-center
+        = link_to t('.Transformation_digitale'), digital_path, class: 'button large-4 columns right' 
+        = link_to t('.développement_professionnel'), prodevelopment_path, class: 'button large-4 columns large-centered'
+        = link_to t('.Management'), management_path, class: 'button large-4 columns left'
+        
+      br
+
+      h5 Cette activité est née de notre volonté de mettre l'expertise de notre équipe, constituée de professionnels d’entreprise de secteurs aussi variés que les télécommunications, le digital, les systèmes d’information et systèms industriels  de partager leur expérience et leur passion en management d’hommes et de femmes, en conduite de grand projets, en développement professionnel aussi bien qu'en transformation digitale.
+      br
+      h5 A la différence de l’approche traditionnelle des cabinets de conseil, Fiatope Consulting opte plutôt pour la connaissance de l’entreprise, du terrain et des situations réellement vécues. Ainsi, nos consultants sont avant tout des acteurs du monde économique, industriel ou des services et sont ou ont tous été des Manager de haut niveau.
+      br
+      h5 Ainsi nous vous apportons une véritable plus value à votre organisation, basée sur notre savoir-faire, l’expertise de nos consultatns et leur performance reconnue dans leur domaine d'activité.
+      br
+      h5
+         | Notre intervention adresse essentiellement le secteur des services (Informatique, Banque, Assurance...) 
+      br  
+         = link_to t('.Les Intervenants'), experts_path, class: 'button large-4 columns large-centered'
+
+  
+  .row
+      .large-12.columns.large-centered
+        hr
+
+
+  section.actualités
+    .row
+      h3.text-center
+        = t('.Actualités')
+    .row
+      h3.text-center 
+        = image_tag "oser_banniere.png", align: "middle"
+      h4.text-center
+        a href ="http://www.fiatope.com/org-partners-oser" Fiatope s'associe au Collectif OseR l'Afrique
+
+
+  .row
+    .large-12.columns.large-centered
+      hr  
+   
+  section.partners
+    .row
+      h3.text-center
+        = t('.Partenaires')
+      h4.text-center
+        |
+        a[href="http://www.maeci.org"] = image_tag "maeci.jpg"
+

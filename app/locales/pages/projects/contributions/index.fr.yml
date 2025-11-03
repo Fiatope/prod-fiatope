@@ -1,0 +1,9 @@
+fr:
+  recu_fiscal: 'Reçu fiscal'
+  projects:
+    contributions:
+      index:
+        empty: "Pas encore de contribution. Soyez le premier!"
+      contribution:
+        anonymous_contribution: "Contributeur anonyme"
+        no_reward: "Ce contributeur n'a pas choisi de reward"

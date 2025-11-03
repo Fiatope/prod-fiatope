@@ -1,0 +1,21 @@
+content_for :title, t('.title')
+
+- if request.xhr?
+  a.close-reveal-modal ×
+
+.contact-page.static-page
+  .row
+    .title
+       .large-12.columns
+        h2 Contactez Fiatope 
+        h4
+          |Pour toute information, contactez nous par SMS, de 9h à 20h, du lundi au Samedi au +33(0)608273008. 
+          | Vous pouvez également nous envoyer un mail à 
+          a href='mailto:contact@fiatope.com' contact@fiatope.com 
+          |ou laisser un message
+ 
+  .row
+          = render 'form', :message => @message
+
+
+

@@ -1,0 +1,132 @@
+<div class="navbar-wagon">
+  <!-- Logo -->
+  <%= link_to root_path, class: "navbar-wagon-brand" do %>
+    <%= image_tag "logo_fiatope.png" %>
+  <% end %>
+
+<div id="b" style="font-size:13px; color:#da552f;">
+&nbsp;&nbsp;FR&nbsp;
+<%= link_to_unless_current image_tag("france.png", alt: "france", height: 30, width: 30), locale: "fr" %>&nbsp;&nbsp;&nbsp;&nbsp;EN&nbsp;<%= link_to_unless_current image_tag("uk.png", alt: "English", height: 30, width: 30), locale: "en" %>
+
+</div>
+
+  <!-- Right Navigation -->
+  <div class="navbar-wagon-right hidden-xs hidden-sm">
+
+
+
+
+      
+
+
+
+
+
+
+    <!-- Different navigation if login or not -->
+    <% if user_signed_in? %>
+			<%= link_to t(".top_call_to_action", default: "Discover projects"), main_app.discover_path, class: "navbar-wagon-item navbar-wagon-link" %>
+
+<%= link_to t(".top_call_to_action", default: "how it works ?"), main_app.how_it_works_path, class: "navbar-wagon-item navbar-wagon-link" %>
+
+    	<!--  <%= link_to t(".top_call_to_action", default: "Blog"), main_app.blogo_root_path, class: "navbar-wagon-item navbar-wagon-link" %> -->
+      
+      <div class="navbar-wagon-item">
+        <div class="dropdown">
+          <!-- <span class="dropdown-toggle" data-toggle="dropdown">Profil</span> -->
+          <%= link_to main_app.edit_user_path(current_user), class: 'dropdown-toggle user-profile navbar-wagon-link', data: { toggle: 'dropdown' } do %>
+                <%= image_tag current_user.display_image, size: "18x18", class: 'profile-picture', alt: '' %>
+                <%= current_user.first_name %>
+          <% end %>
+          <ul class="dropdown-menu dropdown-menu-right navbar-wagon-dropdown-menu">
+            <li>
+              <%= link_to main_app.edit_user_path(current_user) do %>
+                <i class="fa fa-user"></i> <%= t ".my_profile" %>
+              <% end %>
+            </li>
+            <% if current_user.projects.any? %>
+            <li>
+              <%= link_to main_app.user_projects_path(current_user) do %>
+                <i class="fa fa-rocket"></i> <%= t'.my_projects' %>
+              <% end %> 
+            </li>
+            <% end %>
+            <% if current_user.contributions.any? %>
+            <li>
+            	<%= link_to main_app.user_contributions_path(current_user) do %>
+                <i class="fa fa-check"></i>  <%= t ".my_contributions" %>
+              <% end %>	
+            </li>
+            <% end %>
+            <li>
+              <%= link_to main_app.credits_user_path(current_user) do %>
+                <i class="fa fa-money"></i>  <%= t ".profile", default: "My credits" %>
+              <% end %>
+            </li>
+            <li>
+              <%= link_to main_app.payments_user_path(current_user) do %>
+                <i class="fa fa-credit-card"></i>  <%= t ".sign_out", default: "Bank details" %>
+              <% end %>
+            </li>
+
+
+            <li>
+              <%= link_to main_app.settings_user_path(current_user) do %>
+                <i class="fa fa-cog"></i>  <%= t ".settings" %>
+              <% end %>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+    	
+
+    	<%= link_to t(".top_call_to_action", default: "Sign out"), main_app.destroy_user_session_url(base_domain_with_https_url_params), method: :delete, class: "navbar-wagon-item navbar-wagon-link" %>
+      <!-- Notification -->
+
+      <!-- Profile picture and dropdown -->
+      
+
+    <% else %>
+    	<%= link_to t(".top_call_to_action", default: "Discover projects"), discover_path, class: "navbar-wagon-item navbar-wagon-link" %> 
+
+    	<%= link_to t(".top_call_to_action", default: "how it works?"), how_it_works_path, class: "navbar-wagon-item navbar-wagon-link" %>
+
+
+
+    	<!-- <%= link_to t(".top_call_to_action", default: "Blog"), blogo_root_path, class: "navbar-wagon-item navbar-wagon-link" %> -->
+
+      <!-- Login text link -->
+      <%= link_to t(".sign_in", default: "Sign in"), new_user_session_path, class: "navbar-wagon-item navbar-wagon-link" %>
+
+      <%= link_to t(".sign_up", default: "Sign up"), new_user_registration_path, class: "navbar-wagon-item navbar-wagon-link" %>
+
+    <% end %>
+
+    <!-- Button (call-to-action) -->
+    <%= link_to t(".top_call_to_action", default: "Submit a project"), main_app.start_path, class: "navbar-wagon-item navbar-wagon-button btn" %>
+  </div>
+
+  <!-- Dropdown list appearing on mobile only -->
+  
+  <div class="navbar-wagon-item hidden-md hidden-lg">
+    <div class="dropdown">
+      <i class="fa fa-bars dropdown-toggle" data-toggle="dropdown"></i>
+      <ul class="dropdown-menu dropdown-menu-right navbar-wagon-dropdown-menu">
+        
+        <li><%= link_to t(".top_call_to_action", default: "Discover projects"), main_app.discover_path %></li>
+        <li><%= link_to t(".top_call_to_action", default: "How it works  ?"), main_app.how_it_works_path %></li>
+       	<!--  <li><%= link_to t(".top_call_to_action", default: "Blog"), main_app.blogo_root_path, class: "navbar-wagon-item navbar-wagon-link" %></li> -->
+        <% if user_signed_in? %>
+        <li><%= link_to t(".top_call_to_action", default: "Profile"), main_app.edit_user_path(current_user) %></li>
+        <li><%= link_to t(".top_call_to_action", default: "Sign out"), main_app.destroy_user_session_url(base_domain_with_https_url_params), method: :delete %></li>
+        <% else %>
+	      <li><%= link_to t(".sign_in", default: "Sign in"), new_user_session_path, class: "navbar-wagon-item navbar-wagon-link" %></li>
+	      <li><%= link_to t(".sign_up", default: "Sign up"), new_user_registration_path, class: "navbar-wagon-item navbar-wagon-link" %></li>
+        <% end %>
+      </ul>
+    </div>
+    
+  </div>
+</div>
+

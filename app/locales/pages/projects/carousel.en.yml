@@ -1,0 +1,6 @@
+en:
+  projects:
+    carousel:
+      discover_only:
+        button: 'Discover projects'
+        button1: 'Submit a project'

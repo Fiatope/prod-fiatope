@@ -1,0 +1,21 @@
+fr:
+  devise:
+    sessions:
+      new:
+        no_account_html: "Pas encore inscrit? S'INSCRIRE"
+        titles:
+          site: 'Se connecter'
+          header: 'Connexion'
+        links:
+          register: "S'inscrire"
+          forgot_password: "Mot de passe oublié?"
+          new_user_confirmation: "Confirmer mon Email"
+        form:
+          labels:
+            remember_me: 'Se souvenir de moi'
+            email: 'Email'
+            password: 'Mot de passe'
+          inputs:
+            submit: 'Se connecter'
+            facebook: 'Facebook'
+            google: 'Google'

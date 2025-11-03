@@ -1,0 +1,9 @@
+.large-11.columns.large-centered
+  = link_to t('devise.sessions.new.form.inputs.facebook'), user_facebook_omniauth_authorize_path(locale: nil), class: [:button, :facebook, 'small-12 large-12', 'columns',  'with-icon']
+  .row
+  .separator
+.large-11.columns.large-centered
+  = link_to t('devise.sessions.new.form.inputs.google'),  user_google_oauth2_omniauth_authorize_path(locale: nil), class: [:button, :google, 'small-12 large-12', 'columns',  'with-icon']
+  .row
+  .separator
+    p.text-center = t('words.or')

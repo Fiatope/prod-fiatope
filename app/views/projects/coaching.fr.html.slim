@@ -1,0 +1,68 @@
+- content_for :title, t('.title')
+.coaching-page
+  header.hero.center[data-image-url=image_path('panorama_fiatope_two.jpg')]
+    .row
+      .small-12.medium-12.medium-centered.columns
+        h2 = t('.titlebis').html_safe
+
+        = link_to new_user_registration_path do
+             /h3 = t('.register.title')
+             span.button.medium = t('.Inscrivez Vous')
+             .facebook-box
+               .fb-like data-href="#{Configuration['facebook_url']}" data-width="284" data-height="40" data-header="false" data-send="true"
+    .row
+
+  hr
+  section.teasing
+    .row
+      h3.text-center
+        | Nous donnons aux entrepreneurs pour le Sud, les outils digitaux pour adresser chaque phase du développement de leur projet
+        br 
+        br
+      h5.text-center
+        = link_to t('.Preuve de concept'), idee_path, class: 'button large-4 columns left'
+        = link_to t('.développement'), development_path, class: 'button large-4 columns large-centered'
+        = link_to t('.lancement'), launch_path, class: 'button large-4 columns right'
+
+        br
+        = image_tag("Front_Page.jpg", :align=> "middle")
+        |
+      h4.text-center
+         | 6 thèmes prioritaires: la médecine, les technologies, l'environnement, les énergies renouvelables, l'enseignement supérieur, la culture
+  
+  .row
+      .large-12.columns.large-centered
+        hr
+
+
+  section.actualités
+    .row
+      h3.text-center
+        = t('.Actualités')
+    .row
+      h3.text-center 
+        = image_tag "oser_banniere.png", align: "middle"
+      h4.text-center
+        a href ="http://www.fiatope.com/org-partners-oser" Fiatope s'associe au Collectif OseR l'Afrique
+
+  .row
+    .large-12.columns.large-centered
+      hr
+
+  .row
+    = link_to t('.les projets accompagnés'), discover_path, class: 'button large-4 medium-4 columns centered'
+    = link_to t('.soumettre votre projet'), new_project_path, class: 'button large-4 medium-4 columns centered'
+
+  .row
+    .large-12.columns.large-centered
+      hr  
+   
+  section.partners
+    .row
+      h3.text-center
+        = t('.Partenaires')
+      h4.text-center
+        |
+        a[href="https://www.kwendoo.com"] = image_tag "Logo_Kwendoo.jpg"
+
+        a[href="http://oserlafrique.com"] = image_tag "oser2.jpg"

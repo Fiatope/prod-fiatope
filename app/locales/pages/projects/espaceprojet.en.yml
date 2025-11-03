@@ -1,0 +1,35 @@
+fr:
+  projects:
+    espaceprojet:
+      title: 'Fiatope | Acting Together'
+      recommended: 'Recommended'
+      near: 'Near end'
+      ending_soon: 'Sur la fin'
+      successful: 'Successful'
+      coming_soon: 'COming Soon'
+      join:
+        join_the_neighborhood: 'Join Fiatope'
+        already_joined: 'Already joined? %{link}.'
+        sign_in: 'Sign In'
+      hero:
+        title: 'We enable joint action and impact <strong></strong>'
+        subtitle: "A world of opportuities opens up withfiatope. Join our newsletter to stay tuned\n"
+        email_placeholder: 'MY EMAIL'       
+        submit: 'Join the Newsletter'
+      how-it-works:
+        one:
+          headline:  'Cagnottes'
+          text: ' Create a cagnotte to support your community. Ask your community to suppor you. Collect membership fees for your association.'
+          button: 'I enter the cagnotte area'
+        two:
+          headline: 'Projects'
+          text: ' You have an original and ambitious project for your region or country of origin. You wiwh to participate to the emergence of such projects.'
+          button: 'I enter the projects area' 
+        three:
+          headline: 'Contributions'
+          text: 'Contribute to project you in care in'
+          button: 'I contribute'
+      start-one-en:
+        title: ' Have a project in need of funding?'
+        button: 'Start a campaign'
+

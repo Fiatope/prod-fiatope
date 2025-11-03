@@ -1,0 +1,203 @@
+- @title = t('.title')
+.admin
+  .row
+    = render 'neighborly/admin/layouts/menu'
+    section.content.large-12.columns
+      h4
+        strong= "#{@total_projects} "
+        = t('.total_projects')
+
+      .filters
+        = form_tag projects_path, method: :get, class: 'form-horizontal' do |f|
+          = hidden_field_tag :order_by, params[:order_by]
+          .row
+            .large-3.columns
+              = label_tag :by_id, t('.id')
+              = text_field_tag :by_id, params[:by_id], class: 'input-small'
+
+            - [:between_created_at, :between_expires_at, :between_online_date].each do |between_field|
+              .large-3.columns
+                = label_tag "#{between_field}_start_at".to_sym, t(".#{between_field}")
+                = text_field_tag "#{between_field}[start_at]", (params[between_field][:start_at] if params[between_field].present?)
+                | &nbsp;
+                | &nbsp;
+                = text_field_tag "#{between_field}[ends_at]", (params[between_field][:ends_at] if params[between_field].present?)
+
+          .row
+            .large-4.columns
+              = label_tag :pg_search, t('.project')
+              = text_field_tag :pg_search, params[:pg_search]
+            .large-4.columns
+              = label_tag :with_state, t('.with_state')
+              = select_tag :with_state, options_for_select(Project.state_names, params[:with_state]), include_blank: true
+            .large-4.columns
+              = label_tag :by_category_id, t('.by_category')
+              = select_tag :by_category_id, options_from_collection_for_select(Category.all, :id, :name_pt,params[:by_category_id]), include_blank: true
+          .row
+            .large-6.columns
+              = label_tag :user_name_contains, t('.user')
+              = text_field_tag :user_name_contains, params[:user_name_contains]
+            .large-6.columns
+              = label_tag :by_user_email, t('.by_user_email')
+              = text_field_tag :by_user_email, params[:by_user_email]
+          .row
+            .large-12.columns.text-right
+              = submit_tag t('.submit'), class: 'button'
+        .row
+          .large-6.columns.text-left
+              = paginate @projects
+          .large-6.columns.text-right
+            = pluralize_without_number @projects.to_a.size, t('words.found_singular'), t('words.found_plural')
+            | &nbsp;
+            strong = @projects.to_a.size
+            | &nbsp;
+            = pluralize_without_number(@projects.to_a.size, t('words.project_singular'), t('words.project_plural')).downcase
+      .data-table
+        - if @projects.empty?
+          = t('.no_projects')
+        - else
+          table.small
+            thead
+              tr
+                th style="width: 200px;"
+                  = t('.name')
+                th= t('.email')
+                th= t('.category')
+                th= t('.user_id')
+                th= t('.user_key')
+                th
+                  a data-sort="goal" href='#'= t('.goal')
+                  span.sort-order
+                th
+                  a data-sort="pt.progress" href='#'= t('.pledged')
+                  span.sort-order
+                th
+                  a data-sort="pt.total_contributions" href='#'= t('.total_contributions')
+                  span.sort-order
+                th= t('.recommended')
+                th= t('.project_id')
+                th
+                  a data-sort="online_date" href='#'= t('.online_date')
+                  span.sort-order
+                th
+                  a data-sort="projects.expires_at" href='#'= t('.expires_at')
+                  span.sort-order
+                th= t('.state')
+                th= t('.wallet_id')
+                th= t('.doc')
+                th
+            tbody
+              - @projects.each do |project|
+                tr id=project.id
+                  td
+                    = link_to project.name, main_app.project_path(project)
+                    - if project.channels.present?
+                      | &nbsp;
+                      - project.channels.each do |channel|
+                        span.label.label-inverse= channel.name
+                        | &nbsp;
+                  td= link_to project.user.email, main_app.edit_user_path(project.user)
+                  td= project.category
+                  td= best_in_place project, :user_id, type: :input
+                  td= project.user.mangopay_contributor.try(:key)
+                  td= best_in_place project, :goal, type: :input, display_as: :display_goal
+                  td= "#{project.display_pledged} (#{project.progress}%)"
+                  td= project.total_contributions
+                  td.checkbox
+                    /= best_in_place project, :recommended, type: :checkbox, collection: [t('words._no'), t('words._yes')]
+                    = best_in_place project, :recommended, as: :checkbox, collection: [t('words._no'), t('words._yes')]
+                    br
+                    = link_to 'Change', main_app.change_recommended_project_path(project), method: :post,  title: 'Change recommended'
+                  
+                  td= project.id
+                  td= project.online_date.to_date if project.online_date
+                  td= project.display_expires_at
+                  td
+                    - if project.online?
+                      span.label.label-online= project.state
+                    - elsif project.successful?
+                      span.label.label-success= project.state
+                    - elsif project.failed? or project.rejected?
+                      span.label.label-important= project.state
+                    - elsif project.waiting_funds?
+                      span.label.label-warning= project.state
+                    - elsif project.canceled?
+                      span.label.label-canceled= project.state
+                    - elsif project.tobefollowed?
+                      span.label.label-tobefollowed= project.state
+                    - else 
+                      span.label= project.state
+                  td
+                    = project.mangopay_wallet_handler.try(:wallet_key)
+                  td
+                    / - if project.user.kycs.other_documents.present?
+                    /   - project.user.kycs.other_documents.each do |kyc|
+                    /     = link_to kyc.uploaded_image.url do
+                    /       i.icon-et-vcard[style="color:green"]
+                    - if project.user.kycs_updatable_elements.present?
+                      - project.user.kycs_updatable_elements.each do |kyc|
+                        = link_to kyc.uploaded_image.url do
+                          i.icon-et-vcard[style="color:green"]
+                  td
+                    .dropdown
+                      = link_to 'javascript:void(0);', class: 'button tiny secondary dropdown-toggle', data: {dropdown: "dropdown-#{project.id}", toggle: "dropdown"} do
+                        i.icon-et-down-dir
+                      ul[id="dropdown-#{project.id}" data-dropdown-content class="dropdown-menu"]
+                        li
+                          = link_to populate_contribution_project_path(project) do
+                            = t('.populate_contribution')
+                        - if project.can_approve?
+                          li
+                            = link_to approve_project_path(project), method: :put  do
+                              = t('.approve')
+
+                        - if project.can_launch?
+                          li
+                            = link_to launch_project_path(project), method: :put do
+                              = t('.launch')
+
+                        - if project.can_reject?
+                          li
+                            = link_to reject_project_path(project), method: :put  do
+                              = t('.reject')
+
+                        - if project.waiting_funds?
+                          li
+                            = link_to neighborly_mangopay.payout_project_path(project), method: :put  do
+                              =t('.payout')
+
+                        - if project.can_push_to_draft?
+                          li
+                            = link_to push_to_draft_project_path(project), method: :put  do
+                              = t('.send_to_draft')
+
+                        - if project.can_cancel?
+                        /  li
+                        /    = link_to cancel_project_path(project), method: :put  do
+                        /      = t('.cancel')
+
+                        /- if project.can_push_to_request_funds?
+                        /  li
+                        /    = link_to push_to_request_funds_project_path(project), method: :put do
+                        /      = t('.request_funds')
+
+                        /- if project.can_push_to_paid?
+                        /  li
+                        /    = link_to push_to_paid_project_path(project), method: :put do
+                        /      = t('.paid') 
+
+                        - if project.can_push_to_trash?
+                          li
+                            = link_to project_path(project), method: :delete, data: {confirm: t('neighborly.admin.confirm_dialog')} do
+                              = t('.send_to_trash')
+
+                        - if project.show_on_homepage
+                          li
+                            = link_to main_app.remove_project_on_homepage_project_path(project), method: :put do
+                              = "Retirer de la page d'accueil"
+                        - elsif project.recommended && !project.show_on_homepage
+                          li
+                            = link_to main_app.show_project_on_homepage_project_path(project), method: :put do
+                              = "Mettre en page d'accueil"
+                              
+        = paginate @projects

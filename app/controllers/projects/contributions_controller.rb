@@ -1,0 +1,419 @@
+class Projects::ContributionsController < ApplicationController
+  after_action :verify_authorized, except: :index
+  skip_before_action :set_persistent_warning
+  before_action :has_mangopay_prerequisites, only: [:new, :create]
+  skip_before_action :verify_authenticity_token, only: :orange_money_payment_confirmation
+  skip_after_action :verify_authorized, only: [:cancel, :orange_money_payment_confirmation, :pay_plus_africa_payment_confirmation, :touch_payment_initialization]
+
+  has_scope :available_to_count, type: :boolean
+  has_scope :with_state
+  has_scope :page, default: 1
+
+  def index
+    @project        = parent
+    @contributions  = collection
+    @active_matches = parent.matches.active
+    if request.xhr? && params[:page] && params[:page].to_i > 1
+      render collection
+    end
+  end
+
+  def edit
+    @project      = parent
+    @contribution = resource
+    authorize resource
+  end
+
+  def mailing
+    # @_policy_authorized = true if current_user.admin
+    authorize resource if current_user.admin
+    @contribution = resource
+    if params[:tips] 
+      NotificationsMailer.tips(@contribution).deliver if params[:tips]
+      flash.notice = 'Mail correctement envoyé'
+      redirect_back(fallback_location: root_path)
+    end
+  end
+
+  def show
+    @project      = parent
+    @contribution = resource
+    authorize resource
+    if @contribution.state == "confirmed"
+      flash.notice = "Your contribution has been confirmed!"
+    elsif @contribution.state == "canceled"
+      flash.notice = "This contribution has been canceled. Please create a new one!"
+      redirect_to project_path(@project) and return
+    end
+  end
+
+  def new
+    @project      = parent
+    @contribution = ContributionForm.new(project: parent, user: current_user)
+    authorize @contribution
+   
+    if @project.presale?
+      @rewards = @project.rewards.not_soon.order(:minimum_value)
+    else
+      @rewards = [empty_reward] + @project.rewards.not_soon.remaining.order(:minimum_value)
+    end
+
+    if params[:reward_id] && (selected_reward = @project.rewards.not_soon.find(params[:reward_id])) && !selected_reward.sold_out?
+      @contribution.reward = selected_reward
+      @contribution.value = "%0.0f" % selected_reward.minimum_value
+    end
+  end
+
+  def create
+    @project      = parent
+    @contribution = ContributionForm.new(permitted_params[:contribution_form].
+                                     merge(user: current_user,
+                                           project: parent))
+    rewards = permitted_params[:reward_ids]
+    if @project.presale? && permitted_params[:user_articles]
+      permitted_user_articles = permitted_params[:user_articles].to_unsafe_h
+      user_articles = []
+
+      permitted_user_articles.each_value do |permitted_user_article|
+         user_article = permitted_user_article.shift
+         user_articles << user_article[1].split(",").join(", ")
+      end
+
+      articleSelected = []
+      user_articles.each_with_index do |article|
+        articleSelected << Article.find(article)
+      end
+
+      @contribution.articles = articleSelected
+    end
+    
+    if(rewards.present?)
+      if @project.presale?
+        value = 0
+        rewards['id'].each_with_index do |r, index|
+          price = Reward.find(r).minimum_value
+          qty = rewards['quantity'][index]
+          if price && qty
+            value +=  "#{price}".to_i * qty.to_i 
+          end
+          @contribution.value = value
+        end
+      end
+    end
+
+    
+    
+    
+    authorize @contribution
+
+    if @contribution.save
+      if @project.presale?
+        rewards['id'].each_with_index do |r, index|
+           ContributionReward.create(contribution_id: @contribution.id, reward_id: r, quantity: rewards['quantity'][index])
+        end
+      end
+      puts "zaeaze #{rewards}"
+     
+      if( !@project.presale? && rewards.present? && !rewards['id'].nil? && rewards['id'][0] != "on")
+        ContributionReward.create(contribution_id: @contribution.id, reward_id: rewards['id'][0], quantity: 1)
+      end
+      
+      session[:thank_you_contribution_id] = @contribution.id
+      flash.delete(:notice)
+      redirect_to edit_project_contribution_path(project_id: @project, id: @contribution.id)
+    else
+      flash.alert = t('controllers.projects.contributions.create.error')
+      redirect_to new_project_contribution_path(@project)
+    end
+    
+  end
+
+  def cancel
+    if resource.user == current_user
+      @contribution = resource
+      @contribution.orange_money_transactions.update_all(status_string: "CANCELLED")
+      response_message = t('controllers.projects.contributions.cancel.error')
+      @contribution.update(
+        response_code: "CANCELLED",
+        transaction_number: @contribution.orange_money_transactions.where("txnid is not null").last.try(:txnid),
+        response_message: response_message,
+        payment_method: "Orange Money"
+      )
+      @contribution.state_event = :cancel
+      @contribution.save!
+      redirect_to edit_project_contribution_path(@contribution.project, @contribution), alert: response_message
+    else
+      redirect_to root_path, alert: "You are not authorized to cancel this contribution"
+    end
+  end
+
+
+
+  def credits_checkout
+    @contribution = resource
+    authorize resource
+    if current_user.credits < @contribution.value
+      flash.alert = t('controllers.projects.contributions.credits_checkout.no_credits')
+      return redirect_to new_project_contribution_path(@contribution.project)
+    end
+
+    unless @contribution.confirmed?
+      @contribution.update({ payment_method: 'Credits' })
+      @contribution.confirm!
+    end
+
+    flash.notice = t('controllers.projects.contributions.credits_checkout.success')
+    redirect_to project_contribution_path(parent, resource)
+  end
+
+
+  def orange_money_payment_initialization
+    @contribution = resource
+    authorize @contribution
+
+    transaction = OrangeMoneyService.initialize_payment_for(@contribution)
+    if transaction.status_string == "OK"
+      redirect_to transaction.payment_url
+    else
+      redirect_to edit_project_contribution_path(@contribution.project, @contribution), alert: "Orange Money is temporarily unavailable. Please pick another payment method (#{transaction.status_string})"
+    end
+  end
+
+
+  def pay_plus_africa_payment_initialization
+    @contribution = resource
+    authorize @contribution
+
+    transaction = PayPlusAfricaService.initialize_payment_for(@contribution)
+
+    # abort transaction.status_string
+
+    if transaction.status_string == "00"
+      @payment_url = transaction.payment_url
+
+      respond_to do |format|
+        format.js {render layout: false}
+      end
+    else
+      redirect_to edit_project_contribution_path(@contribution.project, @contribution), alert: "Payplus Africa is temporarily unavailable. Please pick another payment method (#{transaction.status_string})"
+    end
+  end
+
+
+  def orange_money_payment_confirmation
+    if params["status"] == "SUCCESS"
+      transaction = OrangeMoneyTransaction.find_by(notif_token: params["notif_token"])
+      transaction.update_column(:txnid, params["txnid"])
+      @contribution = Contribution.find_by(id: transaction.contribution_id)
+      if params["status"] == "SUCCESS"
+        response_message = t('controllers.projects.contributions.orange_money_payment_confirmation.success')
+      else
+        response_message = t('controllers.projects.contributions.orange_money_payment_initialization.error', status: params["status"])
+      end
+      @contribution.response_code = params["status"]
+      @contribution.transaction_number = params["txnid"]
+      @contribution.response_message = response_message
+      @contribution.payment_method = "Orange Money"
+      @contribution.state_event = params["status"] == "SUCCESS" ? :confirm : :cancel
+      @contribution.save!
+      @contribution.notify_owner(:orange_money_payment_confirmed) if params["status"] == "SUCCESS"
+    end
+    render json: { success: true }
+  end
+
+
+  def touch_payment_new
+    @contribution = resource
+    authorize @contribution
+
+    @project = @contribution.project
+
+    @html_operators = ''
+    @operators = TouchService::LIST_OPERATORS
+    @operators.each do |country, operators|
+      @html_operators += '<optgroup label="' + country + '">'
+      operators.each do |key, operator|
+        @html_operators += '<option value="' + key + '">' + operator + '</option>'
+      end
+      @html_operators += '</optgroup>'
+    end
+  end
+
+
+  def touch_payment_initialization
+    @contribution = Contribution.find_by!(id: touch_params[:id])
+    authorize @contribution
+
+    @project = @contribution.project
+
+    country_operator = touch_params[:country_operator].split('_')
+    country = country_operator[0]
+    operator = country_operator[1]
+    phone = touch_params[:phone]
+    @new_payment = false
+
+    payment = TouchService.new country, operator, phone, @contribution
+    @response = payment.initiate_paiement
+
+    @response.merge!({
+      "country_operator" => touch_params[:country_operator]
+    })
+
+    puts "======================== response #{@response} ========================"
+
+    if @response['status'] == 'INITIATED'
+      flash.now[:notice] = 'Valider le paiement sur votre téléphone'
+      render 'projects/contributions/touch_payment_initialization'
+    else
+      @response['message'] ||= @response['detailMessage']
+      @response['message'] ||= @response['description']
+      @response['status'] ||= @response['code']
+      redirect_to touch_payment_new_project_contribution_path(@contribution.project, @contribution), notice: "Code: #{@response['status']} #{@response['message']}"
+    end
+  end
+
+
+  def touch_payment_status
+    @contribution = Contribution.find_by!(id: touch_params[:id])
+    authorize @contribution
+
+    @project = @contribution.project
+
+    country_operator = touch_params[:country_operator].split('_')
+    country = country_operator[0]
+    operator = country_operator[1]
+    id_client = touch_params[:id_client]
+    commit = touch_params[:commit]
+    @new_payment = false
+
+    if commit == 'Terminer le paiement'
+      @new_payment = true
+      payment = TouchService.new country, operator
+      @response = payment.check_status id_client
+
+      @response.merge!({
+        "country_operator" => touch_params[:country_operator],
+        "idFromClient" => id_client
+      })
+
+      puts "======================== response #{@response} ========================"
+
+      if @response['status'] == 'PENDING'
+        flash.now[:notice] = 'Valider le paiement sur votre téléphone'
+        render 'projects/contributions/touch_payment_initialization'
+      else
+        if @response['status'] == 'SUCCESSFUL'
+          response_message = t('controllers.projects.contributions.paypal_payment_confirmation.success')
+    
+          @contribution.response_code = @response['status']
+          @contribution.payment_id = @response['idFromClient']
+          @contribution.response_message = response_message
+          @contribution.payment_method = "Touch"
+          @contribution.state_event = :confirm
+          @contribution.save!
+    
+          flash.notice = response_message
+    
+          redirect_to project_contribution_path(project_id: @contribution.project, id: @contribution.id)
+        else
+          response_message = t('controllers.projects.contributions.paypal_payment_confirmation.error', status: paypal_params[:payment_status])
+    
+          @contribution.response_code = @response['status']
+          @contribution.payment_id = @response['idFromClient']
+          @contribution.response_message = response_message
+          @contribution.payment_method = "Touch"
+          @contribution.state_event = :cancel
+          @contribution.save!
+    
+          flash.alert = response_message
+    
+          redirect_to edit_project_contribution_path(project_id: @contribution.project, id: @contribution.id)
+        end
+      end
+    else
+      redirect_to touch_payment_new_project_contribution_path(@contribution.project, @contribution)
+    end
+  end
+
+
+  def touch_payment_return
+    @contribution = Contribution.find_by!(id: touch_params[:id])
+
+    @project = @contribution.project
+  end
+
+
+  def pay_plus_africa_payment_confirmation
+    transaction = PayPlusAfricaTransaction.find_by!(notif_token: params["token"])
+    @contribution = Contribution.find_by!(id: transaction.contribution_id)
+    response_status = PayPlusAfricaService.confirm_payment_for(@contribution, transaction)
+
+    if response_status["response_code"] == "00"
+      transaction.update_column(:invoice_number, response_status["token"])
+
+      response_message = t('controllers.projects.contributions.pay_plus_africa_payment_confirmation.success')
+
+      @contribution.response_code = response_status["status"]
+      @contribution.transaction_number = response_status["token"]
+      @contribution.response_message = response_message
+      @contribution.payment_method = "Pay Plus Africa"
+      @contribution.state_event = response_status["status"] == "completed" ? :confirm : :cancel
+      @contribution.save!
+      # @contribution.notify_owner(:pay_plus_africa_payment_confirmed) if response_status["status"] == "completed"
+
+      flash.notice = response_message
+
+      return redirect_to project_path(@contribution.project)
+    else
+      response_message = t('controllers.projects.contributions.pay_plus_africa_payment_confirmation.error', status: params["status"])
+      flash.alert = response_message
+      return redirect_to edit_project_contribution_path(@contribution.project, @contribution)
+    end
+
+
+    # render json: { success: true }
+  end
+
+
+  protected
+
+  def touch_params
+    params.permit(:id, :phone, :country_operator, :id_client, :commit)
+  end
+
+  def permitted_params
+    params.permit(policy(@contribution || ContributionForm).permitted_attributes)
+  end
+
+  def collection
+    @contributions ||= apply_scopes(parent.contributions).available_to_display.where(matching_id: nil).order("confirmed_at DESC").per(10)
+  end
+
+  def empty_reward
+    Reward.new(minimum_value: 0, description: t('controllers.projects.contributions.new.no_reward'))
+  end
+
+  def parent
+    @parent ||= Project.find_by_permalink!(params[:project_id])
+  end
+
+  def resource
+    @resource ||= parent.contributions.find(params[:id])
+  end
+
+  private
+
+  def has_mangopay_prerequisites
+    if user_signed_in?
+      if current_user.light_authentication_ready?
+        return true
+      else
+        flash.alert = t('projects.contributions.new.not_mangopay_ready')
+        redirect_to edit_user_path(current_user, redirect_url: new_project_contribution_path(parent.permalink)) and return false
+      end
+    else
+      #redirect_to new_user_session_path
+      redirect_to new_user_registration_path(:from_contribution => parent)
+    end
+  end
+end

@@ -1,0 +1,144 @@
+- @title = t('projects.admin.title')
+.admin
+  .row
+    section.content.large-12.columns
+      .text-right
+        = link_to t('neighborly.admin.dashboard.index.download_funding_raised_per_project_report'), url_for(format: :csv), class: 'button small secondary'
+      h4
+        strong= "#{@projects.count} "
+        = t('projects.admin.total_projects')
+
+      /.filters
+        = form_tag projects_path, method: :get, class: 'form-horizontal' do |f|
+          = hidden_field_tag :order_by, params[:order_by]
+          .row
+            .large-3.columns
+              = label_tag :by_id, t('.id')
+              = text_field_tag :by_id, params[:by_id], class: 'input-small'
+
+            - [:between_created_at, :between_expires_at, :between_online_date].each do |between_field|
+              .large-3.columns
+                = label_tag "#{between_field}_start_at".to_sym, t(".#{between_field}")
+                = text_field_tag "#{between_field}[start_at]", (params[between_field][:start_at] if params[between_field].present?)
+                | &nbsp;
+                | &nbsp;
+                = text_field_tag "#{between_field}[ends_at]", (params[between_field][:ends_at] if params[between_field].present?)
+
+          .row
+            .large-4.columns
+              = label_tag :pg_search, t('.project')
+              = text_field_tag :pg_search, params[:pg_search]
+            .large-4.columns
+              = label_tag :with_state, t('.with_state')
+              = select_tag :with_state, options_for_select(Project.state_names, params[:with_state]), include_blank: true
+            .large-4.columns
+              = label_tag :by_category_id, t('.by_category')
+              = select_tag :by_category_id, options_from_collection_for_select(Category.all, :id, :name_pt,params[:by_category_id]), include_blank: true
+          .row
+            .large-6.columns
+              = label_tag :user_name_contains, t('.user')
+              = text_field_tag :user_name_contains, params[:user_name_contains]
+            .large-6.columns
+              = label_tag :by_user_email, t('.by_user_email')
+              = text_field_tag :by_user_email, params[:by_user_email]
+
+          .row
+            .large-12.columns.text-right
+              = submit_tag t('.submit'), class: 'button'
+        /.row
+          .large-6.columns.text-left
+              = paginate @projects
+          .large-6.columns.text-right
+            = pluralize_without_number @projects.to_a.size, t('words.found_singular'), t('words.found_plural')
+            | &nbsp;
+            strong = @projects.to_a.size
+            | &nbsp;
+            = pluralize_without_number(@projects.to_a.size, t('words.project_singular'), t('words.project_plural')).downcase
+      .data-table
+        - if @projects.empty?
+          = t('projects.admin.no_projects')
+        - else
+          table.small
+            thead
+              tr
+                th style="width: 150px;"
+                  = t('projects.admin.name', default: 'Nom')
+                th= t('projects.admin.user_email', default: 'Email')
+                th= t('projects.admin.category', default: 'Catégorie')
+                th= t('projects.admin.goal', default: 'Objectif')
+                th= t('projects.admin.pledged', default: 'Engagement')
+                th= t('projects.admin.total_contributions', default: 'Contributions total')
+                /th= t('projects.admin.recommended')
+                th= t('projects.admin.online_date', default: 'Mise en ligne le')
+                /th
+                  a data-sort="projects.expires_at" href='#'= t('.expires_at')
+                  span.sort-order
+                th= t('.expires_at', default: 'Expire le')
+                th= t('projects.admin.featured', default: 'Populaire')
+                th= t('projects.admin.state', default: 'Status')
+                th="Actions"
+            tbody
+              - @projects.each do |project|
+                - project.featured = false if project.featured.nil?
+                tr id=project.id
+                  td
+                    = link_to project.name, main_app.partner_project_path(partner_id: @partner.permalink, id: project.permalink)
+                    - if project.channels.present?
+                      | &nbsp;
+                      - project.channels.each do |channel|
+                        span.label.label-inverse= channel.name
+                        | &nbsp;
+                  /td= User.find(project.user_id).email
+                  td= project.user.email
+                  td= project.category
+                  td= best_in_place project, :goal, type: :input, display_as: :display_goal
+                  td= "#{project.display_pledged} (#{project.progress}%)"
+                  td= project.total_contributions
+                  /td.checkbox= best_in_place project, :recommended, type: :checkbox, collection: [t('words._no'), t('words._yes')]
+                  /td= project.online_date
+                  td= project.display_online_date
+                  td= project.display_expires_at
+                  td
+                    = best_in_place project, :featured, as: :checkbox, collection: {false: t('words._no', default: 'Non'), true: t('words._yes', default: 'Oui')}
+                    br
+                    /= link_to 'Change', main_app.change_featured_project_path(id: project.permalink), method: :post,  title: 'Change featured'
+                  td
+                    - if project.online?
+                      span.label.label-online= project.state
+                    - elsif project.successful?
+                      span.label.label-success= project.state
+                    - elsif project.failed? or project.rejected?
+                      span.label.label-important= project.state
+                    - elsif project.waiting_funds?
+                      span.label.label-warning= project.state
+                    - else
+                      span.label= project.state
+                  td
+                    .dropdown
+                      = link_to 'javascript:void(0);', class: 'button tiny secondary dropdown-toggle', data: {dropdown: "dropdown-#{project.id}", toggle: "dropdown"} do
+                        i.icon-et-down-dir
+                      ul[id="dropdown-#{project.id}" data-dropdown-content class="dropdown-menu"]
+                        - if project.can_approve?
+                          li
+                            = link_to approve_partner_project_path(partner_id: @partner.permalink, id: project.permalink), method: :put  do
+                              = t('.approve')
+
+                        - if project.can_launch?
+                          li
+                            = link_to launch_partner_project_path(partner_id: @partner.permalink, id: project.permalink), method: :put do
+                              = t('.launch')
+
+                        - if project.can_reject?
+                          li
+                            = link_to reject_partner_project_path(partner_id: @partner.permalink, id: project.permalink), method: :put  do
+                              = t('.reject')
+
+                        - if project.can_push_to_draft?
+                          li
+                            = link_to push_to_draft_partner_project_path(partner_id: @partner.permalink, id: project.permalink), method: :put  do
+                              = t('.send_to_draft')
+
+                        /- if project.can_push_to_trash?
+                        /  li
+                        /    = link_to push_to_trash_partner_project_path(partner_id: @partner.permalink, id: project.permalink), method: :delete, data: {confirm: t('neighborly.admin.confirm_dialog')} do
+                        /      = t('.send_to_trash')

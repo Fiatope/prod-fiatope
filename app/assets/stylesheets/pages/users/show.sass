@@ -1,0 +1,61 @@
+.user-profile-page
+  header.map
+    min-height: +emCalc(330px)
+    .map-canvas
+      width: 100%
+      height: +emCalc(330px)
+
+  header.hero, header.map
+    position: relative
+
+  .profile-image
+    position: absolute
+    bottom: 0
+    left: 50%
+    border: 6px solid white
+    margin-bottom: -75px
+    margin-left: -75px
+    background: white
+    &.organization, &.channel
+      width: 312px
+      height: 162px
+      margin-left: -150px
+
+  section.content
+    padding: 1.5em 0
+
+  .hero-bio
+    padding: 5em 0 2em
+    text-align: center
+    background: white
+    h2
+      text-transform: uppercase
+      margin-bottom: 0
+    .bio
+      margin: 1em auto
+      color: $secondary-font-color
+      font:
+        size: 1.05em
+        weight: 300
+
+  .user-social
+    li
+      display: inline-block
+    .social-link
+      display: block
+      width: 30px
+      height: 30px
+      padding: 5px
+      background: $primary-color
+      color: white
+      text-align: center
+      line-height: 1.3em
+      border-radius: 50%
+      margin: 0 .3em
+      +single-transition(.3s)
+      &:hover
+        background: darken($primary-color, 15%)
+
+  .projects
+    [class*="column"]:last-child
+      float: left

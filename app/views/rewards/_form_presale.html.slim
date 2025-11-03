@@ -1,0 +1,46 @@
+= simple_form_for [parent, @reward], html: { class: 'remote-form' } do |f|
+  .pull-right
+    a.cancel.button.secondary href="#" = t('words.cancel')
+  .clearfix
+
+  - if policy(@reward).permitted_for?(:title, :update)
+    = f.input :title, label: t("Nom de l'article")
+
+  - if policy(@reward).permitted_for?(:minimum_value, :update)
+    = f.input :minimum_value, label: t("Montant de l'article"), as: :integer, input_html: {pattern: "^[\\d+.]+"}
+
+  - if policy(@reward).permitted_for?(:days_to_delivery, :update)
+    = f.input :days_to_delivery, label: t("Nombre de jours nécessaires pour la livraison")
+
+  - if policy(@reward).permitted_for?(:description, :update)
+    = f.input :description, label: t("Description de l'article")
+
+  - if policy(@reward).permitted_for?(:maximum_contributions, :update)
+    = f.input :maximum_contributions, label: t("Stock maximal")
+
+  - if policy(@reward).permitted_for?(:uploaded_image, :update)
+    = f.input_field :uploaded_image
+
+  = f.input :soon, as: :boolean, inline_label: t('.soon_presale')
+
+  - if policy(@reward).permitted_for?(:maximum_articles, :update)
+    = f.input :maximum_articles
+
+  br
+  h4 = t('rewards.new.articles_available')
+  = f.simple_fields_for :articles do |ff|
+    = render 'article_fields', f: ff
+
+  div
+    = link_to_add_association t('rewards.new.add_an_article'), f, :articles, style: "display:block;padding:1rem;text-align:center;border:1px solid silver;width:100%;margin:1rem 0;border-radius:3px;"
+
+  - if @reward.new_record?
+    = f.button :submit, data: { disable_with: t('words.sending') }, value: t('.new_presale')
+  - else
+    = f.button :submit, data: { disable_with: t('words.sending') }, value: t('.edit_presale')
+
+  - if @reward.persisted? && policy(@reward).destroy?
+    span.or = t('words.or')
+    = link_to [parent, @reward], class: 'button alert', method: :delete, confirm: t('words.confirm') do
+      i.icon-et-trash.icon-white
+      = t('words.delete')

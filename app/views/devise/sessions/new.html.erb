@@ -1,0 +1,41 @@
+<%= content_for :title, t('.titles.site') %>
+
+<%= flash_messages if flash.notice.present? %>
+
+<%= render 'layouts/header' %>
+
+<div class="background-img">
+	<div class="filter-hard-black flex-container">
+			<div class="bg-white">
+					<h2><%= t('.titles.header')%></h2>
+
+					<%= render 'devise/shared/omniauth' %>
+					<hr>
+
+					<%= render 'devise/shared/alert' %>
+					<%= simple_form_for(resource, as: resource_name, url: session_path(resource_name)) do |f| %>
+					<div class="form-inputs">
+						<%= f.input :email, as: :email, required: true, autofocus: true, label: false, placeholder: 'Email' %>
+						<%= f.input :password, required: true, label: false, placeholder: 'Mot de passe' %>
+						<%= f.input :remember_me, label: t('.form.labels.remember_me'), as: :boolean if devise_mapping.rememberable?%>
+					</div>
+
+					<div class="form-actions">
+						<%= f.submit t('.form.inputs.submit'), class: 'btn btn-block btn-red' %>
+					</div>
+					<% end %>
+					<div class="label-center">
+						<%= link_to t('.links.forgot_password'), new_password_path(resource_name)%>
+					</div>
+					<div class="label-center">
+           	<%= link_to t('.links.new_user_confirmation'), new_user_confirmation_path if devise_mapping.confirmable? %>
+					</div>
+					<div class="sign-up">
+					<%= link_to t('.no_account_html'), new_user_registration_path %>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+

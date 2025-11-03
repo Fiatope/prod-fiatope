@@ -1,0 +1,27 @@
+<%= content_for :title, t('.titles.site') %>
+
+<%= flash_messages %>
+<%= render 'layouts/header' %>
+
+<div class="background-img">
+	<div class="filter-hard-black flex-container">
+		<div class="flex-item">
+			<div class="background-white flex-container">
+				<div class="flex-item">
+					<h2><%= t('.titles.header')%></h2>
+					
+					<%= simple_form_for(resource, as: resource_name, url: password_path(resource_name)) do |f| %>
+					<%= f.label t('.no_account_html'), class: 'label-title'%>
+					<div class="form-inputs">
+					<%= f.input :email, as: :email, placeholder: t('.form.labels.email'), required: true, label: false %>
+					</div>
+
+					<div class="form-actions">
+						<%= f.submit t('.form.inputs.submit'), class: 'btn btn-block btn-red' %>
+					</div>
+					<% end %>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

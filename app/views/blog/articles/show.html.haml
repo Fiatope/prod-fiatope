@@ -1,0 +1,6 @@
+%article
+  %h1= @article.title
+  = render partial: "meta", locals: { article: @article }
+  = preserve_markdown @article.content
+  %hr
+  %p.action= link_to "← Back to Overview", blog_articles_path

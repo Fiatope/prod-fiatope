@@ -1,0 +1,31 @@
+<section class="bg-light page-section" id="portfolio">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-12 text-center">
+            <h2 class="section-heading ">Pays d'Afrique Francophone</h2>
+            <h3 class="section-subheading text-muted">Découvrez les startups par pays</h3>
+          </div>
+        </div>
+        <div class="row">
+    <% @categories.each do |category| %>
+ 
+        
+          <div class="col-md-4 col-sm-6 portfolio-item">
+            <a class="portfolio-link" data-toggle="modal" href="#portfolioModal1">
+              <div class="portfolio-hover">
+                <div class="portfolio-hover-content">
+                </div>
+              </div>
+              <%= link_to image_tag("startups/#{category[:img]}"), startups_path(category: category[:name]) %>
+              
+            </a>
+            <div class="portfolio-caption">
+              <h4><%= link_to category[:name], startups_path(category: category[:name]) %></h4>
+            </div>
+          </div>
+        
+ 
+<% end %>
+
+</div>
+ </section>

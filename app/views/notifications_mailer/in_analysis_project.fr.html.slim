@@ -1,0 +1,33 @@
+= content_for :title, t('.titre')
+- project = @notification.project
+br
+| Un nouveau projet a été créé sur #{Configuration[:company_name]}
+|  par #{link_to project.user.name, user_url(project.user)}.
+br
+| Email du porteur de projet: #{mail_to project.user.email}
+br
+br
+| Détails du Projet:
+
+br
+b Titre:
+= " #{project.name}"
+br
+b Objectif :
+= " #{project.display_goal}"
+br
+br
+b Contributions déjà faites:
+br
+= simple_format(project.first_contributions)
+br
+b Comment avez-vous entendu parler de #{Configuration[:company_name]}?
+br
+= simple_format(project.how_know)
+br
+br
+= link_to "View Project on #{Configuration[:company_name]}", project_url(project)
+
+br
+br
+|L'équipe #{Configuration[:company_name]}

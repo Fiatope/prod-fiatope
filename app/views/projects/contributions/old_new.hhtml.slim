@@ -1,0 +1,103 @@
+- content_for :title, t('projects.contributions.new.title', name: @project.name)
+.new-contribution-page
+  = simple_form_for @contribution, url: project_contributions_path(@project), html: { id: 'form-contribution' } do |form|
+    = hero_header_tag @project do
+      .row
+        .large-10.columns.large-centered
+          .name
+            - if @project.matches.active.any?
+              - matchers = @project.matches.active.map { |m| m.user.display_name }.uniq.to_sentence
+              h3 = t('.contribution_with_matches', project_name: @project.name, matchers: matchers).html_safe
+            - else
+              - if @project.presale?
+                / h3 = t('.precommander', project_name: @project.name).html_safe
+              - else
+                h3 = t('.contribute', project_name: @project.name).html_safe
+      .row.value-wrapper
+        .large-8.columns.large-centered
+          .row
+            .large-2.small-2.columns
+              span.prefix
+                = @project.currency_sym
+            .large-8.small-8.columns.text-center
+              - if @project.presale?
+                = form.number_field :value, readonly: false, required: true, label: false, autocomplete: 'off', min: 1, max: 2000, data: { rewards: @rewards.map{|r| {id: r.id, minimum_value: r.minimum_value.to_i} }.to_json }, class: 'with-prefix with-postfix'
+              - else
+                = form.number_field :value, required: true, label: false, autocomplete: 'off', min: 1, max: 2000, data: { rewards: @rewards.map{|r| {id: r.id, minimum_value: r.minimum_value.to_i} }.to_json }, class: 'with-prefix with-postfix'
+              = "   "
+            .large-2.small-2.columns
+              span.postfix .00
+          .row
+            .large-12.columns.text-center
+                .minimum-value
+                  i = t('.minimum_value', currency: @project.currency_sym)
+
+    .row[style="margin-top:-50px;"]
+      .large-12.columns.text-center
+        .cfa-equivalent[data-conversion-rate=(ENV['CFA_CONVERSION_RATE'] || 656)]
+          = t('.cfa_equivalent_html')
+
+    .row
+      .large-8.columns.large-centered
+        - if @project.rewards.present?
+          .subtitle
+            - if @project.presale?
+              h4 = t('.subtitle_presale')
+            - else
+              h4 = t('.subtitle')
+          .row
+            = form.association :reward_id, as: :radio_buttons, label: false, collection: @rewards do |builder|
+              - if builder.object.any?
+                - i=0
+                - for reward in builder.object
+                  .large-12.columns
+                    .reward-option.row[class="#{'selected' if form.object.reward_id == reward.id }"]
+                      .large-2.small-2.columns.radio
+                      - if @project.presale?
+                        = hidden_field_tag "user_articles[#{i}][maximum_articles]", reward.maximum_articles, disabled: true
+                        - if reward.id.present?
+                          = form.simple_fields_for :reward do |reward_form|
+                            = reward_form.radio_button "minimum_value_#{reward.id}".to_sym, reward.minimum_value.to_s.to_f, class: "reward hide"
+                        = form.radio_button :reward_id, reward.id
+                      - else
+                        = form.radio_button :reward_id, reward.id
+                      .large-10.small-10.columns
+                        .row.reward-image
+                          - if @project.presale?
+                            - if reward.uploaded_image.url.present?
+                              = image_tag reward.uploaded_image.url
+                        = form.label "reward_id#{'_' if reward.id.present?}#{reward.id}" do
+                          .title = reward.title
+                          p.description
+                            = h reward.description
+                          - if reward.sold_out?
+                            .sold-out
+                              = I18n.t('reward.sold_out')
+                          .minimum-value
+                            - if @project.presale?
+                              = reward.display_minimum
+                            - else
+                              = reward.minimum_value > 0 ? reward.display_minimum + ' et plus' : I18n.t('reward.dont_want')
+                            .minimum-value
+                              = "Nombre d'articles à sélectionner : #{reward.maximum_articles}"
+                        .large-12.columns
+                          .row
+                            - for article in reward.articles
+                              .large-12.small-12.columns
+                                .row.reward-image
+                                  - if article.uploaded_image.url.present?
+                                    = image_tag article.uploaded_image.url
+                                  .title = article.title
+                                  p.description
+                                    = h article.description
+                                  .form-group
+                                    = check_box_tag "user_articles[#{i}][id][]", article.id, false, disabled: true
+                              - i=i+1
+
+        = form.input :anonymous, as: :boolean, label: t('simple_form.labels.contribution.new.anonymous')
+        .anonymous-warning.hide
+          .alert-box
+            = render 'anonymous_warning'
+        = form.input :short_note, label: t('simple_form.labels.contribution.new.short_note')
+        .text-center
+          = form.button :submit, t('.submit'), class: 'btn btn-medium-red-w-m btn-block'

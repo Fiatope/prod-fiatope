@@ -1,0 +1,31 @@
+= f.input :presale, as: :boolean, label: t('crowdfunding.presale')
+
+= f.input :name, as: :string, maxlength: 100, label: t('crowdfunding.title')
+
+= f.input :about, input_html: { id: 'project_about' }, label: t('crowdfunding.about')
+
+- if @partner && @partner.permalink == "digitfin"
+  = f.input :category_id, collection: Category.array, selected: 1, required: true
+- else
+  = f.input :category_id, collection: Category.array, selected: @project.category_id, required: true
+
+- if !@partner
+  = f.input :currency, collection: available_currencies
+- else
+  = f.input :currency, collection: [ "EUR"]
+
+= f.input :goal, as: :integer, input_html: { step: 50, class: 'with-prefix with-postfix', min: 0 }, label: t('crowdfunding.goal')
+
+= f.input :presale_goal, as: :integer, input_html: { min: 0}, label: t('crowdfunding.presale_goal')
+
+= f.input :online_days, as: :integer, input_html: { min: 0}, label: 'Durée de la collecte (nombres de jours)', required: true
+
+.location.location-coordinates.pin-img[data-longitude=@project.longitude data-latitude=@project.latitude data-image-url=image_url('pin.png')]
+  = f.input :location, input_html: { class: 'search-cities-with-google', autocomplete: :off }, label: t('crowdfunding.location')
+  .map-canvas
+
+- if !@partner
+  = f.input :donation_can_issue_tax_receipt
+
+- if @partner
+  = f.input :partner_id, :as => :hidden, :input_html => { :value => @partner.id }

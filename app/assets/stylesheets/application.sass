@@ -1,0 +1,123 @@
+@import core/_settings
+@import core/_foundation
+@import font-icons-entypo-remapped
+@import font-icons-awesome
+
+@import core/_columnfix
+
+@import bootstrap-sprockets
+@import bootstrap
+@import font-awesome-sprockets
+@import font-awesome
+
+$nprogress-color: $primary-color
+@import nprogress
+@import nprogress-bootstrap
+
+.lt-ie9
+  @include columnFix
+
+@import core/**/*
+@import modules/**/*
+@import pages/**/*
+@import neighborly-admin
+
+@import jquery.ui.datepicker
+
+@import ./custom.css
+
+
+body, html
+  height: 100%
+  margin: 0
+
+  #homeCarousel
+    .carousel-inner
+      width: 100% 
+
+      & > .item
+        width: 100% 
+
+        .carousel-item
+          width: 100% 
+          background-size: cover !important
+          background-position: center 0 !important
+          background-repeat: no-repeat !important
+
+        .carousel-caption
+          width: 60% 
+          margin-bottom: 50px
+
+#new_project
+  .button
+    border: none !important
+    background-color: #A3320C
+    padding-right: 1.275em !important
+    padding-left: 1.275em !important
+
+  .markdown .markItUpButton
+    &:before
+      border: none !important
+      right: 1.9em !important
+      top: 0.9em !important
+
+  .markdown .markItUpButton1
+    &:before
+      content: 'H1' !important
+
+  .markdown .markItUpButton2
+    &:before
+      content: 'H2' !important
+
+  .markdown .markItUpButton3
+    &:before
+      content: 'H3' !important
+
+  .markdown .markItUpButton4
+    &:before
+      content: 'H4' !important
+
+  .markdown .markItUpButton5
+    &:before
+      content: '\f032' !important
+
+  .markdown .markItUpButton6
+    &:before
+      content: '\f033' !important
+
+  .markdown .markItUpButton7
+    &:before
+      content: '\f0ca' !important
+
+  .markdown .markItUpButton8
+    &:before
+      content: '\f0cb' !important
+
+  .markdown .markItUpButton9
+    &:before
+      content: '\f03e' !important
+
+  .markdown .markItUpButton10
+    &:before
+      content: '\f0c1' !important
+
+  .markdown .markItUpButton11
+    &:before
+      content: '\f10d' !important
+
+  .markdown .markItUpButton10
+    &:before
+      content: '\f0c1' !important
+
+  .markItUpHeader
+    ul
+      .markItUpSeparator
+        display: none !important
+
+
+.background-full-color
+    background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(0, 0, 0, 0.6)), image-url('banner_projects_index_page/group-afro-americans-working-together.jpg');
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: cover;
+    min-height: 60dvh;

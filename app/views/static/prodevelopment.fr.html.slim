@@ -1,0 +1,11 @@
+= content_for :title, t('.titre')
+.idee-page.static-page
+  .row
+    .title
+       h2 Développement Professionnel
+       = image_tag("panorama_fiatope_eleven.jpg", :align=> "center")
+    .text
+     h5 A venir 
+     br   
+     = link_to t('.Nous contacter'), new_message_path, class: 'button large-4 medium-4 columns large-centered'
+

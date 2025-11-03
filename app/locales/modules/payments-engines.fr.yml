@@ -1,0 +1,10 @@
+fr:
+  payments:
+    common:
+      terms: "En contribuant à ce projet, j'accepte les %{link}."
+      terms-link: "Condiitons d'Utilisaiton"
+      confirm: 'Confirmer le paiement'
+      proccessing: 'En Cours de traitement...'
+      error:
+        title: "Un problème est survenu."
+        name: 'Recharger la page et Ré-essayer.'

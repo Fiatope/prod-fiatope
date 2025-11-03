@@ -1,0 +1,44 @@
+= content_for :title, t('.titre')
+- project = @notification.project
+- confirmed_contributions_today = project.contributions.confirmed_today
+
+|Bonne nouvelle #{project.user.display_name}, #{confirmed_contributions_today.size} contributeur(s) a(ont) financé votre campagne aujourd'hui pour un total de: #{number_to_currency(confirmed_contributions_today.map(&:value).sum, precision: 0)}
+br
+br
+table width="500" border="1" cellpadding="10" cellspacing="0" style='font-size: 13px;'
+  thead
+    tr
+      th width="100" Contributeur
+      th width="100" Email
+      th width="100" Montant
+      th width="200" Reward sélectionné
+  tbody
+    - confirmed_contributions_today.each do |contribution|
+      tr
+        td= contribution.user.display_name
+        td= contribution.user.email
+        td= contribution.display_value
+        td
+          - if contribution.rewards 
+            - for reward in contribution.rewards
+              strong Prix #{number_to_currency reward.minimum_value, precision: 0}
+              |Quantité
+              - contribution.contribution_rewards.each do |rc| 
+                = " #{rc.reward_id == reward.id && rc.quantity ? rc.quantity.to_i : '' }"
+                br
+              /|  &mdash; #{contribution.reward.display_description}
+          - else
+            |  Pas de reward sélectionné. Si ceci était une erreur, envoyez un email à #{mail_to Configuration[:email_contact]}
+          br
+          - if project.presale?
+              .user-reward = "Articles :"
+              - for article in contribution.articles
+                .user-reward = "- #{article.title}"
+
+br
+|Vous pouvez découvrir l'ensemble de vos contributeurs ici: #{link_to(project.name, project_url(project))} dans l'onglet "contributions".
+br
+br
+|Continuez votre engagement pour le développement,
+br
+|L'équipe #{Configuration[:company_name]}

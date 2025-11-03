@@ -1,0 +1,32 @@
+= content_for :title, t('.title')
+
+- if request.xhr?
+  a.close-reveal-modal ×
+
+
+.privacy-page.static-page
+  .row
+       = image_tag("panorama_fiatope_twelve.jpg", :align=> "center")
+       hr
+       h3.text-center
+         = t('.Avec Fiatope créez votre propre site de financement participatif')
+       h5.text
+         |
+         |Fiatope permet à une organisation de créer son propre site de crowdfunding en utilisant notre infrastructure logicielle, nos agréments auprès des intermédiaires de paiement et de l'ACPR et en bénéficiant de la sécurisation de notre système par nos partenaires.
+       br
+       h5.text-center
+        = link_to t('.Comment ça marche'), how_it_works_whitelabel_path, class: 'button large-4 columns centered'
+  
+
+.contact-page.static-page
+  .row
+    /.large-10.small-11.columns.centered
+    h4.text-center
+      |Démarrez
+
+  .row
+          = render 'form', :whitelabel => @whitelabel
+
+
+
+      

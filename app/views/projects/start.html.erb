@@ -1,0 +1,160 @@
+<%= content_for :title, t('.title') %>
+<%= content_for :meta_tags do %>
+  <meta name="description" content="<%= t(".meta_description") %>" />
+<% end %>
+
+<%# background-full  %>
+<div class="background-full-color flex-container text-center">
+	<div class="background-title flex-item">
+		<h2><%= t('.campaign') %></br><%= t('.campaigne') %></h2>
+	</div>
+</div>
+
+
+<div class="row">
+	<div class="large-10 columns large-centered">
+		<hr>
+	</div>
+</div>
+
+
+
+<section class="container work text-center">
+	<div class="row">
+		<div class="col-xs-12 who-intro">
+			<h2><%= t('.work.title') %></h2>
+		</div>
+	</div>
+
+
+	<div class="row">
+		<div class="col-md-4 col-sm-6 col-xs-12">
+			<div class="work-icon">
+				<i class="icon-fa-group"></i>
+			</div>
+			<div class="work-title"><%= t('.work.team.title') %></div>
+			<p><%= t('.work.team.description') %></p>
+		</div>
+
+		<div class="col-md-4 col-sm-6 col-xs-12">
+				<div class="work-icon">
+						<i class="icon-et-book-open"></i>
+				</div>
+				<div class="work-title"><%= t('.work.detailed.title') %></div>
+				<p><%= t('.work.detailed.description') %></p>
+		</div>
+
+		<div class="col-md-4 col-sm-6 col-xs-12">
+			<div class="work-icon">
+				<i class="icon-et-picture"></i>
+			</div>
+			<div class="work-title"><%= t('.work.imagery.title') %></div>
+			<p><%= t('.work.imagery.description') %></p>
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="col-md-4 col-sm-6 col-xs-12">
+			<div class="work-icon">
+				<i class="icon-et-video"></i>
+			</div>
+			<div class="work-title"><%= t('.work.video.title') %></div>
+			<p><%= t('.work.video.description') %></p>
+		</div>
+
+		<div class="col-md-4 col-sm-6 col-xs-12">
+			<div class="work-icon">
+				<i class="icon-fa-gift"></i>
+			</div>
+			<div class="work-title"><%= t('.work.rewards.title') %></div>
+			<p><%= t('.work.rewards.description') %></p>
+		</div>
+
+		<div class="col-md-4 col-sm-6 col-xs-12">
+			<div class="work-icon">
+				<i class="icon-et-link"></i>
+			</div>
+			<div class="work-title"><%= t('.work.engagement.title') %></div>
+			<p><%= t('.work.engagement.description') %></p>
+		</div>
+	</div>
+
+	<div class="row">
+		<%= link_to t('.guide_access'), successful_path, class: 'btn btn-medium-red' %>
+	</div>
+</section>
+
+
+<div class="row">
+	<div class="large-10 columns large-centered">
+		<hr>
+	</div>
+</div>
+
+
+<section class="container inspiration text-center">
+	<div class="row">
+		<div class="large-12 columns">
+			<h2><%= t('.inspiration.title') %></h2>
+			<h3><%= t('.inspiration.subtitle') %></h3></div>
+	</div>
+	<div class="row">
+		<%= link_to t('.work.look'), discover_path, class: 'btn btn-medium-red' %>
+
+		</div>
+	</div>
+</section>
+
+<div class="row">
+	<div class="large-10 columns large-centered">
+		<hr>
+	</div>
+</div>
+
+<section class="container start text-center">
+<div class="container step text-center">
+	<div class="row">
+                <div class="col-xs-12 who-intro">
+			<h2><%= t('.start.title') %></h2>
+		</div>
+
+		<div class="col-md-4">
+			<div class="step-icon step-one">
+				<i class="icon-et-paper-plane"></i>
+			</div>
+			<div class="step-title step-one">
+                               <%= t('.steps.first.title') %>
+			
+			</div>
+			<div class="step-content">
+				<p>    <%= t('.steps.first.description') %></p>
+			</div>
+		</div>
+		<div class="col-md-4">
+			<div class="step-icon step-two">
+				<i class="icon-et-clock"></i>
+			</div>
+			<div class="step-title step-two">
+				 <%= t('.steps.second.title') %>
+			</div>
+			<div class="step-content">
+				<p><%= t('.steps.second.description') %></p>
+			</div>
+		</div>
+		<div class="col-md-4">
+			<div class="step-icon step-three">
+				<i class="icon-et-rocket"></i>
+			</div>
+			<div class="step-title step-three">
+				 <%= t('.steps.third.title') %>
+			</div>
+			<div class="step-content">
+				<p><%= t('.steps.third.description') %></p>
+			</div>
+		</div>
+	</div>
+			<%= link_to t('.get-started'), project_build_index_path, class: 'btn btn-medium-red' %>
+
+</div>
+</div>
+</section>

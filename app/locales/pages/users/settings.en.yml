@@ -1,0 +1,48 @@
+en:
+  users:
+    settings:
+      change_password: "Change Password"
+      current_password: "Current Password"
+      password_info: "We need your current password to confirm your changes."
+      save_password: 'Save my new password'
+      communication_preferences: 'Communication Preferences'
+      update_communication_preferences: 'Update Communication Preferences'
+      unsubscribes:
+        title: 'Notifications from Projects Updates'
+        updates: 'I want to receive project updates'
+        submit: 'Save my Notifications Preferences'
+      add_document: "Download the piece"
+      uploaded_image: "Image downloaded"
+      kyc:
+        intro_text: "To ensure the security of the withdrawal process, you will need to download a copy of your ID. You may also be asked for proof of address"
+        uploaded_image: "vignette"
+      add_document: "New evidence"
+      kyc:
+        intro_text: "To ensure the security of the withdrawal process, you will need to download a copy of your ID. In case you wish to change a document already sent, you must send this proof again. The new one will replace the old one."
+        proof_type: 'Document type'
+        uploaded_image: 'Click below'
+        type:
+          identity_proof: "Identity proof"
+          address_proof: "Address proof"
+          status_proof: "Status proof"
+          register_proof: "Register proof"
+      payments:
+        intro_text: "This form is only to be completed at the time of collection. Enter here the IBAN and SWIFT codes on your RIB (Bank Identity Statement). They will be used to pay you the amount collected. Ask your bank for this information if necessary."
+        owner_address: "Your Adress as known by your Bank"      
+        owner_city: "City"
+        owner_region: "Region"
+        owner_postal_code: "Postal Code"
+        fr_header: "Bank information (French account)"
+        us_header: "Bank information (American account)"
+        ca_header: "Bank information (Canadian account)"
+        us_account_number_label: "Account Number"
+        ca_account_number_label: "Account Number"
+        us_account_aba_label: "Account ABA"
+        ca_institution_number_label: "Institution Number"
+        ca_branch_code_label: "Branch Code"
+        ca_bank_name_label: "Bank Name"
+        other_header: "Bank Information (Other Countries)"
+        other_country_label: "Country"
+        other_account_number_label: "Account Number"
+        other_bic_label: "BIC Number"
+      remove_document: 'Cancel'

@@ -1,0 +1,28 @@
+= content_for :title, t('.titre')
+- project = @notification.project
+- canceled_contributions_today = project.contributions.canceled_today
+
+| #{project.user.display_name}, les contributions suivantes n'ont pas pu aboutir. Nous en avons informé les personnes et leur avons indiqué la raison de l'échec. Invitez les à ré-essayer pour celles qui ne l'ont pas fait.
+br
+br
+table width="500" border="1" cellpadding="10" cellspacing="0" style='font-size: 13px;'
+  thead
+    tr
+      th width="100" Contributeur
+      th width="100" Email
+      th width="100" Montant
+  tbody
+    - canceled_contributions_today.each do |contribution|
+      tr
+        td= contribution.user.display_name
+        td= contribution.user.email
+        td= contribution.display_value
+br
+br
+| Les principales raisons qui font échouer le paiement: "carte bleue invalide", "refus d'autorisation de la banque", "numéro de carte incorrect", "33DSecure non actif" 
+br
+br
+| Bien à vous
+br
+br
+|L'équipe #{Configuration[:company_name]}

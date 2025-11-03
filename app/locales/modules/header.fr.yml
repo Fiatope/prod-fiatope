@@ -1,0 +1,19 @@
+fr:
+  layouts:
+    header:
+      start_campaign: 'Démarrer une campagne'
+      start_project: 'créer un projet'
+      start_cagnotte: 'créer une cagnotte'
+      discover: 'Découvrir'
+      tofollow: 'Suivre'
+      how_it_work: 'how to'
+      about: 'Apprendre'
+      blog: 'Blog'
+      sign-out: 'Sortir'
+      sign-up: "S'inscrire"
+      sign-in: 'Se Connecter'
+      my_projects: 'Mes projets'
+      my_partner_page: 'Les projets %{partner}'
+      my_contributions: 'Mes contributions'
+      my_profile: 'Mon profil' 
+      settings: 'Mes préférences'

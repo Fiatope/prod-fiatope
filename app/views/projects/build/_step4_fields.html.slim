@@ -1,0 +1,23 @@
+/= f.input :need_support, as: :radio_buttons, label: t('crowdfunding.need_support')
+
+/= f.input :join_follow_program, as: :radio_buttons, label: t('crowdfunding.need_support')
+
+= f.input :headline, as: :string, label: t('crowdfunding.headline')
+
+- if @partner
+  = f.input :numero_ifu, label: "Numéro IFU", required: true
+
+  = f.input :numero_rccm, label: "Numéro RCCM", required: true
+
+= f.input :organization_type, as: :string, label: t('crowdfunding.organization_type')
+
+= f.input :organization_description, as: :string, label: t('crowdfunding.organization_description')
+
+= f.input :organization_created_at, as: :string, label: t('crowdfunding.organization_created_at')
+
+= f.input :organization_in_incubateur, as: :string, label: t('crowdfunding.organization_in_incubateur')
+
+= f.input :organization_funding, as: :text, label: t('crowdfunding.organization_funding')
+
+- if @partner
+  = f.input :partner_id, :as => :hidden, :input_html => { :value => @partner.id }

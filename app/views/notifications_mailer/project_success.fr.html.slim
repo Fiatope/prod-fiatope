@@ -1,0 +1,20 @@
+= content_for :title, t('.titre')
+- project = @notification.project
+|Chèr(e) #{project.user.name},
+br
+br
+|Toutes nos Félicitations pour la réussite de votre campagne de financement participatif. Vous le méritez
+br
+br
+|Aussitôt que vous le pourrez, il y a eux choses que vous devriez faire:
+br
+ol 
+  li Télécharger le rapport final des contributions (nom du contributeur, reward sélectionné...) à partir du lien #{link_to "reports tab", project_path(project, anchor: "project_reports")} également accessible e votre page projet (vous devrez être connecté à votre compte pour cela).
+  li COntacter vos contribueturs pour les remercier chaleureusement et prendre avec eux les dispositions pour leur faire parevenir leur rewards.
+br
+|Pour toute question, nous sommes à votre disposition: #{mail_to Configuration[:email_contact]}
+br
+br
+|Bien à vous,
+br
+|L'équipe #{Configuration[:company_name]} 

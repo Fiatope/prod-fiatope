@@ -1,0 +1,31 @@
+= content_for :title, t('.titre')
+- project = @notification.project
+- project_draft = Rails.cache.fetch("project_draft_#{project.user.id}")
+br
+| Un nouveau projet a été créé sur #{Configuration[:company_name]}
+|  by #{link_to project.user.name, user_url(project.user)}.
+br
+| Email du porteur de projet: #{mail_to project.user.email}
+br
+br
+| Détails du projet:
+
+- attrs = %w(description how_knows_fiatope how_knows_crowdfunding already_did_crowdfunding)
+- attrs << %w(how_many_contributors how_much_contribute contributors_from_where enrollment_strategy)
+- attrs << Project::CROWDFUNDING_SOCIAL_NETWORKS
+- Project::CROWDFUNDING_SOCIAL_NETWORKS.each do |network|
+    attrs << "#{network}_followers"
+- attrs << %w(need_support join_follow_program organization organization_type organization_description organization_created_at organization_in_incubateur organization_funding)
+
+- attrs.each do |attr|
+  br
+  b = attr
+  p = project_draft.send(attr)
+
+br
+br
+= link_to "Visiter la page Projet ici #{Configuration[:company_name]}", project_url(project)
+
+br
+br
+| Equipe #{Configuration[:company_name]} 

@@ -1,0 +1,31 @@
+- project = @notification.project
+- if @notification.contribution.present?
+  - resource = @notification.contribution
+- else
+  - resource = @notification.match
+
+|Chèr(e) #{resource.user.display_name},
+br
+br
+|Vous avez souhaité faire une #{resource.class.model_name.human} à #{link_to(resource.project.name, project_url(resource.project))}. 
+br
+br
+|La transaction n'a pas pu se dérouler avec succès à cause de l'erreur suivante:
+br
+|<strong> Le numéro de carte rentré est incorrect. </strong> 
+br
+|Nous vous conseillons de rajouter une nouvelle carte sur la page de paiement 
+br
+br
+|Votre carte de paiement n'a pas été débitée. 
+br
+br
+|Nous sommes désolés de ce désagrément et espérons que vous allez pouvoir effectuer votre contribution à nouveau et dans les meilleurs délais.
+br
+br
+|Pour toute autre question, écrivez nous #{mail_to Configuration[:email_contact]} ou accédez à nos #{link_to('FAQ', "#{Configuration[:base_url]}/faq")}.
+br
+br
+|Bien à vous,
+br
+|L'équipe #{Configuration[:company_name]}

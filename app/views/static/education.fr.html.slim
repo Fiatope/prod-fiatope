@@ -1,0 +1,14 @@
+= content_for :title, t('.titre')
+.idee-page.static-page
+  .row
+    .title
+       h3 Education & Enseignement Supérieur
+       = image_tag("panorama_fiatope_eleven.jpg", :align=> "center")
+    .text
+     h5 Chez Fiatope, nous avons la conviction qu’une éducation de bon niveau et une formation de qualité sont le socle d’une économie et d’une société durable.
+     h5 L’éducation et l’enseignement supérieur doivent être pensés pour donner à l’étudiant les moyens de trouver des solutions et non pas pensés pour faire emmagasiner des connaissances qui deviennent pour beaucoup obsolètes avec l’évolution technologique du monde.
+     h5 Notre vision est qu’un jeune éduqué et formé n’attende pas que lui soit trouvé un emploi mais soit capable d’entreprendre, de proposer des solutions pour résoudre les problèmes qui se posent à sa localité.
+
+     = link_to t('.soumettre votre projet'), new_project_path, class: 'button large-4 medium-4 columns large-centered'
+
+

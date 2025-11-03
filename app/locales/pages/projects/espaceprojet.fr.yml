@@ -1,0 +1,46 @@
+fr:
+  projects:
+    espaceprojet:
+      title: 'Fiatope | Acting Together'
+      titlebis: "Devenir acteur de l'éclosion de projets locaux"
+      recommended: 'Recommendé'
+      discover: 'Voir tous les Projets'
+      near: 'Projets Near'
+      channels: 'Partenaires'
+      ending_soon: 'Sur la fin'
+      successful: 'Réussi'
+      coming_soon: 'Bientôt'
+      join:
+        join_the_neighborhood: 'Rejoindre Fiatope'
+        already_joined: 'Déjà Membre? %{link}.'
+        sign_in: 'Se connecter'
+      hero:
+        title: "Donner les moyens d'une action solidaire<strong></strong>"
+        subtitle: "Un monde d'opportunités s'ouvre avec fiatope. Rejoignez notre newsletter pour rester connectés\n"
+        email_placeholder: 'MON EMAIL'       
+        submit: 'Rejoindre la Newsletter'
+      how-it-works:
+        one:
+          headline:  'Cagnottes'
+          text: 'Je créée une cagnotte pour mes projets et évènements personnels ou pour soutenir mes proches. Je collecte les cotisations des membres de mon association. Je contribue à une cagnotte'
+          button: "J'accède à l'espace cagnotte"
+        two:
+          headline: 'Projets'
+          text: "Je suis porteur d'un projet original et ambitieux pour mon pays ou ma région. Je souhaite participer à l'émergence de tels projets. Je rêve d'avoir de l'impact pour les pays du Sud."
+          button: "J'accède à l'espace projet" 
+        three:
+          headline: 'Contributions'
+          text: 'Contribuez à vos projets coup de coeur. Participez à des cagnottes privées. Les cagnotte ne sont pas visibles sur le site.'
+          button: 'Je contribue à un projet'
+      start-one:
+        title: ' un projet à financer?'
+        button: 'Démarrer votre campagne'
+      discover:
+        title: 'Vous recherchez un coup de coeur?'
+        button: "Découvrez tous les projets"
+      filters:
+        selection: 'La sélection Fiatope'  
+        successful: 'Exemple de projet financé'
+        coming_soon: 'Bientôt sur Fiatope'
+      channels:
+        there: 'Nous y étions'

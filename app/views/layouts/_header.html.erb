@@ -1,0 +1,132 @@
+
+<div class="navbar-wagon">
+  <!-- Logo -->
+  <% if @partner && @partner.uploaded_image.present? %>
+    <%= link_to partner_path(id: @partner.permalink), class: "navbar-wagon-brand" do %>
+      <%= image_tag(@partner.uploaded_image.url, alt: "Logo #{@partner.name}", style: "display: inline-block;max-height: 54px;margin-top: -1px;") %>
+    <% end %>
+  <% else %>
+    <%= link_to root_path, class: "navbar-wagon-brand" do %>
+      <%= image_tag "logo_fiatope.png" %>
+    <% end %>
+  <% end %>
+
+  <!-- Right Navigation -->
+  <div class="navbar-wagon-right hidden-xs hidden-sm">
+
+<div id="b" style="font-size:13px; color:#da552f;">
+&nbsp;&nbsp;FR&nbsp;
+<%= link_to_unless_current image_tag("france.png", alt: "france", height: 30, width: 30), locale: "fr" %>&nbsp;&nbsp;&nbsp;&nbsp;EN&nbsp;<%= link_to_unless_current image_tag("uk.png", alt: "English", height: 30, width: 30), locale: "en" %>
+
+</div>
+   <% if !@partner %>
+      <%= link_to t(".top_call_to_action", default: "Projets à Financer"), main_app.discover_path, class: "navbar-wagon-item navbar-wagon-link" %>
+
+      <%= link_to t(".top_call_to_action", default: "Comment ça marche ?"), main_app.how_it_works_path, class: "navbar-wagon-item navbar-wagon-link" %>
+    <% end %>
+
+    <!-- Different navigation if login or not -->
+    <% if user_signed_in? %>
+      <!-- <%= link_to t(".top_call_to_action", default: "Projets à Suivre"), main_app.tofollow_path, class: "navbar-wagon-item navbar-wagon-link" %> -->
+
+      <!-- <%= link_to t(".top_call_to_action", default: "Blog"), main_app.blogo_root_path, class: "navbar-wagon-item navbar-wagon-link" %>  -->
+      
+      <div class="navbar-wagon-item">
+        <div class="dropdown">
+          <!-- <span class="dropdown-toggle" data-toggle="dropdown">Profil</span> -->
+          <%= link_to main_app.edit_user_path(current_user), class: 'dropdown-toggle user-profile navbar-wagon-link', data: { toggle: 'dropdown' } do %>
+                <% unless current_user.uploaded_image.url.nil? %>
+                  <%= image_tag current_user.uploaded_image.url, size: "18x18", class: 'profile-picture', alt: '' %>
+                <% end %>
+                <%= current_user.first_name %>
+          <% end %>
+          <ul class="dropdown-menu dropdown-menu-right navbar-wagon-dropdown-menu">
+            <li>
+              <%= link_to main_app.edit_user_path(current_user) do %>
+                <i class="fa fa-user"></i> <%= t ".my_profile" %>
+              <% end %>
+            </li>
+            <% if current_user.projects.any? %>
+              <li>
+                <%= link_to main_app.user_projects_path(current_user) do %>
+                  <i class="fa fa-rocket"></i> <%= t'.my_projects' %>
+                <% end %> 
+              </li>
+            <% end %>
+            <% if current_user.partner %>
+              <li>
+                <%= link_to main_app.partner_path(current_user.partner.permalink) do %>
+                  <i class="fa fa-rocket"></i> <%= t'.my_partner_page', partner: current_user.partner.name %>
+                <% end %> 
+              </li>
+            <% end %>
+            <% if current_user.contributions.any? %>
+            <li>
+            	<%= link_to main_app.user_contributions_path(current_user) do %>
+                <i class="fa fa-check"></i>  <%= t ".my_contributions" %>
+              <% end %>	
+            </li>
+            <% end %>
+            <li>
+              <%= link_to main_app.credits_user_path(current_user) do %>
+                <i class="fa fa-money"></i>  <%= t ".profile", default: "Mes crédits" %>
+              <% end %>
+            </li>
+            <li>
+              <%= link_to main_app.payments_user_path(current_user) do %>
+                <i class="fa fa-credit-card"></i>  <%= t ".sign_out", default: "Coordonnées bancaires" %>
+              <% end %>
+            </li>
+
+
+            <li>
+              <%= link_to main_app.settings_user_path(current_user) do %>
+                <i class="fa fa-cog"></i>  <%= t ".settings" %>
+              <% end %>
+            </li>
+          </ul>
+        </div>
+      </div>
+      
+    	<%= link_to t(".top_call_to_action", default: "Se déconnecter"), main_app.destroy_user_session_url(base_domain_with_https_url_params), method: :delete, class: "navbar-wagon-item navbar-wagon-link" %>
+    <% else %>
+      <!-- <%= link_to t(".top_call_to_action", default: "Blog"), blogo_root_path, class: "navbar-wagon-item navbar-wagon-link" %> -->
+
+      <!-- Login text link -->
+      <%= link_to t(".sign_in", default: "Connexion"), new_user_session_path, class: "navbar-wagon-item navbar-wagon-link" %>
+
+      <%= link_to t(".sign_up", default: "Inscription"), new_user_registration_path, class: "navbar-wagon-item navbar-wagon-link" %>
+    <% end %>
+
+    <!-- Button (call-to-action) -->
+     <% if @partner %>
+      <%= link_to t(".top_call_to_action", default: "Soumettre un projet"), main_app.commencer_partner_path(id: @partner.permalink), class: "navbar-wagon-item navbar-wagon-button btn" %>
+    <% else %>
+      <%= link_to t(".top_call_to_action", default: "Proposez un projet"), main_app.start_path, class: "navbar-wagon-item navbar-wagon-button btn" %>
+    <% end %>
+    
+  </div>
+
+  <!-- Dropdown list appearing on mobile only -->
+  
+  <div class="navbar-wagon-item hidden-md hidden-lg">
+    <div class="dropdown">
+      <i class="fa fa-bars dropdown-toggle" data-toggle="dropdown"></i>
+      <ul class="dropdown-menu dropdown-menu-right navbar-wagon-dropdown-menu">
+        <li><%= link_to t("Startup'Iyem"), main_app.startupiyem_path %></li>
+        <li><%= link_to t(".top_call_to_action", default: "Projets à Financer"), main_app.discover_path %></li>
+        <!--  <li><%= link_to t(".top_call_to_action", default: "Projets à Suivre"), main_app.tofollow_path %></li>  -->
+        <li><%= link_to t(".top_call_to_action", default: "Comment ça marche ?"), main_app.how_it_works_path %></li>
+       	<!-- <li><%= link_to t(".top_call_to_action", default: "Blog"), main_app.blogo_root_path, class: "navbar-wagon-item navbar-wagon-link" %></li> -->
+        <% if user_signed_in? %>
+        <li><%= link_to t(".top_call_to_action", default: "Profil"), main_app.edit_user_path(current_user) %></li>
+        <li><%= link_to t(".top_call_to_action", default: "Se déconnecter"), main_app.destroy_user_session_url(base_domain_with_https_url_params), method: :delete %></li>
+        <% else %>
+	      <li><%= link_to t(".sign_in", default: "Connexion"), new_user_session_path, class: "navbar-wagon-item navbar-wagon-link" %></li>
+	      <li><%= link_to t(".sign_up", default: "Inscription"), new_user_registration_path, class: "navbar-wagon-item navbar-wagon-link" %></li>
+        <% end %>
+      </ul>
+    </div>
+  </div>
+</div>
+

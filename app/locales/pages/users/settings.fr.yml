@@ -1,0 +1,48 @@
+fr:
+  users:
+    settings:
+      change_password: "Changer Le Mot de Passe"
+      current_password: "Mot de passe actuel"
+      password_info: " "
+      save_password: 'Sauvegarder Mon Nouveau Mot de Passe'
+      communication_preferences: 'Préférences de Communication'
+      update_communication_preferences: 'Mettre à Jour les Préférences de Communication'
+      unsubscribes:
+        title: 'Notifications des Mises à Jour de Projets'
+        updates: 'Je voudrais recevoir les mises à jour des projets'
+        submit: 'Sauvegarder mes préférences de notification'
+      add_document: "télécharger la pièce"
+      uploaded_image: "image téléchargée"
+      kyc: 
+        intro_text: "Afin de garantir la sécurité du processus de retrait des fonds, vous devrez télécharger ici une copie de votre pièce d'identité. Il pourra aussi vous être demandé une preuve d'adresse"
+        uploaded_image: "vignette"
+      add_document: "Nouveau justificatif"
+      kyc:
+        intro_text: "Afin de garantir la sécurité du processus de retrait des fonds, vous devrez télécharger ici une copie de votre pièce d'identité. Dans le cas où vous souhaitez changer un justificatif déjà envoyé, il vous faut envoyer de nouveau ce justificatif. Le nouveau remplacera l'ancien."
+        proof_type: 'Type de document'
+        uploaded_image: 'Cliquez ci-dessous'
+        type:
+          identity_proof: "Pièce d'identité"
+          address_proof: "Justificatif de domicile"
+          status_proof: "Les statuts"
+          register_proof: "La preuve d'enregistrement (récépissé de déclaration, Kbis...)"
+      payments:
+        intro_text: "Ce formulaire n'est à remplir qu'au moment du versement de la collecte. Renseigner ici les codes IBAN et SWIFT présents sur votre RIB (Relevé d'Identité Bancaire). Ils serviront à vous payer le montant collecté. Renseignez-vous auprès de votre banque pour obtenir ces informations le cas échéant."
+        owner_address: "Votre addresse telle que connue à votre Banque" 
+        owner_city: "Ville"
+        owner_region: "Région"
+        owner_postal_code: "Code Postal"        
+        fr_header: "Coordonnées bancaires (FR)"
+        us_account_number_label: "Numéro du compte"
+        ca_account_number_label: "Numéro du compte"
+        us_account_aba_label: "ABA du compte"
+        ca_institution_number_label: "Numéro de l'institution"
+        ca_branch_code_label: "Code de l'agence"
+        ca_bank_name_label: "Nom de la banque"
+        us_header: "Coordonnées bancaires (US)"
+        ca_header: "Coordonnées bancaires (CA)"
+        other_header: "Coordonnées bancaires (Autres Pays)"
+        other_country_label: "Pays"
+        other_account_number_label: "Numéro de Compte"
+        other_bic_label: "Numéro BIC"
+      remove_document: 'Annuler'

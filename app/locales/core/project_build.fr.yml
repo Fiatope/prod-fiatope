@@ -1,0 +1,33 @@
+fr:
+  crowdfunding:
+    title: 'Titre du projet'
+    about: 'Description courte (max. 5 lignes)'
+    goal: 'Montant visé'
+    presale_goal: "Nombre d'article visé"
+    page_title_crowdfunding: 'Ma Campagne'
+    location: 'Localisation du projet'
+    description: 'Décrivez en détail votre projet'
+    description_placeholder: "Contexte, \n\nProblème à résoudre, \n\nsolution apportée, \n\nimpact social, \n\ncaractère innovant, \n\nobjectifs de la campagne de financement \n\nparticipatif, \n\ndétails de la dépense du budget, \n\nréalisations précédentes, \n\néquipe"
+    how_knows_fiatope: 'Comment avez vous entendu parler de Fiatope ?'
+    how_knows_crowdfunding: 'Avez vous des connaissances en crowdfunding ?'
+    already_did_crowdfunding: 'Avez vous déjà eu à faire une campagne de financement participatif ? Si oui, quand ? Pour quelle raison ? Sur quelle plateforme ?'
+    presale: 'Voulez-vous faire un crowdfunding en prévente ?'
+    how_many_contributors: 'A combien estimez-vous vos potentiels contributeurs ?'
+    how_much_contribute: 'A combien estimez-vous leur contribution moyenne?'
+    contributors_from_where: "D'où viendront les potentiels contributeurs géographiquement (citez les pays)?"
+    enrollment_strategy: 'Quelle stratégie comptez-vous adopter pour les mobiliser ?'
+    has_partner: "Cochez si vous venez de la part d'un partenaire :"
+    partner_yes: "Veuillez indiquer si vous créez un projet avec un de nos partenaires :"
+    followers: "Nombre d'Abonnés"
+    need_support: "Pensez vous avoir besoin d'un accompagnement spécial ?"
+    join_follow_program: "Si vous n'êtes pas sélectionnés, serez-vous d'accord pour qu'on vous intègre à notre programme de suivi de projet ?"
+    headline: "Nom de la structure qui porte le projet"
+    organization_type: "Statut juridique"
+    organization_description: "Description succinte de ses objectifs"
+    organization_created_at: "Date d'enregistrement"
+    organization_in_incubateur: "La structure est-elle suivie par un incubateur ? Si oui, lequel ?"
+    organization_funding: "La structure est-elle déjà soutenue financièrement ? Si oui, par quels acteurs et selon quel format (subvention, prêt, participation au capital)"
+    next: 'Suivant'
+    submit: 'Soumettre'
+    check_then_send: 'Vérifiez les données du formulaire puis soumettez votre demande de campagne de financement participatif'
+    send: "Envoyer"

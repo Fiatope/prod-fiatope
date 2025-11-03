@@ -1,0 +1,871 @@
+- @rewards.each do |reward|
+  div[id="reward-#{reward.id}" data-update-path=sort_project_reward_path(parent, reward) data-new-project-contribution-path=new_project_contribution_path(parent, reward_id: reward.id) class="reward #{ 'clickable' if parent.online? && !reward.sold_out? && !reward.soon? } #{ 'sortable' if policy(reward).update? } #{ 'soon' if reward.soon? }"]
+    header.title
+      - if parent.presale?
+        = t('.reward_title_presale', minimum: reward.display_minimum).html_safe
+      - else
+        = t('.reward_title', minimum: reward.display_minimum).html_safe
+      - if policy(reward).update?
+        = link_to edit_project_reward_path(parent, reward), data: { element: ".edit-#{reward.id}-reward-form", path: edit_project_reward_path(parent, reward) }, class: 'edit' do
+          i.icon-et-pencil
+
+    - if parent.presale? || parent.rewards.present?
+      - if parent.online? && !parent.expired?
+        / = link_to contribution_project_reward_path(parent, reward), class: "text-center", style: "display:block;" do
+        = link_to new_project_contribution_url(parent, reward_id: reward.id), class: "text-center", style: "display:block;" do
+          div[class="edit-#{reward.id}-reward-form text-center" style="padding-top:20px;"]
+            
+            
+          - if reward.id == 845
+            = image_tag 'campagnemaanabox/Matondo.png'
+          - if reward.id == 847
+            = image_tag 'campagnemaanabox/douceur.png'
+          - if reward.id == 854
+            = image_tag 'campagnemaanabox/douceur.png'
+          - if reward.id == 846
+            = image_tag 'campagnemaanabox/divertissement.png'
+          - if reward.id == 853
+            = image_tag 'campagnemaanabox/divertissement.png'
+          - if reward.id == 848
+            = image_tag 'campagnemaanabox/initiation.png'
+          - if reward.id == 855
+            = image_tag 'campagnemaanabox/initiation.png'
+          - if reward.id == 849
+            = image_tag 'campagnemaanabox/decouverte.png'
+          - if reward.id == 856
+            = image_tag 'campagnemaanabox/decouverte.png'
+          - if reward.id == 850
+            = image_tag 'campagnemaanabox/initiation_premium.png'
+          - if reward.id == 858
+            = image_tag 'campagnemaanabox/initiation_premium.png'
+          - if reward.id == 851
+            = image_tag 'campagnemaanabox/decouverte_premium.png'
+          - if reward.id == 859
+            = image_tag 'campagnemaanabox/decouverte_premium.png'
+          - if reward.id == 852
+            = image_tag 'campagnemaanabox/ultimate.png'
+          - if reward.id == 857
+            = image_tag 'campagnemaanabox/ultimate.png'
+            
+            
+            
+          - if reward.id == 795
+            = image_tag 'campagnefam/bogolan.png'
+          - if reward.id == 771
+            = image_tag 'campagnefam/toghuh.png'
+          - if reward.id == 772
+            = image_tag 'campagnefam/kente.png'
+          - if reward.id == 773
+            = image_tag 'campagnefam/ndop.png'
+          - if reward.id == 774
+            = image_tag 'campagnefam/woodin.png'
+
+          - if reward.id == 744
+            = image_tag 'contrepartie_dieurnedieu.png'
+          - if reward.id == 745
+            = image_tag 'contrepartie_RS_yennenga.png'
+          - if reward.id == 746
+            = image_tag 'contrepartie_sama_xarit.png'
+          - if reward.id == 747
+            = image_tag 'contrepartie_yobalema.png'
+          - if reward.id == 748
+            = image_tag 'contrepartie_setane.png'
+
+
+          - if reward.id == 731
+            = image_tag 'campagnetanybio/Contrepartie_MISOATRA.jpeg'
+          - if reward.id == 732
+            = image_tag 'campagnetanybio/Contrepartie_VAGNONO.jpeg'
+          - if reward.id == 733
+            = image_tag 'campagnetanybio/Contrepartie_VOAHARY.jpeg'
+
+
+          - if reward.id == 780
+            = image_tag 'contrepartie_chap_chap_food/merci.png'
+          - if reward.id == 781
+            = image_tag 'contrepartie_chap_chap_food/saphir.png'
+          - if reward.id == 782
+            = image_tag 'contrepartie_chap_chap_food/rubis.png'
+          - if reward.id == 783
+            = image_tag 'contrepartie_chap_chap_food/jade.png'
+          - if reward.id == 784
+            = image_tag 'contrepartie_chap_chap_food/grenat.png'
+          - if reward.id == 785
+            = image_tag 'contrepartie_chap_chap_food/diamant_rouge.png'
+          - if reward.id == 789
+            = image_tag 'contrepartie_chap_chap_food/diamant_bleu.png'
+
+
+
+          - if reward.id == 724
+            = image_tag 'merci.png'
+          - if reward.id == 725
+            = image_tag 'une_place.png'
+          - if reward.id == 726
+            = image_tag 'JCD.png'
+          - if reward.id == 727
+            = image_tag 'maafeu.png'
+          - if reward.id == 728
+            = image_tag 'lopaire2.png'
+          - if reward.id == 729
+            = image_tag 'zomloa.png'
+
+
+
+          - if reward.id == 600
+            = image_tag 'campagnetoffidoux/CPF1.png'
+          - if reward.id == 601
+            = image_tag 'campagnetoffidoux/CPF2.png'
+          - if reward.id == 602
+            = image_tag 'campagnetoffidoux/CPF3.png'
+          - if reward.id == 603
+            = image_tag 'campagnetoffidoux/CPF4.png'
+          - if reward.id == 604
+            = image_tag 'campagnetoffidoux/figurine.jpg' 
+          - if reward.id == 605
+            = image_tag 'campagnetoffidoux/decoupoir.png'
+          
+
+          - if reward.id == 552
+            = image_tag 'campagnepassmousso/1_Colibri.png'
+          - if reward.id == 553
+            = image_tag 'campagnepassmousso/2_Aigle.png'
+          - if reward.id == 554
+            = image_tag 'campagnepassmousso/5_Dauphin.png'
+          - if reward.id == 555
+            = image_tag 'campagnepassmousso/4_Tigre.png'
+          - if reward.id == 556
+            = image_tag 'campagnepassmousso/3_Lion.png'
+
+          - if reward.id == 479
+            = image_tag 'CampagneNeoafrica/AA-ceinture-grand-modele_7_U_5_E.jpg'
+          - if reward.id == 480
+            = image_tag 'CampagneNeoafrica/AA-ceinture-petit-modele_Q_3_P_5_E.jpg'
+          - if reward.id == 481
+            = image_tag 'CampagneNeoafrica/AA-eventail-africain_Q_14_P_8_E.jpg'
+          - if reward.id == 482
+            = image_tag 'CampagneNeoafrica/AA-housse-pour-tablette-portatif-petit-modele_Q_43_P_10_E.jpg'
+          - if reward.id == 483
+            = image_tag 'CampagneNeoafrica/AA-pochette-de-sortie_Q_3_P_10_E.jpg'
+          - if reward.id == 484
+            = image_tag 'CampagneNeoafrica/AA-set-de-table_Q_5_P_10_E.jpg'
+          - if reward.id == 485
+            = image_tag 'CampagneNeoafrica/AB-cache-col-a-noeud-papillon_Q_26_P_10_E.jpg'
+          - if reward.id == 486
+            = image_tag 'CampagneNeoafrica/AB-ensemble-bracelet-et-boucle-d-oreille-multitexture_5_U_P_10_E.jpg'
+          - if reward.id == 487
+            = image_tag 'CampagneNeoafrica/AC-ensemble-bracelet-et-boucle-d-oreille_Q_4_P_12_E.jpg'  
+          - if reward.id == 488
+            = image_tag 'CampagneNeoafrica/CDDD-ensemble-bracelet-et-boucle-d-oreille-pagnific_4_U_P_12_E.jpg'
+          - if reward.id == 489
+            = image_tag 'CampagneNeoafrica/CDDE-boucle-d-oreille-cauris_Q_12_P_12_E.jpg'
+          - if reward.id == 490
+            = image_tag 'CampagneNeoafrica/CDE-ensemble-bracelet-et-boucle-d-oreille-africain-millenial_Q_5_P_15_E.jpg'
+          - if reward.id == 491
+            = image_tag 'CampagneNeoafrica/chemise-blanche-brodee.jpg'
+          - if reward.id == 492
+            = image_tag 'CampagneNeoafrica/chemise-blanche-brodee-rouge-fonce.jpg'
+          - if reward.id == 493
+            = image_tag 'CampagneNeoafrica/chemise-brodee-batik.jpg'
+          - if reward.id == 494
+            = image_tag 'CampagneNeoafrica/D-cabas-africain-pliable_Q_24_ P_15_E.jpg'
+          - if reward.id == 495
+            = image_tag 'CampagneNeoafrica/E-haut-dashiki-pour-enfant_Q_19_P_15_E.jpg'
+          - if reward.id == 496
+            = image_tag 'CampagneNeoafrica/E-sac-à-bandouliere-en-pagne-batik_Q_3_P_20_E.jpg'
+          - if reward.id == 497
+            = image_tag 'CampagneNeoafrica/E-sac-a-dos-pour-enfant-en-pagne-africain_6_U_20_E.jpg'
+          - if reward.id == 498
+            = image_tag 'CampagneNeoafrica/EF-collier-court-tresse-en-perles_5_U_P_22 E.jpg'
+          - if reward.id == 499
+            = image_tag 'CampagneNeoafrica/EFF-collier-bicolore-en-perles-africaine_Q_4_P_P_25_E.jpg'
+          - if reward.id == 500
+            = image_tag 'CampagneNeoafrica/EFFF-collier-en-cuir-et-perle-style-africain_Q_4_P_25_E.jpg'
+          - if reward.id == 501
+            = image_tag 'CampagneNeoafrica/EFFF-collier-tradi-millenial-en-cuir-et-perles_Q_4_P_27_E.jpg'
+          - if reward.id == 502
+            = image_tag 'CampagneNeoafrica/EFH-sac-cabas-africain-a-poignet-en-rafia_5_P_25_E.jpg' 
+          - if reward.id == 503
+            = image_tag 'CampagneNeoafrica/EFH-sac-a-dos-pour-senior_Q_3_P_25_E.jpg'
+          - if reward.id == 504
+            = image_tag 'CampagneNeoafrica/F-ensemble-sac-et-pochette-de-sortie_5U_P_30.jpg'
+          - if reward.id == 505
+            = image_tag 'CampagneNeoafrica/F-sac-a-main-a-poignet-en-rafia-avec-pochette_6_U_P_30_E.jpg' 
+                  
+
+
+          - if reward.id == 303
+            = image_tag 'campagnemaya/Reward_Maya_10€.jpg'
+          - if reward.id == 304
+            = image_tag 'campagnemaya/Reward_Maya_50€.jpg'
+          - if reward.id == 305
+            = image_tag 'campagnemaya/Reward_Maya_100€.jpg'
+          - if reward.id == 307
+            = image_tag 'campagnemaya/Reward_Maya_150€.jpg'
+          - if reward.id == 306
+            = image_tag 'campagnemaya/Reward_Maya_200€_bis.png'
+          - if reward.id == 308
+            = image_tag 'campagnemaya/Reward_Maya_500€.jpg'
+
+          - if reward.id == 245
+            = image_tag 'ahbonhein_reward_10€.jpg'
+          - if reward.id == 247
+            = image_tag 'ahbonhein_reward_25€.jpg'
+          - if reward.id == 248
+            = image_tag 'ahbonhein_reward_50€.jpg'
+          - if reward.id == 249
+            = image_tag 'ahbonhein_reward_100€.jpg'
+          - if reward.id == 250
+            = image_tag 'ahbonhein_reward_150€.jpg'
+          - if reward.id == 251
+            = image_tag 'ahbonhein_reward_250€.jpg'
+          - if reward.id == 252
+            = image_tag 'ahbonhein_reward_500€.jpg'
+
+          - if reward.id == 48
+            = image_tag 'campagneoser/reward25€.jpg'
+          - if reward.id == 47
+            = image_tag 'campagneoser/i.jpg'
+          - if reward.id == 46
+            = image_tag 'campagneoser/h.jpg'
+          - if reward.id == 45
+            = image_tag 'campagneoser/g.jpg'
+          - if reward.id == 44
+            = image_tag 'campagneoser/f.jpg'
+          - if reward.id == 43
+            = image_tag 'campagneoser/e.jpg'
+          - if reward.id == 42
+            = image_tag 'campagneoser/d.jpg'
+          - if reward.id == 41
+            = image_tag 'campagneoser/c.png'
+          - if reward.id == 40
+            = image_tag 'campagneoser/b.png'
+          - if reward.id == 39
+            = image_tag 'campagneoser/a.tif'
+          - if reward.id == 38
+            = image_tag 'campagneoser/Pins_Oser.JPG'
+          - if reward.id == 37
+            = image_tag 'campagneoser/reunification.jpg'
+          - if reward.id == 36
+            = image_tag 'campagneoser/gentleman.jpg'
+          - if reward.id == 35
+            = image_tag 'campagneoser/Innogence.png'
+          - if reward.id == 34
+            = image_tag 'campagneoser/kiroogames.jpg'
+          - if reward.id == 33
+            = image_tag 'campagneoser/madlyncazalis.png'
+            = image_tag 'campagneoser/visiterafrique.jpg' 
+          - if reward.id == 32
+            = image_tag 'campagneoser/inspireafrika.png'
+            = image_tag 'campagneoser/camerdiscount.jpg'
+          - if reward.id == 31
+            = image_tag 'campagneoser/littleafrica.jpg'
+            = image_tag 'campagneoser/camerdiscount.jpg'
+          - if reward.id == 30
+            = image_tag 'campagneoser/AFROSTREAM.png'
+          - if reward.id == 29
+            = image_tag 'campagneoser/oser2.jpg'
+          - if reward.uploaded_image.url.present?
+            = image_tag reward.uploaded_image.url
+          .form-content
+
+          - if reward.maximum_contributions
+            / - if reward.sold_out?
+              .sold-out
+                .wrapper
+                  h4
+                    i.icon-et-cancel-squared
+                    br/
+                    = t('.sold_out')
+            .maximum-contributions
+              i.icon-et-alert
+              = reward.display_remaining
+
+              - in_time_to_confirm = reward.contributions.with_state('waiting_confirmation').count
+              - if in_time_to_confirm > 0
+                .pending = t('.contributions_to_confirm', count: in_time_to_confirm)
+
+          .title = reward.title
+          / .description = reward.display_description
+          .description = reward.description
+
+          - if reward.days_to_delivery.present?
+            / .days-to-delivery
+            p = "#{t('.reward_deliver_time', prevision: reward.display_deliver_prevision)}".html_safe
+      - else
+        = link_to "#", class: "text-center", style: "display:block;" do
+          div[class="edit-#{reward.id}-reward-form text-center" style="padding-top:20px;"]
+            
+            
+          - if reward.id == 845
+            = image_tag 'campagnemaanabox/Matondo.png'
+          - if reward.id == 847
+            = image_tag 'campagnemaanabox/douceur.png'
+          - if reward.id == 854
+            = image_tag 'campagnemaanabox/douceur.png'
+          - if reward.id == 846
+            = image_tag 'campagnemaanabox/divertissement.png'
+          - if reward.id == 853
+            = image_tag 'campagnemaanabox/divertissement.png'
+          - if reward.id == 848
+            = image_tag 'campagnemaanabox/initiation.png'
+          - if reward.id == 855
+            = image_tag 'campagnemaanabox/initiation.png'
+          - if reward.id == 849
+            = image_tag 'campagnemaanabox/decouverte.png'
+          - if reward.id == 856
+            = image_tag 'campagnemaanabox/decouverte.png'
+          - if reward.id == 850
+            = image_tag 'campagnemaanabox/initiation_premium.png'
+          - if reward.id == 858
+            = image_tag 'campagnemaanabox/initiation_premium.png'
+          - if reward.id == 851
+            = image_tag 'campagnemaanabox/decouverte_premium.png'
+          - if reward.id == 859
+            = image_tag 'campagnemaanabox/decouverte_premium.png'
+          - if reward.id == 852
+            = image_tag 'campagnemaanabox/ultimate.png'
+          - if reward.id == 857
+            = image_tag 'campagnemaanabox/ultimate.png'
+            
+            
+            
+          - if reward.id == 795
+            = image_tag 'campagnefam/bogolan.png'
+          - if reward.id == 771
+            = image_tag 'campagnefam/toghuh.png'
+          - if reward.id == 772
+            = image_tag 'campagnefam/kente.png'
+          - if reward.id == 773
+            = image_tag 'campagnefam/ndop.png'
+          - if reward.id == 774
+            = image_tag 'campagnefam/woodin.png'
+
+          - if reward.id == 744
+            = image_tag 'contrepartie_dieurnedieu.png'
+          - if reward.id == 745
+            = image_tag 'contrepartie_RS_yennenga.png'
+          - if reward.id == 746
+            = image_tag 'contrepartie_sama_xarit.png'
+          - if reward.id == 747
+            = image_tag 'contrepartie_yobalema.png'
+          - if reward.id == 748
+            = image_tag 'contrepartie_setane.png'
+
+
+          - if reward.id == 731
+            = image_tag 'campagnetanybio/Contrepartie_MISOATRA.jpeg'
+          - if reward.id == 732
+            = image_tag 'campagnetanybio/Contrepartie_VAGNONO.jpeg'
+          - if reward.id == 733
+            = image_tag 'campagnetanybio/Contrepartie_VOAHARY.jpeg'
+
+
+          - if reward.id == 780
+            = image_tag 'contrepartie_chap_chap_food/merci.png'
+          - if reward.id == 781
+            = image_tag 'contrepartie_chap_chap_food/saphir.png'
+          - if reward.id == 782
+            = image_tag 'contrepartie_chap_chap_food/rubis.png'
+          - if reward.id == 783
+            = image_tag 'contrepartie_chap_chap_food/jade.png'
+          - if reward.id == 784
+            = image_tag 'contrepartie_chap_chap_food/grenat.png'
+          - if reward.id == 785
+            = image_tag 'contrepartie_chap_chap_food/diamant_rouge.png'
+          - if reward.id == 789
+            = image_tag 'contrepartie_chap_chap_food/diamant_bleu.png'
+
+
+
+          - if reward.id == 724
+            = image_tag 'merci.png'
+          - if reward.id == 725
+            = image_tag 'une_place.png'
+          - if reward.id == 726
+            = image_tag 'JCD.png'
+          - if reward.id == 727
+            = image_tag 'maafeu.png'
+          - if reward.id == 728
+            = image_tag 'lopaire2.png'
+          - if reward.id == 729
+            = image_tag 'zomloa.png'
+
+
+
+          - if reward.id == 600
+            = image_tag 'campagnetoffidoux/CPF1.png'
+          - if reward.id == 601
+            = image_tag 'campagnetoffidoux/CPF2.png'
+          - if reward.id == 602
+            = image_tag 'campagnetoffidoux/CPF3.png'
+          - if reward.id == 603
+            = image_tag 'campagnetoffidoux/CPF4.png'
+          - if reward.id == 604
+            = image_tag 'campagnetoffidoux/figurine.jpg' 
+          - if reward.id == 605
+            = image_tag 'campagnetoffidoux/decoupoir.png'
+          
+
+          - if reward.id == 552
+            = image_tag 'campagnepassmousso/1_Colibri.png'
+          - if reward.id == 553
+            = image_tag 'campagnepassmousso/2_Aigle.png'
+          - if reward.id == 554
+            = image_tag 'campagnepassmousso/5_Dauphin.png'
+          - if reward.id == 555
+            = image_tag 'campagnepassmousso/4_Tigre.png'
+          - if reward.id == 556
+            = image_tag 'campagnepassmousso/3_Lion.png'
+
+          - if reward.id == 479
+            = image_tag 'CampagneNeoafrica/AA-ceinture-grand-modele_7_U_5_E.jpg'
+          - if reward.id == 480
+            = image_tag 'CampagneNeoafrica/AA-ceinture-petit-modele_Q_3_P_5_E.jpg'
+          - if reward.id == 481
+            = image_tag 'CampagneNeoafrica/AA-eventail-africain_Q_14_P_8_E.jpg'
+          - if reward.id == 482
+            = image_tag 'CampagneNeoafrica/AA-housse-pour-tablette-portatif-petit-modele_Q_43_P_10_E.jpg'
+          - if reward.id == 483
+            = image_tag 'CampagneNeoafrica/AA-pochette-de-sortie_Q_3_P_10_E.jpg'
+          - if reward.id == 484
+            = image_tag 'CampagneNeoafrica/AA-set-de-table_Q_5_P_10_E.jpg'
+          - if reward.id == 485
+            = image_tag 'CampagneNeoafrica/AB-cache-col-a-noeud-papillon_Q_26_P_10_E.jpg'
+          - if reward.id == 486
+            = image_tag 'CampagneNeoafrica/AB-ensemble-bracelet-et-boucle-d-oreille-multitexture_5_U_P_10_E.jpg'
+          - if reward.id == 487
+            = image_tag 'CampagneNeoafrica/AC-ensemble-bracelet-et-boucle-d-oreille_Q_4_P_12_E.jpg'  
+          - if reward.id == 488
+            = image_tag 'CampagneNeoafrica/CDDD-ensemble-bracelet-et-boucle-d-oreille-pagnific_4_U_P_12_E.jpg'
+          - if reward.id == 489
+            = image_tag 'CampagneNeoafrica/CDDE-boucle-d-oreille-cauris_Q_12_P_12_E.jpg'
+          - if reward.id == 490
+            = image_tag 'CampagneNeoafrica/CDE-ensemble-bracelet-et-boucle-d-oreille-africain-millenial_Q_5_P_15_E.jpg'
+          - if reward.id == 491
+            = image_tag 'CampagneNeoafrica/chemise-blanche-brodee.jpg'
+          - if reward.id == 492
+            = image_tag 'CampagneNeoafrica/chemise-blanche-brodee-rouge-fonce.jpg'
+          - if reward.id == 493
+            = image_tag 'CampagneNeoafrica/chemise-brodee-batik.jpg'
+          - if reward.id == 494
+            = image_tag 'CampagneNeoafrica/D-cabas-africain-pliable_Q_24_ P_15_E.jpg'
+          - if reward.id == 495
+            = image_tag 'CampagneNeoafrica/E-haut-dashiki-pour-enfant_Q_19_P_15_E.jpg'
+          - if reward.id == 496
+            = image_tag 'CampagneNeoafrica/E-sac-à-bandouliere-en-pagne-batik_Q_3_P_20_E.jpg'
+          - if reward.id == 497
+            = image_tag 'CampagneNeoafrica/E-sac-a-dos-pour-enfant-en-pagne-africain_6_U_20_E.jpg'
+          - if reward.id == 498
+            = image_tag 'CampagneNeoafrica/EF-collier-court-tresse-en-perles_5_U_P_22 E.jpg'
+          - if reward.id == 499
+            = image_tag 'CampagneNeoafrica/EFF-collier-bicolore-en-perles-africaine_Q_4_P_P_25_E.jpg'
+          - if reward.id == 500
+            = image_tag 'CampagneNeoafrica/EFFF-collier-en-cuir-et-perle-style-africain_Q_4_P_25_E.jpg'
+          - if reward.id == 501
+            = image_tag 'CampagneNeoafrica/EFFF-collier-tradi-millenial-en-cuir-et-perles_Q_4_P_27_E.jpg'
+          - if reward.id == 502
+            = image_tag 'CampagneNeoafrica/EFH-sac-cabas-africain-a-poignet-en-rafia_5_P_25_E.jpg' 
+          - if reward.id == 503
+            = image_tag 'CampagneNeoafrica/EFH-sac-a-dos-pour-senior_Q_3_P_25_E.jpg'
+          - if reward.id == 504
+            = image_tag 'CampagneNeoafrica/F-ensemble-sac-et-pochette-de-sortie_5U_P_30.jpg'
+          - if reward.id == 505
+            = image_tag 'CampagneNeoafrica/F-sac-a-main-a-poignet-en-rafia-avec-pochette_6_U_P_30_E.jpg' 
+                  
+
+
+          - if reward.id == 303
+            = image_tag 'campagnemaya/Reward_Maya_10€.jpg'
+          - if reward.id == 304
+            = image_tag 'campagnemaya/Reward_Maya_50€.jpg'
+          - if reward.id == 305
+            = image_tag 'campagnemaya/Reward_Maya_100€.jpg'
+          - if reward.id == 307
+            = image_tag 'campagnemaya/Reward_Maya_150€.jpg'
+          - if reward.id == 306
+            = image_tag 'campagnemaya/Reward_Maya_200€_bis.png'
+          - if reward.id == 308
+            = image_tag 'campagnemaya/Reward_Maya_500€.jpg'
+
+          - if reward.id == 245
+            = image_tag 'ahbonhein_reward_10€.jpg'
+          - if reward.id == 247
+            = image_tag 'ahbonhein_reward_25€.jpg'
+          - if reward.id == 248
+            = image_tag 'ahbonhein_reward_50€.jpg'
+          - if reward.id == 249
+            = image_tag 'ahbonhein_reward_100€.jpg'
+          - if reward.id == 250
+            = image_tag 'ahbonhein_reward_150€.jpg'
+          - if reward.id == 251
+            = image_tag 'ahbonhein_reward_250€.jpg'
+          - if reward.id == 252
+            = image_tag 'ahbonhein_reward_500€.jpg'
+
+          - if reward.id == 48
+            = image_tag 'campagneoser/reward25€.jpg'
+          - if reward.id == 47
+            = image_tag 'campagneoser/i.jpg'
+          - if reward.id == 46
+            = image_tag 'campagneoser/h.jpg'
+          - if reward.id == 45
+            = image_tag 'campagneoser/g.jpg'
+          - if reward.id == 44
+            = image_tag 'campagneoser/f.jpg'
+          - if reward.id == 43
+            = image_tag 'campagneoser/e.jpg'
+          - if reward.id == 42
+            = image_tag 'campagneoser/d.jpg'
+          - if reward.id == 41
+            = image_tag 'campagneoser/c.png'
+          - if reward.id == 40
+            = image_tag 'campagneoser/b.png'
+          - if reward.id == 39
+            = image_tag 'campagneoser/a.tif'
+          - if reward.id == 38
+            = image_tag 'campagneoser/Pins_Oser.JPG'
+          - if reward.id == 37
+            = image_tag 'campagneoser/reunification.jpg'
+          - if reward.id == 36
+            = image_tag 'campagneoser/gentleman.jpg'
+          - if reward.id == 35
+            = image_tag 'campagneoser/Innogence.png'
+          - if reward.id == 34
+            = image_tag 'campagneoser/kiroogames.jpg'
+          - if reward.id == 33
+            = image_tag 'campagneoser/madlyncazalis.png'
+            = image_tag 'campagneoser/visiterafrique.jpg' 
+          - if reward.id == 32
+            = image_tag 'campagneoser/inspireafrika.png'
+            = image_tag 'campagneoser/camerdiscount.jpg'
+          - if reward.id == 31
+            = image_tag 'campagneoser/littleafrica.jpg'
+            = image_tag 'campagneoser/camerdiscount.jpg'
+          - if reward.id == 30
+            = image_tag 'campagneoser/AFROSTREAM.png'
+          - if reward.id == 29
+            = image_tag 'campagneoser/oser2.jpg'
+          - if reward.uploaded_image.url.present?
+            = image_tag reward.uploaded_image.url
+          .form-content
+
+          - if reward.maximum_contributions
+            / - if reward.sold_out?
+              .sold-out
+                .wrapper
+                  h4
+                    i.icon-et-cancel-squared
+                    br/
+                    = t('.sold_out')
+            .maximum-contributions
+              i.icon-et-alert
+              = reward.display_remaining
+
+              - in_time_to_confirm = reward.contributions.with_state('waiting_confirmation').count
+              - if in_time_to_confirm > 0
+                .pending = t('.contributions_to_confirm', count: in_time_to_confirm)
+
+          .title = reward.title
+          / .description = reward.display_description
+          .description = reward.description
+
+          - if reward.days_to_delivery.present?
+            / .days-to-delivery
+            p = "#{t('.reward_deliver_time', prevision: reward.display_deliver_prevision)}".html_safe
+    - else
+      div[class="edit-#{reward.id}-reward-form text-center" style="padding-top:20px;"]
+        
+        
+      - if reward.id == 845
+        = image_tag 'campagnemaanabox/Matondo.png'
+      - if reward.id == 847
+        = image_tag 'campagnemaanabox/douceur.png'
+      - if reward.id == 854
+        = image_tag 'campagnemaanabox/douceur.png'
+      - if reward.id == 846
+        = image_tag 'campagnemaanabox/divertissement.png'
+      - if reward.id == 853
+        = image_tag 'campagnemaanabox/divertissement.png'
+      - if reward.id == 848
+        = image_tag 'campagnemaanabox/initiation.png'
+      - if reward.id == 855
+        = image_tag 'campagnemaanabox/initiation.png'
+      - if reward.id == 849
+        = image_tag 'campagnemaanabox/decouverte.png'
+      - if reward.id == 856
+        = image_tag 'campagnemaanabox/decouverte.png'
+      - if reward.id == 850
+        = image_tag 'campagnemaanabox/initiation_premium.png'
+      - if reward.id == 858
+        = image_tag 'campagnemaanabox/initiation_premium.png'
+      - if reward.id == 851
+        = image_tag 'campagnemaanabox/decouverte_premium.png'
+      - if reward.id == 859
+        = image_tag 'campagnemaanabox/decouverte_premium.png'
+      - if reward.id == 852
+        = image_tag 'campagnemaanabox/ultimate.png'
+      - if reward.id == 857
+        = image_tag 'campagnemaanabox/ultimate.png'
+        
+        
+        
+      - if reward.id == 795
+        = image_tag 'campagnefam/bogolan.png'
+      - if reward.id == 771
+        = image_tag 'campagnefam/toghuh.png'
+      - if reward.id == 772
+        = image_tag 'campagnefam/kente.png'
+      - if reward.id == 773
+        = image_tag 'campagnefam/ndop.png'
+      - if reward.id == 774
+        = image_tag 'campagnefam/woodin.png'
+
+      - if reward.id == 744
+        = image_tag 'contrepartie_dieurnedieu.png'
+      - if reward.id == 745
+        = image_tag 'contrepartie_RS_yennenga.png'
+      - if reward.id == 746
+        = image_tag 'contrepartie_sama_xarit.png'
+      - if reward.id == 747
+        = image_tag 'contrepartie_yobalema.png'
+      - if reward.id == 748
+        = image_tag 'contrepartie_setane.png'
+
+
+      - if reward.id == 731
+        = image_tag 'campagnetanybio/Contrepartie_MISOATRA.jpeg'
+      - if reward.id == 732
+        = image_tag 'campagnetanybio/Contrepartie_VAGNONO.jpeg'
+      - if reward.id == 733
+        = image_tag 'campagnetanybio/Contrepartie_VOAHARY.jpeg'
+
+
+      - if reward.id == 780
+        = image_tag 'contrepartie_chap_chap_food/merci.png'
+      - if reward.id == 781
+        = image_tag 'contrepartie_chap_chap_food/saphir.png'
+      - if reward.id == 782
+        = image_tag 'contrepartie_chap_chap_food/rubis.png'
+      - if reward.id == 783
+        = image_tag 'contrepartie_chap_chap_food/jade.png'
+      - if reward.id == 784
+        = image_tag 'contrepartie_chap_chap_food/grenat.png'
+      - if reward.id == 785
+        = image_tag 'contrepartie_chap_chap_food/diamant_rouge.png'
+      - if reward.id == 789
+        = image_tag 'contrepartie_chap_chap_food/diamant_bleu.png'
+
+
+
+      - if reward.id == 724
+        = image_tag 'merci.png'
+      - if reward.id == 725
+        = image_tag 'une_place.png'
+      - if reward.id == 726
+        = image_tag 'JCD.png'
+      - if reward.id == 727
+        = image_tag 'maafeu.png'
+      - if reward.id == 728
+        = image_tag 'lopaire2.png'
+      - if reward.id == 729
+        = image_tag 'zomloa.png'
+
+
+
+      - if reward.id == 600
+        = image_tag 'campagnetoffidoux/CPF1.png'
+      - if reward.id == 601
+        = image_tag 'campagnetoffidoux/CPF2.png'
+      - if reward.id == 602
+        = image_tag 'campagnetoffidoux/CPF3.png'
+      - if reward.id == 603
+        = image_tag 'campagnetoffidoux/CPF4.png'
+      - if reward.id == 604
+        = image_tag 'campagnetoffidoux/figurine.jpg' 
+      - if reward.id == 605
+        = image_tag 'campagnetoffidoux/decoupoir.png'
+      
+
+      - if reward.id == 552
+        = image_tag 'campagnepassmousso/1_Colibri.png'
+      - if reward.id == 553
+        = image_tag 'campagnepassmousso/2_Aigle.png'
+      - if reward.id == 554
+        = image_tag 'campagnepassmousso/5_Dauphin.png'
+      - if reward.id == 555
+        = image_tag 'campagnepassmousso/4_Tigre.png'
+      - if reward.id == 556
+        = image_tag 'campagnepassmousso/3_Lion.png'
+
+      - if reward.id == 479
+        = image_tag 'CampagneNeoafrica/AA-ceinture-grand-modele_7_U_5_E.jpg'
+      - if reward.id == 480
+        = image_tag 'CampagneNeoafrica/AA-ceinture-petit-modele_Q_3_P_5_E.jpg'
+      - if reward.id == 481
+        = image_tag 'CampagneNeoafrica/AA-eventail-africain_Q_14_P_8_E.jpg'
+      - if reward.id == 482
+        = image_tag 'CampagneNeoafrica/AA-housse-pour-tablette-portatif-petit-modele_Q_43_P_10_E.jpg'
+      - if reward.id == 483
+        = image_tag 'CampagneNeoafrica/AA-pochette-de-sortie_Q_3_P_10_E.jpg'
+      - if reward.id == 484
+        = image_tag 'CampagneNeoafrica/AA-set-de-table_Q_5_P_10_E.jpg'
+      - if reward.id == 485
+        = image_tag 'CampagneNeoafrica/AB-cache-col-a-noeud-papillon_Q_26_P_10_E.jpg'
+      - if reward.id == 486
+        = image_tag 'CampagneNeoafrica/AB-ensemble-bracelet-et-boucle-d-oreille-multitexture_5_U_P_10_E.jpg'
+      - if reward.id == 487
+        = image_tag 'CampagneNeoafrica/AC-ensemble-bracelet-et-boucle-d-oreille_Q_4_P_12_E.jpg'  
+      - if reward.id == 488
+        = image_tag 'CampagneNeoafrica/CDDD-ensemble-bracelet-et-boucle-d-oreille-pagnific_4_U_P_12_E.jpg'
+      - if reward.id == 489
+        = image_tag 'CampagneNeoafrica/CDDE-boucle-d-oreille-cauris_Q_12_P_12_E.jpg'
+      - if reward.id == 490
+        = image_tag 'CampagneNeoafrica/CDE-ensemble-bracelet-et-boucle-d-oreille-africain-millenial_Q_5_P_15_E.jpg'
+      - if reward.id == 491
+        = image_tag 'CampagneNeoafrica/chemise-blanche-brodee.jpg'
+      - if reward.id == 492
+        = image_tag 'CampagneNeoafrica/chemise-blanche-brodee-rouge-fonce.jpg'
+      - if reward.id == 493
+        = image_tag 'CampagneNeoafrica/chemise-brodee-batik.jpg'
+      - if reward.id == 494
+        = image_tag 'CampagneNeoafrica/D-cabas-africain-pliable_Q_24_ P_15_E.jpg'
+      - if reward.id == 495
+        = image_tag 'CampagneNeoafrica/E-haut-dashiki-pour-enfant_Q_19_P_15_E.jpg'
+      - if reward.id == 496
+        = image_tag 'CampagneNeoafrica/E-sac-à-bandouliere-en-pagne-batik_Q_3_P_20_E.jpg'
+      - if reward.id == 497
+        = image_tag 'CampagneNeoafrica/E-sac-a-dos-pour-enfant-en-pagne-africain_6_U_20_E.jpg'
+      - if reward.id == 498
+        = image_tag 'CampagneNeoafrica/EF-collier-court-tresse-en-perles_5_U_P_22 E.jpg'
+      - if reward.id == 499
+        = image_tag 'CampagneNeoafrica/EFF-collier-bicolore-en-perles-africaine_Q_4_P_P_25_E.jpg'
+      - if reward.id == 500
+        = image_tag 'CampagneNeoafrica/EFFF-collier-en-cuir-et-perle-style-africain_Q_4_P_25_E.jpg'
+      - if reward.id == 501
+        = image_tag 'CampagneNeoafrica/EFFF-collier-tradi-millenial-en-cuir-et-perles_Q_4_P_27_E.jpg'
+      - if reward.id == 502
+        = image_tag 'CampagneNeoafrica/EFH-sac-cabas-africain-a-poignet-en-rafia_5_P_25_E.jpg' 
+      - if reward.id == 503
+        = image_tag 'CampagneNeoafrica/EFH-sac-a-dos-pour-senior_Q_3_P_25_E.jpg'
+      - if reward.id == 504
+        = image_tag 'CampagneNeoafrica/F-ensemble-sac-et-pochette-de-sortie_5U_P_30.jpg'
+      - if reward.id == 505
+        = image_tag 'CampagneNeoafrica/F-sac-a-main-a-poignet-en-rafia-avec-pochette_6_U_P_30_E.jpg' 
+              
+
+
+      - if reward.id == 303
+        = image_tag 'campagnemaya/Reward_Maya_10€.jpg'
+      - if reward.id == 304
+        = image_tag 'campagnemaya/Reward_Maya_50€.jpg'
+      - if reward.id == 305
+        = image_tag 'campagnemaya/Reward_Maya_100€.jpg'
+      - if reward.id == 307
+        = image_tag 'campagnemaya/Reward_Maya_150€.jpg'
+      - if reward.id == 306
+        = image_tag 'campagnemaya/Reward_Maya_200€_bis.png'
+      - if reward.id == 308
+        = image_tag 'campagnemaya/Reward_Maya_500€.jpg'
+
+      - if reward.id == 245
+        = image_tag 'ahbonhein_reward_10€.jpg'
+      - if reward.id == 247
+        = image_tag 'ahbonhein_reward_25€.jpg'
+      - if reward.id == 248
+        = image_tag 'ahbonhein_reward_50€.jpg'
+      - if reward.id == 249
+        = image_tag 'ahbonhein_reward_100€.jpg'
+      - if reward.id == 250
+        = image_tag 'ahbonhein_reward_150€.jpg'
+      - if reward.id == 251
+        = image_tag 'ahbonhein_reward_250€.jpg'
+      - if reward.id == 252
+        = image_tag 'ahbonhein_reward_500€.jpg'
+
+      - if reward.id == 48
+        = image_tag 'campagneoser/reward25€.jpg'
+      - if reward.id == 47
+        = image_tag 'campagneoser/i.jpg'
+      - if reward.id == 46
+        = image_tag 'campagneoser/h.jpg'
+      - if reward.id == 45
+        = image_tag 'campagneoser/g.jpg'
+      - if reward.id == 44
+        = image_tag 'campagneoser/f.jpg'
+      - if reward.id == 43
+        = image_tag 'campagneoser/e.jpg'
+      - if reward.id == 42
+        = image_tag 'campagneoser/d.jpg'
+      - if reward.id == 41
+        = image_tag 'campagneoser/c.png'
+      - if reward.id == 40
+        = image_tag 'campagneoser/b.png'
+      - if reward.id == 39
+        = image_tag 'campagneoser/a.tif'
+      - if reward.id == 38
+        = image_tag 'campagneoser/Pins_Oser.JPG'
+      - if reward.id == 37
+        = image_tag 'campagneoser/reunification.jpg'
+      - if reward.id == 36
+        = image_tag 'campagneoser/gentleman.jpg'
+      - if reward.id == 35
+        = image_tag 'campagneoser/Innogence.png'
+      - if reward.id == 34
+        = image_tag 'campagneoser/kiroogames.jpg'
+      - if reward.id == 33
+        = image_tag 'campagneoser/madlyncazalis.png'
+        = image_tag 'campagneoser/visiterafrique.jpg' 
+      - if reward.id == 32
+        = image_tag 'campagneoser/inspireafrika.png'
+        = image_tag 'campagneoser/camerdiscount.jpg'
+      - if reward.id == 31
+        = image_tag 'campagneoser/littleafrica.jpg'
+        = image_tag 'campagneoser/camerdiscount.jpg'
+      - if reward.id == 30
+        = image_tag 'campagneoser/AFROSTREAM.png'
+      - if reward.id == 29
+        = image_tag 'campagneoser/oser2.jpg'
+      - if reward.uploaded_image.url.present?
+        = image_tag reward.uploaded_image.url
+      .form-content
+
+      - if reward.maximum_contributions
+        - if reward.sold_out?
+          .sold-out
+            .wrapper
+              h4
+                i.icon-et-cancel-squared
+                br/
+                = t('.sold_out')
+        .maximum-contributions
+          i.icon-et-alert
+          = reward.display_remaining
+
+          - in_time_to_confirm = reward.contributions.with_state('waiting_confirmation').count
+          - if in_time_to_confirm > 0
+            .pending = t('.contributions_to_confirm', count: in_time_to_confirm)
+
+      .title = reward.title
+      / .description = reward.display_description
+      .description = reward.description
+
+      - if reward.days_to_delivery.present?
+        / .days-to-delivery
+        p = "#{t('.reward_deliver_time', prevision: reward.display_deliver_prevision)}".html_safe
+
+- if policy(parent).update?
+
+  .reward.new-reward-form
+    .loading.hide
+      = image_tag 'loading.gif'
+    .form-content
+
+  .reward.add-reward
+    = link_to new_project_reward_path(parent), data: { element: '.new-reward-form', path: new_project_reward_path(parent) } do
+      i.icon-et-plus
+      br/
+      - if parent.presale?
+        = t('.add_presale')
+      - else
+        = t('.add')

@@ -1,0 +1,23 @@
+fr:
+  projects:
+    contributions:
+      edit:
+        title: 'Vous contribuez à %{project_name}'
+        you_are_contributing_to: 'Vous contribuez à'
+        you_are_presale_to: 'Vous précommandez à'
+        cfa_equivalent_html: 'Equivalent: %{cfa_value} Francs CFA'
+        total: 'Total: '
+        i_want_pay_fees: "Je prends en charge les frais de transaction"
+        payment_form_title: 'Sélectionner un moyen de paiement'
+        payment:
+          title: "Vous allez très bientôt pouvoir effectuer votre paiement. Nous travaillons à intégrer les interfaces de paiement avec Mangopay. Nous vous enverrons un email pour finaliser votre contribution."
+        reward:
+          title: 'Votre reward'
+        tooltip-text: "Merci de soutenir <strong>%{project_name}</strong>! Afin de profiter au maximum de votre contribution, nous vous saurons gré si possible de prendre en charge les frais de transaction. Cela fait une grosse différence pour nous et pour l'atteinte de nos objectifs et nous l' apprécierons grandement.<br /><strong>Les frais de transaction sont de x%.</strong>"
+        tooltip-text-projet: "Merci de soutenir <strong>%{project_name}</strong>! <strong>Les frais de transaction sont de x%.</strong>"
+        payment-method:
+          fees: 'Frais:'
+          balanced-creditcard:
+            title: 'Carte de débit/crédit'
+          balanced-bankaccount:
+            title: 'Compte en banque'

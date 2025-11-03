@@ -1,0 +1,5 @@
+fr:
+  will_paginate:
+    next: "Suite »"
+    page_gap: "..."
+    previous: "« Précédent"

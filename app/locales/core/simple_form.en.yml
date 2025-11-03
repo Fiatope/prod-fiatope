@@ -1,0 +1,131 @@
+en:
+  simple_form:
+    "yes": 'Yes'
+    "no": 'No'
+    required:
+      text: 'required'
+      mark: '*'
+      # You can uncomment the line below if you need to overwrite the whole required html.
+      # When using html, text and mark won't be used.
+      # html: '<abbr title="required">*</abbr>'
+    error_notification:
+      default_message: "Please review the problems below:"
+    placeholders:
+      user:
+        name: 'Full name'
+        email: 'Email'
+        birthday: 'Birthday'
+        password: 'Password'
+        current_password: 'Current Password'
+        bio: '140 characters or less...'
+        facebook_url: 'http://facebook.com/'
+        other_url: 'http://www.'
+        linkedin_url: 'http://linkedin.com/in/'
+        twitter_url: 'http://twitter.com/'
+      channel:
+        facebook: 'http://facebook.com/'
+        twitter: 'http://twitter.com/'
+        website: 'http://www.'
+    labels:
+      company_contact:
+        first_name: 'First Name'
+        last_name: 'Last Name'
+        company_name: 'Company Name'
+        company_website: 'Company Website'
+        email: 'Email Address'
+        phone: 'Phone (If you prefer to be called)'
+        message: "Anything in particular that you'd like to know?"
+      channel:
+        how_it_works: 'About Us'
+        submit_your_project_text: 'Submit Your Project'
+        start_hero_image: 'Header Image'
+        start_content:
+          start_primary_content: 'Primary Content'
+          start_secondary_content: 'Secondary Content'
+      user:
+        bio: 'Short Bio'
+        password: 'New Password'
+        newsletter: 'Receive occasional e-mail newsletters from Fiatope'
+        new_project: 'Email me when new projects are added to Fiatope'
+        profile_type: 'Display me as a'
+        phone_number: 'Phone number'
+        address: 'City, State'
+        address_street: 'Street Address'
+        address_neighborhood: 'Organization Name'
+        address_zip_code: 'Zip code'
+        other_url: 'Your website'
+        update_address: "Update my address on my profile."
+      project:
+        name: 'Project title '
+        campaign_type: 'Project Type'
+        category_id: 'Category'
+        category: 'Category'
+        permalink: 'The link to send to your contributors  must begin with www.fiatope.com/projects/'
+        goal: 'Targeted amount'
+        headline: 'Beneficiary'
+        about: 'Describe your campaign in detail'
+        expires_at: 'Duration'
+        online_days: 'Duration'
+        video_url: 'Video'
+        uploaded_image: 'Project thumbnail'
+        hero_image: 'Project header image'
+        site: 'Website'
+        hash_tag: 'Hashtag'
+        foundation_widget: 'Use new foundation widget?'
+        address_neighborhood: 'Why is the project being carried out at this location?'
+        address: 'City, State'
+        address_city: 'City'
+        address_state: 'State'
+        budget: 'Budget Detail'
+        english: 'English'
+        tag_list: 'Keywords'
+        street_address: 'Street Address'
+        code_partenaire: 'Partner code'
+        anonimity: 'anonimity'
+        donation_can_issue_tax_receipt: 'Donations are eligible to tax receipt in France'
+        new:
+          category_id: 'Category'
+      contribution:
+        new:
+          anonymous: 'Optional: Make your contribution anonymous.'
+          short_note: 'Optional: Add a short message. This will display with your name on the "Contributors" tab.'
+    hints:
+      project:
+        edit:
+          video_url_edit: 'Paste here the URL of your Vimeo or Youtube video.'
+          about: "Tell us the story of your project. What is it, why does it matter, and why should contributors care about it? Here is the place for details."
+          category: "Which category best describes your project?"
+          expires_at: "How long will your campaign run? Research shows a 'Goldilocks window' between 30 and 60 days."
+          goal: "What is the total goal for the project? Keep in mind Fiatope's platform fee, and the cost to fulfill perks you offer. No commas, currency sign or decimal."
+          first_contributions: "Having contributors already in hand is critical to the success of your project. You can list contributions already received, or contributions you can count on to come in on day 1 of your project. If you have neither, explain who you plan to target with your campaign."
+          headline: "In 130 characters or less, summarize your project. Why should contributors support it?"
+          name: "Be concise and objective. 8 words or less."
+          uploaded_image: "Upload a minimum 500x340 image(.jpg or .png)."
+          hero_image: "Upload a minimum 1600x600 image(.jpg or .png)."
+          video_url: "Paste the link from a Youtube or Vimeo video about your project. Your video should be short enough to retain viewers, but descriptive enough that viewers can understand the project clearly."
+          hash_tag: 'A short hashtag that can be added to tweets and Facebook updates.'
+          site: "Paste the full link to your project's website, if it has one."
+          foundation_widget: 'If you want to use new widget on embed, check this!'
+          campaign_type: 'All or None: Fund only if the goal is met by the deadline. <br> Every Dollar Counts: Keep the funds whether or not goal is met.'
+          budget: 'Contributors feel most comfortable when you have a clear plan for how the proceeds will be spent. Briefly explain how the money will be used.'
+          permalink: 'Automatically generated. You can edit this later.'
+          headlinet: 'headlinet hint'
+          address_neighborhood: 'If part of a specific organization, please specify.'
+          address_city: 'The primary city or region where your project is located.'
+          address_state: 'Please select the state where your project is located.'
+          tag_list: "Adding keywords improves the chances of your project being discovered. The best keywords relate to the subject matter of your project. For example, if your project is to build an accessible playground, then 'Playground' and 'Accessibility' are great tags. Start typing the first few characters to see a list of existing keywords."
+      channel:
+        image: "Upload a minimum 600x300 image(.jpg or .png)."
+      organization:
+        image: "Upload a minimum 300x150 image(.jpg or .png)."
+      user:
+        uploaded_image: "Upload a minimum 150x150 image(.jpg or .png)."
+  helpers:
+    submit:
+      company_contact:
+        create: "Let's Talk!"
+      user:
+        update: 'Save Changes'
+      project:
+        create: 'Submit Project'
+        update: 'Update Project'

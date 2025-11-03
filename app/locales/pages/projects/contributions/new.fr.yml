@@ -1,0 +1,13 @@
+fr:
+  projects:
+    contributions:
+      new:
+        title: "Contribuer à cette campagne"
+        minimum_value: ''
+        cfa_equivalent_html: 'Équivalent: <span id="cfa-value">0</span> Francs CFA'
+        subtitle: "Sélectionner le reward qui correspond à votre contribution."
+        subtitle_presale: "Choisissez les articles que vous souhaitez recevoir"
+        contribute: "Contribuer à <strong>%{project_name}</strong>"
+        precommander: "Précommander à <strong>%{project_name}</strong>"
+        submit: 'Confirmer'
+        not_mangopay_ready: "Valider plus bas"

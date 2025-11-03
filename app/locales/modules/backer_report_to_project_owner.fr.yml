@@ -1,0 +1,18 @@
+fr:
+  contribution_report_to_project_owner:
+    user_name: 'Contributeur'
+    value: 'Montant de la Contribution'
+    minimum_value: 'Niveau de Reward'
+    reward_description: 'Description du Reward'
+    created_at: 'Contribution effectuée'
+    confirmed_at: 'Contribution confirmée'
+    service_fee: 'Frais Fiatope'
+    user_email: 'Email'
+    payment_method: 'Méthode de paiement'
+    address_street: 'Rue'
+    address_neighborhood: 'Communauté'
+    address_city: 'Ville'
+    address_state: 'Etat'
+    address_zip_code: 'Code Postal'
+    anonymous: 'Anonyme'
+    short_note: 'Message'

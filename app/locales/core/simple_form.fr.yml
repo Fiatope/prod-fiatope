@@ -1,0 +1,140 @@
+fr:
+  simple_form:
+    "yes": 'Oui'
+    "no": 'Non'
+    required:
+      text: 'requis'
+      mark: '*'
+      # You can uncomment the line below if you need to overwrite the whole required html.
+      # When using html, text and mark won't be used.
+      # html: '<abbr title="required">*</abbr>'
+    error_notification:
+      default_message: "Veuillez vérifier ci-dessous:"
+    placeholders:
+      user:
+        name: 'Nom Complet'
+        email: 'Email'
+        birthday: 'Date de naissance'
+        password: 'Mot de Passe'
+        current_password: 'Mot de Passe actuel'
+        bio: 'maximum 140 caractères...'
+        facebook_url: 'http://facebook.com/'
+        other_url: 'http://www.'
+        linkedin_url: 'http://linkedin.com/in/'
+        twitter_url: 'http://twitter.com/'
+      channel:
+        facebook: 'http://facebook.com/'
+        twitter: 'http://twitter.com/'
+        website: 'http://www.'
+    labels:
+      company_contact:
+        first_name: 'Prénom'
+        last_name: 'Nom'
+        company_name: "Nom de l'Entreprise"
+        company_website: 'Site'
+        email: 'Adresse email'
+        phone: 'Téléphone (Si vous préférez être appelé)'
+        message: "Quelque chose de particulier que vous aimeriez savoir?"
+      channel:
+        how_it_works: 'A propos'
+        submit_your_project_text: 'Soumettre'
+        start_hero_image: 'Image En-tête'
+        start_content:
+          start_primary_content: 'Contenu en premier'
+          start_secondary_content: 'Contenu en second'
+      user:
+        bio: 'Courte Biographie'
+        password: 'Nouveau mot de passe'
+        newsletter: 'Recevoir la Newsletter de Fiatope.com'
+        new_project: "M'envoyer un email lorsqu'un projet est ajouté sur Fiatope.com"
+        profile_type: "Profil d'utilisateur (personal ou organization)"
+        phone_number: 'Téléphone'
+        address: 'Ville, Pays'
+        address_street: 'Adresse'
+        address_neighborhood: 'Autres précisions'
+        address_zip_code: 'Code postal'
+        other_url: 'Votre site web'
+        update_address: "Mettre à jour mon adresse sur mon profil."
+      project:
+        name: 'Titre du projet'
+        campaign_type: 'Type de Campagne'
+        category_id: 'Catégorie'
+        category: 'Catégorie'
+        organization_type: "type d'organisation bénéficiaire"
+        location: 'localisation du projet'
+        permalink: "Le lien à envoyer à vos contributeurs"
+        goal: 'Montant visé'
+        headline: 'Nom de l"organisme bénéficiaire'
+        headline_cotisation: 'La cotisation en quelques mots'
+        about: 'Décrivez en détail votre campagne'
+        about_cotisation: 'Détaillez votre cotisation'
+        cagnotte: 'Décrivez en détail votre cagnotte'
+        cotisation: 'Décrivez en détail votre cotisation'
+        expires_at: 'Expire le'
+        currency: 'Monnaie'
+        online_days: 'Durée(en jours)'
+        video_url: 'Vidéo'
+        uploaded_image: 'Image de vignette'
+        hero_image: 'Image de page Projet'
+        site: 'Site Web'
+        terms: 'Les termes'
+        admin_fields: 'Informations Principales'
+        hash_tag: 'Hashtag'
+        foundation_widget: 'Nouveau Widget'
+        address_neighborhood: "Pourquoi le projet est-il réalisé à cet endroit?"
+        address: 'Ville, Pays'
+        address_city: 'Ville'
+        address_state: 'Pays'
+        budget: 'Détails du budget'
+        english: 'English'
+        tag_list: 'Mots Clés pour les Moteurs de Recherche'
+        street_address: 'Adresse'
+        code_partenaire: 'Code partenaire'
+        anonimity: 'Anonymat'
+        donation_can_issue_tax_receipt: 'Les dons sont éligibles à un reçu fiscal en France'
+        new:
+          category_id: 'Catégorie'
+      contribution:
+        new:
+          anonymous: 'Optionnel: Faire une contribution anonyme.'
+          short_note: "Optionnel: Ajouter un court message. Il s'affichera avec votre nom dans l'onglet Contributeurs."
+    hints:
+      project:
+        edit:
+          video_url_edit: 'Copier-coller ici le lien de votre vidéo Viméo ou Youtube.'
+          about: "Décrivez votre projet de façon détaillée. Qu'apporte-il? Pourquoi est-il important d'y contribuer?"
+          category: "Quelle catégorie décrit le mieux votre projet?"
+          expires_at: "Combien de temps durera votre campagne? Sachez que le gros des contributions se font entre 30 et 60 jours"
+          goal: "Quel est votre objectif financier? N'oubliez pas de prendre en compte la déduction des frais de transaction et le coût des rewards que vous offrez. Pas de virgule, de signe ou de décimale dans vos montants."
+          first_contributions: "Déjà avoir des contributions en poche au moment du lancement de votre projet sur la plateforme est déterminant pour le succès de votre campagne. Vous pouvez d ailleurs lister les contributions déjà recues (par d'autres biais que le site) ou les contributions sur lesquelles vous comptez voir arriver dès le premier jour. Si vous n'en avez pas, expliquez avec soin qui vous comptez cibler pendant votre campagne."
+          headline: "Résumer votre projet en 130 caractères maximum et dites pourquoi il faut le soutenir"
+          name: "Etre concis et précis: pas plus de 8 mots."
+          uploaded_image: "Télécharger un image de taille minimum 500x340(.jpg or .png)."
+          hero_image: "Télécharger un image de taille  minimum 1600x600(.jpg or .png)."
+          video_url: "Copier-Coller le lien d une vidéo Viméo ou Youtube qui présente votre projet. Votre vidéo doit être courte pour captiver vos potentiels contributeurs mais complète afin de dire d éclairer au mieux sur votre projet."
+          hash_tag: 'Un court hashtag qui peut être rajouté aux tweets et mises à jour facebook.'
+          site: "Copiez-collez le lien sur votre site web si vous en avez un."
+          foundation_widget: "Si vous voulez mettre la vignette de votre campagne sur d'autres sites, jetez un coup d' oeil à ceci!"
+          campaign_type: "Tout ou Rien: Réalisez votre projet seulement si l'objectif de collecte est atteint à la fin de la campagne. <br> Tout Compte: Réalisez votre projet avec ce que vous recevrez, que l'objectif de collecte soit atteint ou pas."
+          budget: 'Les contributeurs sont en général rassurés lorsque vous avez une idée claire de la façon avec laquelle vous allez utiliser les fonds. Donnez-en une explication ici.'
+          permalink: 'généré automatiquement. Vous pourrez le modifier plus tard.'
+          headlinet: 'astuce pour le headline'
+          address_neighborhood: "d'autres précisions à apporter"
+          address_city: "La ville où est localisée l'exécution du projet."
+          address_state: 'Le Pays correspondant.'
+          tag_list: "Ajouter des mots-clés augmente les chances de découverte de votre projet dans les recherches. Mes mot-clés sont des mots qui décrivent le mieux votre projet. Si votre projet consiste à construire une école, 'Ecole', 'Construction', 'Education' seront des mots clés pertinents. Une liste de mots clés vous est proposée."
+      channel:
+        image: "Télécharger une photo de taille minimum 600x300(.jpg or .png)."
+      organization:
+        image: "Télécharger une photo de taille minimum 300x150(.jpg or .png)."
+      user:
+        uploaded_image: "Télécharger une photo de taille minimum 150x150(.jpg or .png)."
+  helpers:
+    submit:
+      company_contact:
+        create: "Parlons-ens!"
+      user:
+        update: 'Sauvegarder les modifications'
+      project:
+        create: 'Soumettre'
+        update: 'Mettre à jour'

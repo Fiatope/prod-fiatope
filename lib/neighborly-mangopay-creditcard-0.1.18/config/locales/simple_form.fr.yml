@@ -1,0 +1,12 @@
+fr:
+  simple_form:
+    labels:
+      payment:
+        card_number: 'Numéro de Carte'
+        security_code: 'CV'
+        user:
+          name: "Nom (ainsi qu'apparaît sur la carte)"
+          address_street: 'Numéro et nom de voie'
+          address_city: 'Ville'
+          address_state: 'Region'
+          address_zip_code: 'Code Postal'

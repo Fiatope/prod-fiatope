@@ -1,0 +1,13 @@
+fr:
+  activerecord:
+    models:
+      reward: 'Reward'
+    attributes:
+      reward:
+        title: 'Ecrivez un court texte qui résume ce que les contributeurs recevront.'
+        description: "Décrire votre reward de façon à attirer l'attention de votre contributeur."
+        maximum_contributions: "Limiter le nombre de rewards à ce niveau."
+        minimum_value: "Le montant minimum de contribution pour revecoir ce reward."
+        days_to_delivery: "Une estimation de nombre de jours que prendra la réception du reward à la fin de la campagne."
+        soon: 'Reward à venir?'
+  

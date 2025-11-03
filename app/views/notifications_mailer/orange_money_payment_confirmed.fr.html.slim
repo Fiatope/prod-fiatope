@@ -1,0 +1,39 @@
+- if @notification.contribution.present?
+  - resource = @notification.contribution
+- else
+  - resource = @notification.match
+
+|Chèr(e), #{resource.user.display_name}!
+br
+br
+|Ce mail confirme votre #{resource.class.model_name.human} à #{link_to(resource.project.name, project_url(resource.project))}. Veuillez garder cet email comme reçu de votre paiement Orange money.
+br
+br
+|Montant de la #{resource.class.model_name.human}:
+strong #{number_to_currency resource.value, unit: (resource.currency || "RWF"), precision: 0}
+br
+|#{resource.class.model_name.human} effectuée le:
+strong #{l resource.created_at.to_date, format: :long}
+br
+br
+|Référence du paiement:
+strong #{resource.transaction_number}
+br
+- if resource.is_a?(Contribution)
+  - if resource.project.flexible?
+    br
+    |Vous serez prévenu du financement du projet.
+  - else
+    br
+    |
+  br
+br
+|Si vous souhaitez contacter #{resource.project.user.name}, envoyez un email à #{mail_to resource.project.user.email}.
+br
+br
+|Pour toute autre question, écrivez nous #{mail_to Configuration[:email_contact]} ou accédez à nos #{link_to('FAQ', "#{Configuration[:base_url]}/faq")}.
+br
+br
+|Bien à vous,
+br
+|L'équipe #{Configuration[:company_name]}

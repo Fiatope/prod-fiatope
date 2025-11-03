@@ -1,0 +1,8 @@
+- content_for :page_content do
+  #user-contributions-content.row
+    h1 Hey
+
+- if request.xhr?
+  = yield :page_content
+- else
+  = render template: 'users/edit'

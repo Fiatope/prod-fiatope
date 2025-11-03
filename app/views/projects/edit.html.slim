@@ -1,0 +1,102 @@
+= content_for :title, "Modifier la campagne de crowfunding" 
+
+/- content_for :page_content do
+  /= initjs_tag app_name: 'Neighborly', partial: true if request.xhr?
+
+.background-full-color.flex-container.text-center
+	.background-title.flex-item
+		h2 =t('words.modify')
+
+
+.edit-project-page
+	.row
+	  .col-md-offset-1.col-md-10
+	    .new-project-box
+	      .row
+	        .large-10.small-11.columns.large-centered.small-centered
+					  = simple_form_for @project, html: { id: 'new_project'} do |form|
+					      - if current_user.admin
+					        .admin-fields
+					          .section-header =t('words.projet_information') 
+					          = form.input :user_id, required: true
+					          = form.input :permalink, as: :string
+					          = form.input :campaign_type, as: :select, collection: [['All or None', 'all_or_none'], ['Flexible', 'flexible']], include_blank: false
+					          = form.input :foundation_widget, as: :boolean
+					          = form.input :goal, as: :integer 
+					          = form.input :presale_goal, as: :integer 
+					          = form.input :online_days, as: :integer
+					          = form.input :donation_can_issue_tax_receipt, as: :boolean
+					          hr
+					      .section-header =t('words.detailed_information')
+					      - if policy(@project).permitted_for?(:name, :update)
+					        = form.input :name, as: :string
+					      - if policy(@project).permitted_for?(:category, :update)
+					        = form.association :category, include_blank: false
+					      - if policy(@project).permitted_for?(:name, :update)
+					        = form.input :permalink, as: :string
+					      - if policy(@project).permitted_for?(:headline, :update)
+					        = form.input :headline, as: :string
+					      - if policy(@project).permitted_for?(:about, :update)
+					        = form.input :about
+					      - if policy(@project).permitted_for?(:tag_list, :update)
+					        .tags-path[data-url=tags_path]
+					        = form.input :tag_list, as: :string
+					      hr
+
+					      .section-header =t('words.location')
+					      - if policy(@project).permitted_for?(:location, :update)
+					        .location
+					          .location-coordinates.pin-img[data-longitude=@project.longitude data-latitude=@project.latitude data-url=image_url('pin.png')]
+					          = form.input :location, required: false, input_html: { class: 'search-cities-with-google' }, autocomplete: :off
+					          .map-canvas
+					      - if policy(@project).permitted_for?(:address_neighborhood, :update)
+					        = form.input :address_neighborhood
+					      hr
+					      .section-header =t('words.communication')
+					      - if policy(@project).permitted_for?(:video_url, :update)
+					        = form.input :video_url, as: :string
+					      .row
+					        - if policy(@project).permitted_for?(:uploaded_image, :update)
+					          .col-md-12.image-uploader
+					            = form.input :uploaded_image, as: :file
+					            - if @project.uploaded_image.present?
+					              .image-preview
+					                = image_tag(@project.uploaded_image.project_thumb.url, size: '220x172')
+					        - if policy(@project).permitted_for?(:hero_image, :update)
+					          .col-md-12.image-uploader
+					            = form.input :hero_image, as: :file
+					            - if @project.hero_image.present?
+					              .image-preview
+					                = image_tag(@project.hero_image_url(:blur), size: '220')
+					      - if policy(@project).permitted_for?(:site, :update)
+					        = form.input :site
+					      - if policy(@project).permitted_for?(:site, :update)
+					        = form.input :hash_tag
+
+					      hr
+					      .section-header =t('words.budget_and_planning')
+					      
+					      - if policy(@project).permitted_for?(:budget, :update)
+					        = form.input :budget
+					      /- if policy(@project).permitted_for?(:terms, :update)
+					      /  = form.input :terms
+					      hr
+
+
+                                              hr
+                                              .section-header =t('words.english_translation')
+
+                                              - if policy(@project).permitted_for?(:english, :update)
+                                                = form.input :english
+                                              hr
+
+                                             
+					      = form.button :submit, class:'btn btn-block btn-medium-red'
+
+							/- if request.xhr?
+					  		= yield :page_content
+							/- else
+					 		  = render template: 'projects/show'
+
+
+

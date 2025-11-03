@@ -1,0 +1,19 @@
+fr:
+  projects:
+    contributions:
+      edit:
+        title: 'Vous contribuez à %{project_name}'
+        you_are_contributing_to: 'Vous contribuez à'
+        total: 'Total: '
+        i_want_pay_fees: "Je prends en charge les frais de transaction"
+        payment:
+          title: 'Veuillez sélectionner un moyen de paiement ou envoyer un chèque à l initiateur de la cagnotte ou du projet tant que les interfaces de paiement ne sont pas encore disponibles'
+        reward:
+          title: 'Votre Reward'
+        tooltip-text: "Merci de soutenir <strong>%{project_name}</strong>! Afin de profiter au maximum de votre contribution, nous vous saurons gré si possible de prendre en charge les frais de transaction. Cela fait une grosse différence pour nous et pour l atteinte de nos objectifs et nous l apprécirons grandement.<br /><strong>Les frais de transaction sont de 5,5%.</strong>"
+        payment-method:
+          fees: 'Frais:'
+          balanced-creditcard:
+            title: 'Carte de Débit/Crédit'
+          balanced-bankaccount:
+            title: 'Compte en banque'

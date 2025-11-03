@@ -1,0 +1,15 @@
+fr:
+  devise:
+    confirmations:
+      new:
+        no_account_html: "Besoin d'un compte? S'inscrire"
+        titles:
+          site: 'Valider mon compte'
+          header: 'Valider mon compte'
+        links:
+          register: "S'inscrire"
+        form:
+          labels:
+            email: 'Votre adresse email'
+          inputs:
+            submit: 'Me renvoyer les instructions'

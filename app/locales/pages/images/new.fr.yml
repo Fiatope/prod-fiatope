@@ -1,0 +1,8 @@
+fr:
+  images:
+    new:
+      title: 'Télécharger une image'
+      description: 'Déposer une image ici ou cliquer pour en sélectionner une.'
+      insert: "Insérer l'image"
+      upload: 'Début de transfert'
+      uploading: 'En cours de transfert...'

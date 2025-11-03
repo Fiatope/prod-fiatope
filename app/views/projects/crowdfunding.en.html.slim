@@ -1,0 +1,200 @@
+- content_for :title, t('.title')
+.index-page
+  header.hero.center[data-image-url=image_path('panorama_fiatope_height.jpg')]
+    .row
+      .small-12.medium-12.medium-centered.columns
+        h2 = t('.titlebis').html_safe
+
+        = link_to new_user_registration_path do
+             h3 = t('.register.title')
+             span.button.medium = t('.register.button')
+    .row
+
+  hr
+  section.teasing
+    .row
+      h3.text-center
+        = t('.teasing.title')
+      h4.text-center
+        | 1ère plateforme de financement participatif qui permet aux entrepreneurs en Afrique francophone de constituer leur capital d'amorçage grâce aux dons des particuliers
+        |
+        br 
+        br
+        = image_tag "multi_ethnic_entrepreneurs.jpg"
+        |
+      h4.text-center
+         | 6 thèmes prioritaires: la médecine, les technologies, l'environnement, les énergies renouvelables, l'enseignement supérieur, la culture
+  
+  .row
+      .large-12.columns.large-centered
+        hr
+
+
+  section.how-it-works
+    .row
+      h3.text-center
+        = t('.how-it-works.title')
+        br
+        br
+        iframe width="633" height="380" src="//www.youtube.com/embed/jy6Dbcvgass?rel=0&modestbranding=1&theme=light&autoplay=0" frameborder="0" allowfullscreen=''
+
+      h4.text-center  
+        | Les porteurs de projets offrent aux mécènes des contreparties attrayantes
+
+  .row
+      .large-10.columns.large-centered
+        hr
+
+
+  section.actualités
+    .row
+      h3.text-center
+        = t('.actualités.title')
+    .row
+      h3.text-center 
+        = image_tag "oser_banniere.png", align: "middle"
+      h4.text-center
+        a href ="http://www.fiatope.com/org-partners-oser" Fiatope s'associe au Collectif OseR l'Afrique
+
+  .row
+    .large-12.columns.large-centered
+      hr
+
+
+  /section.a-propos
+  /  .row
+  /    h3.text-center
+  /      | Financez un des <strong>
+  /      = @projects.projets.size
+  /      | </strong> projets en ligne
+  /    h3.text-center
+      = link_to t('.discover_only.button'), discover_path, class: 'button large-12 columns large-center'
+
+
+  section.secure.white
+    .row
+      h3.text-center
+        = t('.paiements.title')
+      h4.text-center
+        | Vos contributions et vos cagnottes sont sécurisées (3D Secure) par nos partenaires de confiance
+        br
+        = image_tag "Mangopay.jpg"
+        = image_tag "Credi_Mutuel_Arkea.jpg"
+        = image_tag "Payline.jpg"     
+    .row
+      h4.text-center
+        | Fiatope est autorisé à afficher le label de financement participatif de la Banque de France
+        = image_tag "Label_Financement_Participatif.jpg"   
+    .row
+      h4.text-center
+        | L'ensemble de votre activité sur Fiatope.com est sécurisée par chiffrement
+        = image_tag "Chiffrement_HTTPS.jpg"
+        | certifié par
+        = image_tag "Geotrust.jpg"
+    .row
+      h4.text-center
+        | Nous acceptons les cartes bancaires Visa et Master Card. Nous allons bientôt accepter Sofort
+        = image_tag "Visa_Master_Card_2.jpg"
+
+  .row
+    .large-12.columns.large-centered
+      hr  
+   
+  section.partners
+    .row
+      h3.text-center
+        = t('.partenaires.title')
+      h4.text-center
+        |
+        a[href="http://www.info-afrique.com"] = image_tag "info-afrique.com.jpg"
+
+        a[href="https://www.kwendoo.com"] = image_tag "Logo_Kwendoo.jpg"
+
+        a[href="http://oserlafrique.com"] = image_tag "oser2.jpg"
+ 
+        a[href="http://www.maeci.org"] = image_tag "maeci.jpg"
+
+
+
+  section.projects
+    .row
+      - if @recommended.any?
+        section.successful
+          .small-12.columns
+            h3
+              = link_to discover_path(filter: 'recommended_and_cagnotte') do
+                i.icon-et-heart
+                = t('.filters.selection')
+
+          - if @recommended.present?
+            - for project in @recommended
+              = render 'project', project: @recommended.first, large: !browser.device.mobile? if @recommended.any?
+              = render 'project', project: @recommended.shift if @recommended.any?
+
+          /- if @recommended.size > 4
+            .text-right
+              = link_to discover_path(filter: 'recommended_and_cagnotte'), class: 'see-more' do
+                = t('.words.discover')
+                i.icon-et-right-circled
+
+
+      - if @successful.any?
+        section.successful
+          .small-12.columns
+            h3
+              = link_to discover_path(filter: 'successful_and_cagnotte') do
+                i.icon-et-thumbs-up
+                = t('.filters.successful')
+
+          - for project in @successful
+            p = render 'project', project: @successful.first, large: !browser.device.mobile? if @successful.any?
+
+          - if @successful.size >= 4
+            .text-right
+              = link_to discover_path(filter: 'successful_and_cagnotte'), class: 'see-more' do
+                = t('words.see_more')
+                i.icon-et-right-circled
+
+      /- if @coming_soon.any?
+        section.coming-soon
+          .small-12.columns
+            h3
+              = link_to discover_path(filter: 'soon_and_cagnotte') do
+                i.icon-et-clock
+                = t('.filters.coming_soon')
+
+          - for project in @coming_soon
+            p = render 'project', project: project
+
+          - if @coming_soon.size >= 4
+            .text-right.text-right.small-12.columns
+              = link_to discover_path(filter: 'soon_aand_cagnotte'), class: 'see-more' do
+                = t('words.voir_plus')
+                i.icon-et-right-circled
+
+    section.start-one
+      .row
+        /= link_to t('.discover.button'), discover_path, class: 'button large-5 columns large-left'
+        /= link_to t('.start-one.button'), new_user_registration_path, class: 'button large-5 columns large-right'
+        /.small-6.columns.centered
+        /  = link_to start_path do
+        /    h3 = t('.start-one.title')
+        /    span.button.columns.medium = t('.start-one.button')
+        /  = link_to start_path do
+        /    h3 = t('.start-one.title')
+            /span.button.columns.medium = t('.start-one.button')
+             h6  = link_to t('.start-one.button'), start_path, class: 'button columns medium'
+
+
+
+  section.press
+    .row
+      h3.text-center
+      /  | Le Crowdfunding pour l'Afrique dans la Presse
+      ul.list-inline
+      - @press_assets.each do |asset|
+        li.large-3.columns
+           = link_to asset.url, target: :blank, title: asset.title do
+             = image_tag asset.image.thumb.url
+
+

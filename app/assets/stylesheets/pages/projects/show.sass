@@ -1,0 +1,384 @@
+.project-page
+  header.hero
+    // padding-top: 0
+    // padding-bottom: 0
+    @media #{$medium}
+      // padding-top: +emCalc(25px)
+      // padding-bottom: +emCalc(60px)
+      .name
+        padding-bottom: +emCalc(40px)
+    .name
+      text-align: center
+    .name, .subtitle, .headline, .status
+      a
+        color: #DB9500
+        &:hover
+          color: #DB9500
+    .time-remaining
+      font-size: 140%
+      padding-top: 12px
+      font-weight: 200
+      i
+        padding-right: +emCalc(10px)
+      strong
+        padding-right: +emCalc(2px)
+    .has-tip
+      border-bottom: none
+      color: red
+      font-weight: 200
+    h3
+      font-weight: bold
+      font-size: 50px
+    .status
+      .pledged
+        font-size: 225%
+        padding-top: +emCalc(10px)
+        margin-bottom: +emCalc(10px)
+        small
+          font-size: 75%
+      .pledged.show-for-medium
+        font-size: 126%
+      .progress
+        margin-top: 40px
+        background: white
+        +radius(10px)
+        height: 30px
+
+        span
+          display: block
+          background: #db9500
+          height: 30px
+          +radius(3px)
+        &.green-bar
+          span
+            border: 1px solid $border-color
+            background: lighten($primary-color, 30%)
+    .contribute-top
+      margin-top: +emCalc(25px)
+
+  section.status-bar
+    display: none
+    background: white
+    padding: +emCalc(10px, 0)
+    color: $secondary-color
+    border-bottom: 1px solid $border-color
+
+    @media #{$medium}
+      top: 0px
+
+    &.show
+      display: block
+    p
+      font-weight: 200
+      text-transform: lowercase
+      margin-bottom: 0
+      text-align: center
+      i
+        padding-right: +emCalc(5px)
+        opacity: .5
+    .columns:not(:first-child)
+      border-left: 1px solid $border-color
+    .button
+      width: 100%
+      margin-bottom: 0
+      margin-top: 0
+    .status-description
+      line-height: 1
+      font-size: 75%
+    .share-small
+      margin-top: 0
+      position: relative
+      padding-right: +emCalc(30px)
+      .columns
+        border: none
+      .button
+        color: white
+        border: 1px solid darken($border-color, 10%)
+        // border-bottom-width: 2px
+        &:after
+          border-left-color: darken($border-color, 10%)
+        &.facebook
+          color: white
+        &.twitter
+          color: white
+  .button
+    &.contribute
+      width: 100%
+      font-size: 125%
+      padding-left: 0
+      &:after
+        content: ' '
+        // background: image-url('icons/dollar-heart.png') center no-repeat
+        font-weight: 200
+        font-family: $body-font-family
+        padding-top: 5px
+
+    &.edit
+      background: $special-highlighted-color
+      border-color: darken($special-highlighted-color, $button-border-color-darken)
+  .call-to-action
+    margin-top: +emCalc(15px)
+    @media #{$medium}
+      margin-top: 0
+    .button
+      font-size: 80%
+      width: 100%
+      margin-bottom: +emCalc(10px)
+      &.contribute
+        font-size: 125%
+      &.create-match
+        text-align: left
+        padding: +emCalc(15px)
+        padding-left: +emCalc(8px)
+        font-size: 105%
+        &:after
+          text-align: center
+          font-size: 195%
+          content: ' '
+          background: image-url('icons/2x.png') center no-repeat
+          font-weight: 200
+          font-family: $body-font-family
+          padding-top: 5px
+
+      &.edit
+        background: $special-highlighted-color
+        border-color: darken($special-highlighted-color, $button-border-color-darken)
+    .status-description
+      p
+        margin-bottom: 0
+
+  .neighbors-behind-this
+    .title
+      margin-bottom: +emCalc(5px)
+    p
+      text-align: center
+      padding: +emCalc(10px)
+    .list
+      margin-bottom: +emCalc(10px)
+      a
+        display: inline-block
+        padding: +emCalc(3px)
+        &.has-tip
+          border-bottom: none
+        img
+          width: 35px
+          height: 35px
+          +radius(50%)
+    .more
+      text-align: right
+      padding-right: +emCalc(5px)
+      padding-bottom: +emCalc(10px)
+
+  .main
+    section.content
+      background: white
+      text-align: justify
+      margin:
+        left: +emCalc(-15px)
+        right: +emCalc(-15px)
+      padding: +emCalc(15px)
+      padding-bottom: 0
+      @media #{$medium}
+        text-align: justify
+        padding-bottom: +emCalc(15px)
+
+  section.author
+    +clearfix
+    color: #DB9500
+    margin:
+      left: +emCalc(-15px)
+      right: +emCalc(-15px)
+      bottom: +emCalc(20px)
+    padding: +emCalc(25px)
+    &:before
+      margin-top: +emCalc(-25px)
+      margin-left: +emCalc(25px)
+      width: 0
+      height: 0
+      line-height: 0
+      border-top: +emCalc(20px) solid
+      border-top-color: $body-bg
+      border-right: (+emCalc(20px)*.75) solid transparent
+      border-left: (+emCalc(20px)*.75) solid transparent
+      @media #{$medium}
+        border-top-color: white
+    h4
+      color: #DB9500
+      text-transform: uppercase
+      font-weight: bold
+      margin-bottom: 0
+      a
+        color: #DB9500
+    h4.orange
+      color: #be5330
+      a
+        color: #be5330
+    p
+      color: white
+      margin-bottom: +emCalc(5px)
+    .row
+      margin: +emCalc(10px, 0)
+    figure.profile-image
+      margin-top: +emCalc(15px)
+      &.organization, &.channel
+        max-width: 100%
+        img
+          height: auto !important
+    .social
+      ul
+        margin: 0
+        li
+          list-style: none
+          float: left
+          margin-right: +emCalc(15px)
+      a
+        +single-transition(color, 0.6s)
+        color: white
+        font-size: 150%
+        &:hover
+          color: $primary-color
+    .ask-a-question-button
+      margin-top: +emCalc(7px)
+      margin-bottom: 0
+      font-size: 65%
+      border: 1px solid #DB9500
+      color: #DB9500
+      background-color: transparent
+    .ask-a-question-button.orange
+      color: #be5330
+
+  .share-small, .share-white
+    .button
+      width: 100%
+      &.embed:after
+        @extend .icon-et-code
+
+  .share-white
+    .button
+      color: white
+      border-bottom-color: darken($border-color, 10%)
+      &:after
+        border-left-color: darken($border-color, 10%)
+
+  .share-small
+    margin-top: +emCalc(10px)
+    .columns
+      padding-right: 0
+    .button
+      // padding-left: 0
+      // margin-bottom: 0
+      @extend .small
+      font-size: 70%
+      // padding-right: +emCalc(37px)
+      &:after
+        font-size: 130%
+
+  section.channel
+    background: white
+    margin-bottom: +emCalc(20px)
+    text-align: center
+    padding: +emCalc(15px)
+    border: 1px solid white
+    +single-transition(background-color, 0.6s)
+    +single-transition(box-shadow, 0.6s)
+    h5
+      text-transform: uppercase
+      margin-bottom: +emCalc(15px)
+      font-size: 109%
+    &:hover
+      background: $box-hover-background-color
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.30)
+
+#embed-panel
+  min-width: +emCalc(730px)
+  max-width: +emCalc(730px)
+  margin-left: +emCalc(-730px) / 2
+.embed-panel-page
+  h5
+    text-align: left
+    margin-top: 0
+    text-transform: uppercase
+  .header
+    margin-top: +emCalc(-15px)
+    margin-bottom: +emCalc(10px)
+    text-align: center
+    h3
+      text-transform: uppercase
+  .content
+    background: darken($body-bg, 5%)
+    margin-left: +emCalc(-30px)
+    margin-right: +emCalc(-30px)
+    margin-bottom: +emCalc(-30px)
+    padding-left: +emCalc(30px)
+    padding-right: +emCalc(30px)
+    padding-bottom: +emCalc(30px)
+    padding-top: +emCalc(30px)
+    border-top: 1px solid darken($border-color, 5%)
+  form
+    margin: 0
+    textarea
+      margin-bottom: 0
+      height: +emCalc(125px)
+  #project-video-embed-html
+    width: 390px
+  #project-box-embed-html
+    width: 250px
+
+@media #{$medium}
+  .project-page
+    .headline
+      padding-bottom: +emCalc(15px)
+    header.hero .status .pledged
+      font-size: 225%
+
+.contribute
+  margin-bottom: 30px
+
+.project-page
+  .progress
+    height: 30px
+    border-radius: 3px
+  .subtitle
+    color: #333333
+    font-size: 25px
+    padding: 20px 5px
+    i 
+      color: #DB9500
+      padding-right: 15px
+      padding-bottom: 45px
+    i.orange 
+      color: #be5330
+    a
+      color: #333333
+
+#no-margin-top
+  margin-top: 0px
+
+.padding-20
+  padding: 20px
+
+
+.project-page 
+  .prog
+    color: #333333
+    font-size: 25px
+    span
+      background: #db9500
+      display: block
+      height: 30px 
+    span.orange
+      background: #be5330
+
+  .video.youtube iframe
+    max-width: 100%
+
+// ###### dus #####"
+
+
+.video-container
+  position: relative
+  padding-bottom: 56.25%
+  padding-top: 30px
+  height: 0
+  overflow: hidden
+

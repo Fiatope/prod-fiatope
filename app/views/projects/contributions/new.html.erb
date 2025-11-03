@@ -1,0 +1,188 @@
+<div class="new-contribution-page">
+<%= javascript_include_tag "hello.js", "data-turbolinks-track" => true  %>
+
+  <%= simple_form_for @contribution, url: project_contributions_path(@project), html: { id: 'form-contribution' } do |form| %>
+      <%= hero_header_tag @project do %> 
+
+        <div class="row" style="margin-top: 200px;">
+          <div class="large-10 columns large-centered">
+            <div class="name">
+              <% if @project.matches.active.any? %>
+                <%=  matchers  @project.matches.active.map { |m| m.user.display_name }.uniq.to_sentence %>
+                  <h2> <%=  t('.contribution_with_matches', project_name: @project.name, matchers: matchers).html_safe %></h2>
+              <%else%>
+                <% if @project.presale?%>
+                  <h2> <%= t('.precommander', project_name: @project.name).html_safe %></h2>
+                <%else%>
+                  <h2>  <%= t('.contribute', project_name: @project.name).html_safe%> </h2>
+                <%end%>
+              <%end%>
+            </div>
+          </div>
+        </div>
+
+      <div class="row value-wrapper">
+        <div class="large-8 columns large-centered">
+          <div class="row">
+            <div class="large-2 small-2 columns">
+              <span class="prefix"><%= @project.currency_sym %></span>
+            </div>
+
+            <div class="large-8 small-8 columns text-center">
+              <% if @project.presale? %>
+                <%= form.number_field :value, readonly: false, required: true, label: false, autocomplete: 'off', min: 1, max: 2500, data: { rewards: @rewards.map{|r| {id: r.id, minimum_value: r.minimum_value.to_i} }.to_json }, class: 'with-prefix with-postfix  total_with_reward' %>
+              <% else %>
+                <%= form.number_field :value,  required: true, label: false, autocomplete: 'off', min: 1, max: 2500, data: { rewards: @rewards.map{|r| {id: r.id, minimum_value: r.minimum_value.to_i} }.to_json }, class: 'with-prefix with-postfix' %>
+              <% end %>        
+            </div>
+
+            <div class="large-2 small-2 columns">
+              <span class="postfix"> .00 </span>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="large-12 columns text-center">
+              </div class="minimum-value">
+                 <i> <%= t('.minimum_value', currency: @project.currency_sym) %> 
+              <div>
+            <div>
+          <div>
+        </div> 
+      </div>
+  <% end %>
+
+  <div class="row" style="margin-top:-50px">
+    <div class="large-12 columns text-center">
+      <div class="cfa-equivalent[data-conversion-rate=(ENV['CFA_CONVERSION_RATE'] || 656)]" style="color: white;">
+        <%= t('.cfa_equivalent_html') %>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="large-8 columns large-centered" style="margin-top: 3em;">
+      <% if @project.rewards.present? %>
+        <div class="subtitle">
+          <% if @project.presale? %>
+            <h4>  <%= t('.subtitle_presale') %> </h4>
+          <% else %>
+            <h4>  <%= t('.subtitle') %></h4>
+          <%end%>
+        </div>
+
+        <div class="row">
+          <%= form.association :reward_id, as: :radio_buttons, label: false, collection: @rewards do |builder| %>
+            <% if builder.object.any? %>
+              <% i=0 %>
+              <% for reward in builder.object %> 
+                <div class="large-12 columns">
+                  <div class="reward-option row <%='selected' if form.object.reward_id == reward.id %>">
+                    <div class="large-2 small-2 columns radio" id="reward_ids">
+                      <%if @project.presale? %>
+                          <%= hidden_field_tag "user_articles[#{i}][maximum_articles]", reward.maximum_articles, disabled: true%>
+                          <% if reward.id.present?%>
+                            <%= form.simple_fields_for :reward do |reward_form| %>
+                              <%= reward_form.radio_button "minimum_value_#{reward.id}".to_sym, reward.minimum_value.to_s.to_f, class: "reward hide" %>
+                            <%end%>
+                          <%end%>
+                          <%= check_box_tag "reward_ids[id][]", reward.id, false, disabled: false,  class: 'reward_check'%>
+                      <%elsif !@project.presale? && @project.rewards.present?  %>
+                          <%= radio_button_tag "reward_ids[id][]", reward.id,  false, disabled: false, class: "reward_in_check  #{'selected' if @contribution.reward && @contribution.reward.minimum_value === reward.minimum_value } " %>
+                          
+                             <%= hidden_field_tag "reward_value", reward.minimum_value%>
+                           
+                      <%else%>
+                          <%= check_box_tag "reward_ids[id][]", reward.id, false, disabled: false, class: 'reward_check' %>
+                      <%end%>
+                      <%= hidden_field_tag 'current_value', 0, class: 'current_value' %>
+                      <div class="add-more-reward">
+                        <a href="#" class=<%="add-to-cart reward_card_#{reward.id}"%>  id="down" >-</a>
+                        <a href="#" class=<%="add-to-cart reward_card_#{reward.id}" %> id="up" >+</a>
+                        <a href="#" class="cart"><span></span></a>
+                        <%= hidden_field_tag "reward_ids[quantity][]", '1'%>
+                      </div>
+                    </div>
+                    <div class="large-10 small-10 columns">
+                      <div class="row reward-image">
+                        <% if @project.presale? %>
+                          <%if reward.uploaded_image.url.present? %>
+                            <%= image_tag reward.uploaded_image.url%>
+                          <%end%>
+                        <%end%>
+                      </div>
+                      <%= form.label "reward_id#{'_' if reward.id.present?}#{reward.id}" do %>
+                        <div class="title">  <%= reward.title %> </div>
+                          <p class="description">
+                            <%= h reward.description %>
+                          </p>
+                          <%if reward.sold_out? %>
+                            <div class="sold-out">
+                              <%= I18n.t('reward.sold_out')%>
+                            </div>
+                          <%end%>
+                          <div class="minimum-value">
+                            <%if @project.presale? %>
+                              <%= reward.display_minimum %>
+                            <% else  %>
+                              <%= reward.minimum_value > 0 ? reward.display_minimum + ' et plus' : I18n.t('reward.dont_want')%>
+                            <%end%>
+                            <%if @project.presale? %>
+                            <div class="minimum-value">
+                              <%= "Nombre d'articles à sélectionner : #{reward.maximum_articles}" if reward.maximum_articles %>
+                            </div>
+                            <%end%>
+                          </div>
+                      <%end%>
+                      <%if @project.presale? %>
+                      <div class="large-12 columns">
+                        <div class="row">
+                          <%for article in reward.articles %>
+                            <div class="large-12 small-12 columns">
+                              <div class="row reward-image">
+                                <%if article.uploaded_image.url.present? %>
+                                  <%= image_tag article.uploaded_image.url%>
+                                <%end%>
+                                <div class="title"><%= article.title%></div>
+                                <p class="description">
+                                <%= h article.description%>
+                                </p>
+                                <div class="form-group">
+                                  <%= check_box_tag "user_articles[#{i}][id][]", article.id, false, disabled: true, class: 'article_check' %>
+                                  <% i=i+1 %>
+                                </div>
+                              </div>
+                            </div>
+                          <%end%>
+                        </div>                  
+                      </div>
+                      <%end%>
+                    </div>
+                            
+                  </div>
+                </div> 
+              <%end%>
+            <% end %>
+          <%end%>
+        </div>
+      <%end%>
+       <%= form.input :anonymous, as: :boolean, label: t('simple_form.labels.contribution.new.anonymous') %>
+        <div class="anonymous-warning hide">
+          <div class="alert-box">
+            <%= render 'anonymous_warning' %>
+          </div>
+        </div>
+        <%= form.input :short_note, label: t('simple_form.labels.contribution.new.short_note')%>
+        <div class="text-center">
+          <%= form.button :submit, t('.submit'), class: 'btn btn-medium-red-w-m btn-block' %>
+        </div>
+        <%if !@project.presale? && @project.rewards.present?  %>
+          <div class="subtitle error_amount">
+            <h4>Le prix du reward séléctionner est supérieur à votre contribution. </h4>
+          </div> 
+        <%end%>
+    </div>
+  </div>
+  <% end %>
+</div>
+

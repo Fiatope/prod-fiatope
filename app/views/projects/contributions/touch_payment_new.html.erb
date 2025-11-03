@@ -1,0 +1,27 @@
+<% content_for :title, @project.name %>
+
+<%= flash_messages if flash.notice.present? %>
+
+<div class="contribution-page">
+  <%= hero_header_tag @project do %>
+    <div class="large-10 columns large-centered">
+      <h3><%= t('.title') %></h3>
+    </div>
+  <% end %>
+
+  <div class="row page-main-content">
+    <div class="col-md-6 col-md-offset-3">
+
+      <%= form_tag touch_payment_initialization_project_contribution_path(@contribution.project, @contribution) do %>
+        <div class="form-group">
+          <%= select_tag :country_operator, raw(@html_operators), prompt: 'Sélectionner votre opérateur', class: 'form-control' %>
+        </div>
+        <div class="form-group">
+          <%= text_field_tag :phone, nil, placeholder: 'Entrer votre numéro de téléphone', class: 'form-control' %>
+        </div>
+        <%= submit_tag 'Effectuer le paiement', class: 'btn btn-primary btn-medium-green' %>
+      <% end %>
+
+    </div>
+  </div>
+</div>

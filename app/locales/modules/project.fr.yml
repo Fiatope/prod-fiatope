@@ -1,0 +1,21 @@
+fr:
+  project:
+    display_status:
+      expired: 'expiré'
+      failed: 'pas financée'
+      successful: 'financée'
+      canceled: 'annulée'
+      tobefollowed: 'à suivre'
+      waiting_confirmation: 'en attente de confirmation'
+      waiting_funds: 'en attente de fonds'
+      not_reached_goal: 'objectif non atteint'
+      draft: 'En Revue'
+    organization_type:
+      municipality: 'Personne physique'
+      neighborhood_organization: 'Organisme privé'
+      registered_nonprofit: 'Association'
+      public_private_partnership: 'Hôpital'
+      cid_bid: 'Université'
+      other: 'Autre'
+      not_sure: 'Jeune entreprise'
+     

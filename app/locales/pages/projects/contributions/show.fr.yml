@@ -1,0 +1,21 @@
+fr:
+  projects:
+    contributions:
+      show:
+        title: 'Merci'
+        projectname: '%{project_name}'
+        thank_you: "Merci pour votre participation. Le porteur de projet en sera informé. Un email de confirmation de paiement vous a été envoyé."
+        recommended_projects: 'Vous pourriez aimer ces autres projets:'
+        share: "Vous pouvez encore être utile en parlant de votre contribution à d'autres!"
+        amount: '%{value}'
+        so_far: '&nbsp; collectés sur &nbsp; '
+        mycontrib: 'Ma contribution : %{amount}'
+        twitter-text: 'Je viens de contribuer pour %{value} à %{name} sur @Fiatop: %{project_url}'
+        facebook: 'Partager'
+        twitter: 'Tweeter'
+        bankaccount:
+          title: 'Vous avez conribué par le biais de votre compte bancaire. Veuillez vérifier votre compte pour terminer votre contribution.'
+          steps:
+            first: 'We will make two small deposits (each less than $1.00) to this account. Deposits may take 1-2 business days to appear.'
+            second: 'You will receive an email with a link to verify your account using the two deposit amounts.'
+            third: 'Once your account has been verified, your contribution will be processed and automatically reflected in the campaign you contributed to.'

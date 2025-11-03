@@ -1,0 +1,21 @@
+language: ruby
+cache: bundler
+env: RAILS_ENV=test DISPLAY=:99.0
+script:
+  - bundle exec rspec --colour --format d
+before_script:
+  - 'sh -e /etc/init.d/xvfb start'
+  - './bin/bootstrap'
+deploy:
+  provider: heroku
+  strategy: git
+  api_key:
+    secure: tWSfGLGVFh1VPJxIlHzA+iVM8qjDsqmw+eQx0t3//pNJXCpSatS98Dzr8u/W8JXQlMH4mauKfFEVdIKmOQHLfi/yIFIxgjM4CrHOXgDZ7ZtXpzY5NiwUt7eXiCKdWalLmmkdt4vBL9GYTCuGk47HD9cRL8L6jySGxxgjV5zIYTg=
+  app: neighborly-staging
+  on:
+    repo: neighborly/neighborly
+  run:
+    - rake db:migrate
+    - restart
+notifications:
+  webhooks: http://neighborly-ci.herokuapp.com/projects/2b7b50be-5f61-43b6-9e25-a61a1894d6d6/status

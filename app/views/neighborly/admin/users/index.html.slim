@@ -1,0 +1,69 @@
+- @title = t('.title')
+.admin
+  .row
+    = render 'neighborly/admin/layouts/menu'
+    section.content.large-12.columns
+      .filters
+        = form_for users_path, method: :get, class: 'form-horizontal' do |f|
+          = f.hidden_field :order_by, name: :order_by, value: params[:order_by]
+          .row
+            .large-2.columns
+              = f.label :by_id, t('.id')
+              = f.text_field :by_id, class: 'input-small', name: :by_id, value: params[:by_id]
+            .large-5.columns
+              = f.label :by_name, t('.name')
+              = f.text_field :by_name, class: 'input-small', name: :by_name, value: params[:by_name]
+            .large-5.columns
+              = f.label :by_email, t('.email')
+              = f.text_field :by_email, class: 'input-small', name: :by_email, value: params[:by_email]
+            .large-12.columns
+              = f.label :by_key, t('.key')
+              = f.text_field :by_key, name: :by_key, value: params[:by_key]
+            .large-6.columns.text-left
+              = check_box_tag :has_credits, :true, params[:has_credits].present?
+              = label_tag :has_credits, t('.credits')
+            .large-6.columns.text-right
+              = submit_tag t('.submit'), class: 'button'
+      .row
+        .large-6.columns.text-left
+          strong= "#{@total_users} "
+          = t('.total_contributions')
+          |  ·
+          strong= "#{number_to_currency @total_contributed, precision: 0} "
+          = t('.total_contributed')
+          |  ·
+          strong= "#{number_to_currency @total_credits, precision: 0} "
+          = t('.total_credits')
+        .large-6.columns.text-right
+          = paginate @users
+      .data-table
+        - if @users.empty?
+          = t('.no_users')
+        - else
+          table
+            thead
+              tr
+                th= t('.id')
+                th= t('.key')
+                th= t('.user')
+                th= t('.email')
+                th
+                  a data-sort="coalesce(user_totals.sum,0)" href='#'= t('.total_contributed')
+                  span.sort-order
+                th
+                  a data-sort="coalesce(user_totals.credits,0)" href='#'= t('.credits')
+                  span.sort-order
+                th
+                th
+            tbody
+              - for user in @users do
+                tr id=user.id
+                  td= link_to user.id, main_app.user_path(user), target: '_blank'
+                  td= user.mangopay_contributor.try(:key)
+                  td= link_to user.name, contributions_path(by_user_id: user.id), target: '_blank'
+                  td= user.email
+                  td= user.user_total ? user.user_total.sum : 0
+                  td= user.credits
+                  td= link_to t('.edit'), main_app.edit_user_path(user), class: 'button tiny', target: :blank
+                  td= link_to 'delete', main_app.delete_recursive_user_path(user), method: :post, remote: true, class: 'button tiny', data: {confirm: "Attention cet utilisateur va être supprimé ainsi que ses projets relié (si aucune contribution n'a été faite)"}
+        = paginate @users

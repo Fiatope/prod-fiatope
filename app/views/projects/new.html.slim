@@ -1,0 +1,88 @@
+- @title = t('.titles.site')
+
+- content_for :meta_tags do
+  meta name="description" content= t('.meta_description')
+
+.background-full-color.flex-container.text-center
+	.background-title.flex-item
+		h2 = t('.titles.header')
+
+.new-project-page[class="category-#{@project.category.to_s.parameterize}"]
+
+  - unless browser.device.mobile? || browser.device.tablet?
+    ol.joyride-list[data-joyride]
+      li data-id="joyride-start" data-text=t('.joyride.next') data-options='tipLocation: right; tip_animation: fade;'
+        h5 = t('.joyride.start.title')
+        p = t('.joyride.start.description')
+
+      - joyride = [{id: 'project_category_id',            name: :category},
+                   {id: 'project_name',                   name: :name},
+                   {id: 'project_currency',               name: :currency},  
+                   {id: 'project_goal',                   name: :goal},
+                   {id: 'project_online_days',            name: :online_days},
+                   {id: 'project_location',               name: :location},
+                   {id: 'project_headline',               name: :headline},
+                   {id: 'project_about',                  name: :about},
+                   {id: 'project_organization_type',      name: :organization_type}]
+
+      - for joy in joyride
+        li data-id=joy[:id] data-text=t('.joyride.next')
+          h5 = t(".joyride.#{joy[:name]}.title")
+          p = t(".joyride.#{joy[:name]}.description").html_safe
+
+  .row
+    .large-6.medium-7.columns.large-centered
+      .new-project-box
+        .row
+          .large-10.small-11.columns.large-centered.small-centered
+            = simple_form_for @project do |f|
+              = f.input :category_id, collection: Category.array, selected: @project.category_id, include_blank: false, required: true
+              - if current_user.admin?
+                = f.input :partner_id, label: "Inclure dans la page partenaire:", collection: Partner.all.map { |e| [e.permalink, e.id] }, include_blank: "Ne pas inclure ce project dans la page partenaire"
+              - elsif current_user.partner
+                = f.input :partner_id, label: "Inclure dans la page partenaire:", collection: [[current_user.partner.name, current_user.partner.id]], include_blank: "Ne pas inclure ce project dans la page partenaire"
+              
+              = f.input :name, as: :string, maxlength: 100
+
+              = f.label :currency
+              = f.select :currency, available_currencies
+
+              .input[class="#{'error' if @project.errors[:goal].present?}"]
+                .row
+                  = f.label :goal
+                 	/.large-1.small-2.columns
+                  /   span.prefix €
+                  .large-12.small-12.columns
+                    = f.number_field :goal, class: 'with-prefix with-postfix'
+                  /.large-1.small-2.columns
+                  /   span.postfix .00
+                -  if @project.errors[:goal].present?
+                  small.error = @project.errors[:goal].to_sentence
+
+              .input[class="#{'error' if @project.errors[:presale_goal].present?}"]
+                .row
+                  = f.label :presale_goal
+                 	/.large-1.small-2.columns
+                  /   span.prefix €
+                  .large-12.small-12.columns
+                    = f.number_field :presale_goal, class: 'with-prefix with-postfix'
+                  /.large-1.small-2.columns
+                  /   span.postfix .00
+                -  if @project.errors[:presale_goal].present?
+                  small.error = @project.errors[:presale_goal].to_sentence
+
+              = f.input :online_days
+
+              .location.location-coordinates.pin-img[data-longitude=@project.longitude data-latitude=@project.latitude data-image-url=image_url('pin.png')]
+                = f.input :location, input_html: { class: 'search-cities-with-google', autocomplete: :off }
+                .map-canvas
+              - if !current_user.admin? && !current_user.partner
+                = f.input :partner_id, label: "Veuillez indiquer si vous créez un projet avec un de nos partenaires :", collection: Partner.array, selected: '', include_blank: true, required: false
+              
+              = f.input :headline, as: :string, maxlength: 140
+              = f.input :about
+              = f.input :organization_type, as: :select, collection: Project.organization_type_array, prompt: :translate, input_html: { required: true }
+              = f.input :donation_can_issue_tax_receipt, input_html: { style: "position: relative; margin-bottom: 0px;" }
+
+              p.terms = t('.accept_terms_html', link: link_to(t('words.terms'), terms_path, target: :blank))
+              = f.button :submit, class:'btn btn-medium-red-w-m'

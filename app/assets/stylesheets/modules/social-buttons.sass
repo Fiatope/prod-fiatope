@@ -1,0 +1,57 @@
+.button
+  &.facebook
+    background: $facebook-color
+    border-bottom-color: darken($facebook-color, $button-border-color-darken)
+    color: white
+    &:hover
+      background: lighten($facebook-color, $button-border-color-darken)
+    &.with-icon
+      &:after
+        border-left-color: darken($facebook-color, $button-border-color-darken)
+        padding-top: +emCalc(8px)
+        @extend .icon-et-facebook
+
+  &.twitter
+    background: $twitter-color
+    border-bottom-color: darken($twitter-color, $button-border-color-darken)
+    color: white
+    &:hover
+      background: lighten($twitter-color, $button-border-color-darken)
+    &.with-icon
+      &:after
+        border-left-color: darken($twitter-color, $button-border-color-darken)
+        padding-top: +emCalc(6px)
+        @extend .icon-et-twitter
+
+
+  &.google, &.google_oauth2
+    background: $google-color
+    border-bottom-color: darken($google-color, $button-border-color-darken)
+    color: white
+    margin-top: 10px
+    &:hover
+      background: lighten($google-color, $button-border-color-darken)
+    &.with-icon
+      &:after
+        border-left-color: darken($google-color, $button-border-color-darken)
+        padding-top: +emCalc(6px)
+        @extend .icon-et-gplus
+
+  &.linkedin
+    background: $linkedin-color
+    border-bottom-color: darken($linkedin-color, $button-border-color-darken)
+    color: white
+    &:hover
+      background: lighten($linkedin-color, $button-border-color-darken)
+    &.with-icon
+      &:after
+        border-left-color: darken($linkedin-color, $button-border-color-darken)
+        padding-top: +emCalc(6px)
+        @extend .icon-et-linkedin
+
+  &.facebook.secondary, &.twitter.secondary, &.linkedin.secondary, &.google.secondary, &.google_oauth2.secondary
+    background: $secondary-color
+    border-bottom-color: darken($secondary-color, $button-border-color-darken)
+    &.with-icon
+      &:after
+        border-left-color: darken($secondary-color, $button-border-color-darken)

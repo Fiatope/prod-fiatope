@@ -1,0 +1,29 @@
+- project = @notification.project
+- if @notification.contribution.present?
+  - resource = @notification.contribution
+- else
+  - resource = @notification.match
+
+|Chèr(e) #{resource.user.display_name},
+br
+br
+|Vous avez souhaité faire une #{resource.class.model_name.human} à #{link_to(resource.project.name, project_url(resource.project))}. 
+br
+br
+|Nous sommes désolés que la transaction n'ait pas pu se dérouler avec succès. notre intermédiaire de paiement nous a signalé l'erreur suivante:
+br
+|Votre Banque n'a pas activé l'option de sécurité supplémentaire demandée par #{Configuration[:company_name]}. Demandez l'activation de cette option auprès de votre BAnque et ré-essayez.
+br
+br
+|Votre carte de paiement n'a pas été débitée. 
+br
+br
+|Nous sommes désolés de ce désagrément et espérons que vous allez pouvoir effectuer votre contribution à nouveau et dans les meilleurs délais.
+br
+br
+|Pour toute autre question, écrivez nous #{mail_to Configuration[:email_contact]} ou accédez à nos #{link_to('FAQ', "#{Configuration[:base_url]}/faq")}.
+br
+br
+|Bien à vous,
+br
+|L'équipe #{Configuration[:company_name]}

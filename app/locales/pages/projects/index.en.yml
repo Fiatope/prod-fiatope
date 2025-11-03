@@ -1,0 +1,89 @@
+en:
+  projects:
+    index:
+      title: 'Crowdfunding Africa'
+      subtitle: "Collect and finance all your joint projects thanks to the free and secure online kitty: birthday, marriage, ethics, ..."
+      meta_description: 'Crowdfunding for Africa'
+      titlebis: 'Donate to Empower Entrepreneurship'
+      recommended: 'Recommended'
+      near: 'Projects Near'
+      channels: 'We were there'
+      ending_soon: 'Ending Soon'
+      successful: 'Successful'
+      coming_soon: 'Coming Soon'
+      join:
+        join_the_neighborhood: 'Join Fiatope'
+        already_joined: 'Already joined? %{link}.'
+        sign_in: 'Sign in'
+      hero:
+        title: 'We make possible joint action and impact<strong></strong>.'
+        subtitle: "Fiatope is the best way to earn golden impressions while doing good to communities and people."
+        email_placeholder: 'My email'
+        submit: 'Join the Newsletter'
+      how-it-works:
+        one:
+          headline: 'Pots'
+          text: 'You can create a pot to fund actions for local communities in Africa. As a remote member of such a community or as a sympathizer, you can contribute to such a pot.'
+          button: 'Pot space'
+        two:
+          headline: 'Projects'
+          text: "If you have an original and ambitious project in need of new funding sources, if you would like to make impact by helping such projects happen, you've come to the right place."
+          button: 'Project space'
+        three:
+          headline: 'For Citizens'
+          text: 'Want to earn perks while enhancing projects? What you do matters. Welcome to Fiatope.'
+          button: 'Find Projects'
+      start-one:
+        title: 'Have a project in need of funding?'
+        button: 'Start one'
+         
+        four:
+          button: 'How does it work?'
+      how-it-works-bis:
+        five:
+          headline: 'How does it work?'
+      why-fiatope:
+        six:
+          headline: 'Why should i use Fiatope?'
+          button: 'Why should i use Fiatope?'
+        reason:
+          secu:
+            title: 'Security'
+            content: "At Fiatope, we respect our confidentiality commitments. Your payment information and contributions are secure. Our local partner is responsible for handing over the Fiatopers to the project holder via a transparent process."
+          fiab:
+            title: 'Reliability'
+            content: "You have the assurance that your donations will be received by the beneficiary project leader. Indeed, the Banque de France strictly supervises the activity of holding funds on behalf of third parties and guarantees the destination of the funds via the authorization it gives to our payment intermediary and the legal obligations of Fiatope."
+          prof:
+            title: 'Professionalism'
+            content: "Our ability to select ambitious, original and innovative projects for you in fields such as higher education, health, technology, environment, agriculture, culture. We work for this with many partners in Europe and Africa."
+          trans:
+            title: 'Transparency'
+            content: "Fiatope is a responsible company. We work with partners approved by the French and international administrative and financial authorities.
+We make every effort to guarantee the security of your information and the funds you entrust to us for third parties."
+      discover:
+        title: 'Are you looking for a favorite?'
+        titlea: 'Favorite projects'
+        button: "Fund projects"
+        button1: "Discover other projects"
+        titleb: 'OUR PARTENERS'
+      discover_only:
+        button: 'Discover projects'
+        button1: 'Submit a project'
+      porteurs:
+        title: 'Do you have a project? Get started!'
+      press: 'IN THE PRESS'
+      start-one:
+        seven:
+          headline: ' Un projet à financer?'
+          button: 'Démarrer votre campagne'
+      mission:
+        height:
+          headline: 'Our mission'
+      channels:
+        there: 'We where there'
+      register:
+        title: ''
+        button: 'sign-up to follow the projects'  
+ 
+    project:
+      title: ""

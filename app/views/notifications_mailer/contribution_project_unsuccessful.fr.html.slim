@@ -1,0 +1,36 @@
+= content_for :title, t('.titre')
+- contribution = @notification.contribution
+|Cher(e), #{contribution.user.name}.
+br
+br
+|Nous sommes désolés de vous informer que le project #{link_to(contribution.project.name, "#{Configuration[:base_url]}/projects/#{contribution.project.to_param}")} n'a pas atteint son objectif et ne sera pas financé. 
+br
+|En effet le financement n'intervient que lorsque le montant récolté est supérieur ou égal à l'objectif fixé. En tant que contributeur, nous désirons  savoir si vous souhaitez convertir votre contribution qui était à hauteur #{contribution.display_value} euros en crédits fiatope #{Configuration[:company_name]}  afin de soutenir d'autres projets.
+br
+br
+|Vous pouvez #{link_to "découvrir d'autres projets", "#{Configuration[:base_url]}/explore"} et les financer avec vos crédits.
+br
+br
+-contribution.user.recommended_projects.limit(3).each do |project|
+  |#{link_to(project.name, "#{Configuration[:base_url]}/projects/#{project.to_param}")}
+  br
+  |#{project.headline}
+  br
+  br
+|Si vous préférez, vous pouvez demander un remboursement en allant #{link_to("ici", "#{Configuration[:base_url]}/users/#{contribution.user.to_param}/credits")}. Vous devrez être connecté à votre compte. Vous pouvez aussi nous envoyer un email de demande de remboursement en précisant le projet.
+br
+br
+|Si vous choisissez d'être remboursé, n'oubliez pas que conformément aux #{link_to(" #{Configuration[:company_name]} Terms & Conditions","#{Configuration[:base_url]}/terms")}, des frais de cantonnement de 2,5% seront retenus. Si vous avez une quelconque question à ce sujet, envoyez un email à #{mail_to Configuration[:email_payments]} avec en objet "Remboursement de contribution".
+br
+br
+|Si pour une quelconque raison vous souhaitez contacter le porteur de projet, envoyez un mail directement à #{mail_to contribution.project.user.email}. Pour toute autre question, consultez nos #{link_to('FAQ',"#{Configuration[:base_url]}/faq")}.
+br
+br
+|Merci,
+br
+|L'équipe #{Configuration[:company_name]}
+br
+br
+br
+br
+|Clé de Retour: #{contribution.key}

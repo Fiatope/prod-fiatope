@@ -1,0 +1,23 @@
+= content_for :title, t('.titre')
+- project = @notification.project
+|Bonjour, #{project.user.display_name},
+br
+br
+|Malheureusement, votre projet s est terminé sur #{Configuration[:company_name]} sans atteindre son objectif.
+br
+br
+|Tous vos contributeurs ont reçu un email les notifiant de la possibilité soit de convertir leur contribution en crédit utilisables sur notre plateforme, soit de se faire rembourser. A savoir que 2 possibilités de remboursement existent;
+br
+ol
+   li Si la contribution a été payée par Carte bleue, le rembousement apparaîtra en crédit sur le compte bancaire correspondant aubout dequelues jours.
+   li Si la contributuin a été faite par virement bancaire, le contributeur recevra un chèque de remboursement.
+br
+|Aussi, votre feedback nous est particulièrment précieux dans notre effort d améliorer nos services. Veuillez nous écire à #{mail_to Configuration[:email_contact]}.
+br
+br
+|Merci beaucoup pour votre participation et votre feedback. 
+br
+br
+|Tout le meilleur,
+br
+|L équipe #{Configuration[:company_name]} 
