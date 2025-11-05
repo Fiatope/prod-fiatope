@@ -54,7 +54,21 @@ class Projects::BuildController < ApplicationController
       @skip_to = @next_step
       render_wizard
     elsif step == :verify
-      render_wizard @project
+      # Dernière étape : sauvegarder le projet en base de données
+      Rails.logger.debug("## Tentative de sauvegarde du projet")
+      Rails.logger.debug("## Projet: #{@project.inspect}")
+      Rails.logger.debug("## Erreurs avant save: #{@project.errors.full_messages}")
+      
+      if @project.save
+        Rails.logger.debug("## Projet sauvegardé avec succès, ID: #{@project.id}")
+        render_wizard @project
+      else
+        Rails.logger.error("## ERREUR: Échec de sauvegarde du projet")
+        Rails.logger.error("## Erreurs: #{@project.errors.full_messages}")
+        
+        flash.now[:alert] = "Impossible de créer le projet : #{@project.errors.full_messages.join(', ')}"
+        render_wizard
+      end
     else
       Rails.logger.debug("Skiping wicked save, step: #{step}, last step: #{Wicked::LAST_STEP}, finish step: #{Wicked::FINISH_STEP}")
       @skip_to = @next_step
@@ -73,11 +87,23 @@ class Projects::BuildController < ApplicationController
   end
 
   def finish_wizard_path
-    puts "****************************************************"
-    puts "project : #{@project.inspect}"
-    puts "****************************************************"
-    puts "partner : #{@project.partner.inspect}"
-    puts "****************************************************"
+    Rails.logger.debug("****************************************************")
+    Rails.logger.debug("project : #{@project.inspect}")
+    Rails.logger.debug("project ID : #{@project.id}")
+    Rails.logger.debug("project permalink : #{@project.permalink}")
+    Rails.logger.debug("****************************************************")
+    Rails.logger.debug("partner : #{@project.partner.inspect}")
+    Rails.logger.debug("****************************************************")
+
+    # Vérifier que le projet a bien un ID et un permalink
+    unless @project.persisted? && @project.permalink.present?
+      Rails.logger.error("## ERREUR: finish_wizard_path appelé avec un projet non sauvegardé")
+      Rails.logger.error("## Projet persisted?: #{@project.persisted?}")
+      Rails.logger.error("## Projet ID: #{@project.id}")
+      Rails.logger.error("## Projet permalink: #{@project.permalink}")
+      Rails.logger.error("## Erreurs: #{@project.errors.full_messages}")
+      return projects_path
+    end
 
     if @project.partner.present?
       partner_project_path(partner_id: @project.partner.permalink, id: @project.permalink)

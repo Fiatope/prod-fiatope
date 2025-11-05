@@ -167,7 +167,7 @@
 
 
 
-      - if @project.last_channel
+      - if @project.last_channel && @project.last_channel.image.present?
         section.channel
           = link_to root_url(subdomain: @project.last_channel.permalink, protocol: :http) do
             .row

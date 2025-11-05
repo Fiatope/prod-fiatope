@@ -5,6 +5,24 @@ class RewardsController < ApplicationController
 
   def index
     @rewards = parent.rewards.rank(:row_order)
+    
+    # DEBUG: Log pour diagnostiquer le problème du bouton rewards
+    Rails.logger.debug("=" * 80)
+    Rails.logger.debug("REWARDS#INDEX DEBUG")
+    Rails.logger.debug("  Project: #{parent.name} (#{parent.permalink})")
+    Rails.logger.debug("  Current user: #{current_user ? "#{current_user.name} (#{current_user.email})" : "NIL"}")
+    Rails.logger.debug("  Rewards count: #{@rewards.count}")
+    Rails.logger.debug("  XHR request?: #{request.xhr?}")
+    
+    if current_user
+      policy = ProjectPolicy.new(current_user, parent)
+      Rails.logger.debug("  policy(parent).update?: #{policy.update?}")
+    else
+      Rails.logger.debug("  policy(parent).update?: N/A (no current_user)")
+    end
+    
+    Rails.logger.debug("=" * 80)
+    
     respond_with @rewards, layout: !request.xhr?
   end
 

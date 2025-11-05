@@ -3,15 +3,19 @@ source 'http://rubygems.org'
 
 ruby '3.1.4'
 
-gem 'rails', '6.1.3'
+gem 'rails', '~> 6.1.7' # Upgrade pour éviter problème mimemagic
+
+# Fix timezone sur Windows
+gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw, :jruby]
+gem 'sys-proctable', platforms: [:mingw, :mswin, :x64_mingw]
 
 gem 'rails-observers', '~> 0.1.2'
 gem 'active_model_serializers'
 gem 'json-jwt'
 
-gem 'redis'
-gem 'sidekiq'
-gem 'sidekiq-cron'
+gem 'redis', '~> 4.8' # Compatible avec Redis 3.x
+gem 'sidekiq', '~> 6.5' # Sidekiq 6.x supporte Redis 3.x (Sidekiq 7+ nécessite Redis 6.2+)
+gem 'sidekiq-cron', '~> 1.10' # Compatible avec Sidekiq 6.x
 gem 'sprockets', '~> 3.7.2'
 # State machine for attributes on models
 gem 'state_machines'
@@ -78,8 +82,9 @@ gem 'kaminari'
 #gem 'temple', '0.7.6'
 
 # Uploads
-gem 'carrierwave'
-gem 'rmagick', :require => 'rmagick'
+gem 'carrierwave', '~> 3.0' # Version 3.0+ n'utilise plus mimemagic
+# gem 'rmagick', :require => 'rmagick' # Commenté - problème d'installation sur Windows
+gem 'mini_magick' # Alternative à rmagick, plus facile à installer
 gem 'dropzonejs-rails'
 
 # Other Tools
@@ -98,7 +103,7 @@ gem 'rollbar'
 
 # Feature branch still to be merged by original gem author
 gem 'as_csv', require: 'as_csv', github: 'Irio/as_csv', branch: 'localization-of-headers'
-gem 'gctools'
+# gem 'gctools' # Commenté - ne compile pas sur Windows avec Ruby 3.1
 
 # Excel
 gem 'spreadsheet'
@@ -119,8 +124,9 @@ group :production do
   gem 'fog-aws'
 
   # Workers, forks and all that jazz
-  gem 'unicorn'
-  gem "unicorn-rails"
+  # gem 'unicorn' # Commenté - ne fonctionne pas sur Windows
+  # gem "unicorn-rails" # Commenté - ne fonctionne pas sur Windows
+  # On utilise Puma à la place
 
   # Enabling Gzip on Heroku
   # If you don't use Heroku, please comment the line below.
