@@ -55,6 +55,9 @@ class Project < ActiveRecord::Base
   has_and_belongs_to_many :channels
   has_many :unsubscribes
 
+  # Auto-assign default channel to new projects
+  after_commit :assign_default_channel, on: :create
+
   # acts_as_likeable
 
   accepts_nested_attributes_for :rewards
@@ -241,6 +244,28 @@ class Project < ActiveRecord::Base
   end
 
   private
+  
+  # Auto-assign default channel to projects without one
+  def assign_default_channel
+    # Skip if project already has channels
+    return if self.channels.reload.any?
+    
+    # Find any existing channel (preferably 'general' or the first one)
+    default_channel = Channel.find_by(permalink: 'general') || Channel.first
+    
+    unless default_channel
+      Rails.logger.warn("⚠️  Aucun canal trouvé pour le projet '#{self.name}'. Créez un canal d'abord.")
+      return
+    end
+    
+    # Assign the channel
+    self.channels << default_channel
+    
+    Rails.logger.info("✅ Canal '#{default_channel.name}' assigné au projet '#{self.name}' (ID: #{self.id})")
+  rescue => e
+    Rails.logger.error("❌ Erreur assignation canal au projet #{self.id}: #{e.message}")
+  end
+  
   def self.get_routes
     routes = Rails.application.routes.routes.map do |r|
       r.path.spec.to_s.split('/').second.to_s.gsub(/\(.*?\)/, '')
