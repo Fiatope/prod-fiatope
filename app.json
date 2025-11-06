@@ -1,0 +1,54 @@
+{
+  "name": "Fiatope",
+  "description": "Plateforme de crowdfunding Fiatope",
+  "repository": "https://github.com/votre-repo/fiatope",
+  "keywords": ["rails", "crowdfunding", "neighborly"],
+  "buildpacks": [
+    {
+      "url": "https://github.com/heroku/heroku-buildpack-apt"
+    },
+    {
+      "url": "https://github.com/heroku/heroku-buildpack-nodejs"
+    },
+    {
+      "url": "https://github.com/heroku/heroku-buildpack-ruby"
+    }
+  ],
+  "env": {
+    "RAILS_ENV": {
+      "description": "Rails environment",
+      "value": "production"
+    },
+    "RACK_ENV": {
+      "description": "Rack environment",
+      "value": "production"
+    },
+    "SECRET_KEY_BASE": {
+      "description": "Secret key for Rails",
+      "generator": "secret"
+    },
+    "RAILS_SERVE_STATIC_FILES": {
+      "description": "Enable serving static files",
+      "value": "enabled"
+    },
+    "RAILS_LOG_TO_STDOUT": {
+      "description": "Enable logging to stdout",
+      "value": "enabled"
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1
+    },
+    "worker": {
+      "quantity": 1
+    }
+  },
+  "addons": [
+    "heroku-postgresql",
+    "heroku-redis"
+  ],
+  "scripts": {
+    "postdeploy": "bundle exec rails db:migrate"
+  }
+}
