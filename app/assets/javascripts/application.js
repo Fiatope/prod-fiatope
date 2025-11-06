@@ -30,8 +30,12 @@ var loaded = function(){
 
 	document.addEventListener("turbolinks:load", function() {
 
-   	document.querySelector("body > div.discover.text-center > div.container > div > div.project-box.col-md-4.col-xs-12.environnement.left > a:nth-child(2) > div > div > img").src = "https://kwendoo.s3.amazonaws.com/uploads/project/uploaded_image/2944/project_thumb_large_mangroove.jpg";
-   	console.log("image okay home");
+   	// Fix image on home page if element exists
+   	var homeImage = document.querySelector("body > div.discover.text-center > div.container > div > div.project-box.col-md-4.col-xs-12.environnement.left > a:nth-child(2) > div > div > img");
+   	if (homeImage) {
+   		homeImage.src = "https://kwendoo.s3.amazonaws.com/uploads/project/uploaded_image/2944/project_thumb_large_mangroove.jpg";
+   		console.log("image okay home");
+   	}
 
 
 		$("#question1").click(function(){

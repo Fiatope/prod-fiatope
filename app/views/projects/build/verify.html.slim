@@ -18,6 +18,14 @@
         .row
           .large-10.small-11.columns.large-centered.small-centered
             = simple_form_for @project, url: wizard_path, method: :put do |f|
+              - if @project.errors.any?
+                .alert.alert-danger
+                  h4 
+                    | ⚠️ Erreurs à corriger (#{@project.errors.count})
+                  ul
+                    - @project.errors.full_messages.each do |message|
+                      li = message
+              
               p.check_data = t('crowdfunding.check_then_send')
 
               - 4.times do |i|

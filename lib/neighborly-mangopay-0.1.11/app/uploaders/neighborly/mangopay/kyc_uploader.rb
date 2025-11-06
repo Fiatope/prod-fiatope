@@ -2,7 +2,7 @@
 
 module Neighborly::Mangopay
   class KycUploader < CarrierWave::Uploader::Base
-    include CarrierWave::RMagick
+    include CarrierWave::MiniMagick
     #include CarrierWave::MimeTypes
 
     def extension_white_list
