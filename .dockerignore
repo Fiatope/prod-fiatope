@@ -1,0 +1,74 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+README*
+CHANGELOG*
+LICENSE*
+CONTRIBUTING*
+
+# Logs
+log/*
+*.log
+tmp/*
+
+# Tests
+spec/
+test/
+coverage/
+
+# Development
+.env.local
+.env.development
+.env.test
+
+# Scripts de debug
+*_test.rb
+*_debug.rb
+*_fix.rb
+check_*.rb
+diagnose_*.rb
+verify_*.rb
+quick_*.rb
+create_*.rb
+setup_*.rb
+test_*.rb
+fix_*.rb
+debug_*.rb
+
+# Fichiers patch
+*.patch
+*.fixed
+
+# Scripts de déploiement (non nécessaires dans l'image)
+deploy_*.sh
+deploy_*.ps1
+*.ps1
+
+# Node modules (seront réinstallés si nécessaire)
+node_modules/
+
+# Assets précompilés (seront régénérés)
+public/assets/*
+public/packs/*
+
+# Cache
+.cache
+.bundle
+vendor/cache
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Backup
+*.bak
+*.backup
