@@ -1,0 +1,27 @@
+# Aptfile - Dépendances système pour Easypanel/Heroku buildpacks
+# Ce fichier sera lu lors du déploiement pour installer les paquets Linux nécessaires
+
+# Build essentials pour compiler les gems natives
+build-essential
+git
+
+# PostgreSQL client libraries (pour la gem 'pg')
+libpq-dev
+postgresql-client
+
+# XML/HTML parsing libraries (pour nokogiri)
+libxml2-dev
+libxslt1-dev
+zlib1g-dev
+
+# ImageMagick pour mini_magick
+imagemagick
+libmagickwand-dev
+
+# wkhtmltopdf pour la génération de PDF
+xvfb
+wkhtmltopdf
+
+# Node.js pour la compilation des assets JavaScript
+nodejs
+npm
