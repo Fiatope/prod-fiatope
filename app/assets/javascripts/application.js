@@ -225,6 +225,11 @@ var loaded = function(){
 				}).toArray();
 			
 				if(selected_no_presale_value.length > 0){
+					// Insérer automatiquement le montant du reward dans le champ de contribution
+					var rewardValue = parseInt(selected_no_presale_value[0].next('input[type=hidden]').val());
+					if (!isNaN(rewardValue) && rewardValue > 0) {
+						$('.value-wrapper').find('input[type=number]').val(rewardValue);
+					}
 				
 					var inputs = $('.value-wrapper').find('input[type="number"]');
 						inputs.keyup(function() {
