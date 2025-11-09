@@ -54,7 +54,7 @@
 
   <div class="row" style="margin-top:-50px">
     <div class="large-12 columns text-center">
-      <div class="cfa-equivalent[data-conversion-rate=(ENV['CFA_CONVERSION_RATE'] || 656)]" style="color: white;">
+      <div class="cfa-equivalent" data-conversion-rate="<%= ENV['CFA_CONVERSION_RATE'] || 656 %>" style="color: white;">
         <%= t('.cfa_equivalent_html') %>
       </div>
     </div>
