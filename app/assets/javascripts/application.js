@@ -137,18 +137,33 @@ var loaded = function(){
 			$to_hide.closest(".project-box").hide();
 		});
 		
-		if ($(".cfa-equivalent").length) {
-			$("#contribution_form_value").on("change", function(e) {
-			e.preventDefault();
-			var num = $(this).val();
-			if (isNaN(num)) {
-				$("#cfa-value").html(0.0);
-			} else {
-				var conversion_rate = $(".cfa-equivalent").data("conversion-rate");
-				var cfa = parseFloat(num) * 656;
-				$("#cfa-value").html(Math.round(cfa));
+		// Fonction pour mettre à jour la conversion FCFA
+		function updateCfaConversion() {
+			var num = $("#contribution_form_value").val();
+			var conversion_rate = $(".cfa-equivalent").data("conversion-rate");
+			
+			if (!conversion_rate || isNaN(conversion_rate)) {
+				conversion_rate = 656;
 			}
-			});
+			
+			if (isNaN(num) || num === '' || num <= 0) {
+				$("#cfa-value").html('0');
+			} else {
+				var cfa = parseFloat(num) * parseFloat(conversion_rate);
+				$("#cfa-value").html(Math.round(cfa).toLocaleString('fr-FR'));
+			}
+		}
+		
+		// Événements pour mise à jour FCFA
+		if ($(".cfa-equivalent").length && $("#cfa-value").length) {
+			// Événement 'input' pour mise à jour en temps réel
+			$("#contribution_form_value").on("input", updateCfaConversion);
+			
+			// Événement 'change' pour compatibilité
+			$("#contribution_form_value").on("change", updateCfaConversion);
+			
+			// Appel initial pour afficher la valeur au chargement
+			updateCfaConversion();
 		}
 
 		if ($('#project_about, #project_budget, #project_english, #partner_about, #project_terms').length) {
@@ -225,14 +240,18 @@ var loaded = function(){
 				}).toArray();
 			
 				if(selected_no_presale_value.length > 0){
-					// Insérer automatiquement le montant du reward dans le champ de contribution
-					var rewardValue = parseInt(selected_no_presale_value[0].next('input[type=hidden]').val());
-					if (!isNaN(rewardValue) && rewardValue > 0) {
-						$('.value-wrapper').find('input[type=number]').val(rewardValue);
+				// Insérer automatiquement le montant du reward dans le champ de contribution
+				var rewardValue = parseInt(selected_no_presale_value[0].next('input[type=hidden]').val());
+				if (!isNaN(rewardValue) && rewardValue > 0) {
+					$('.value-wrapper').find('input[type=number]').val(rewardValue);
+					// Mettre à jour la conversion FCFA
+					if (typeof updateCfaConversion === 'function') {
+						updateCfaConversion();
 					}
+				}
 				
 					var inputs = $('.value-wrapper').find('input[type="number"]');
-						inputs.keyup(function() {
+					inputs.keyup(function() {
 						mount = $(this).val();
 						if(parseInt(selected_no_presale_value[0].next('input[type=hidden]').val()) > mount){
 							$('input[type=submit]').hide();
