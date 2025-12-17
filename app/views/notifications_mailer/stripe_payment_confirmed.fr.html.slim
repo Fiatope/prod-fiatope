@@ -1,0 +1,42 @@
+- if @notification.contribution.present?
+  - resource = @notification.contribution
+- else
+  - resource = @notification.match
+
+|Chèr(e), #{resource.user.display_name}!
+br
+br
+|Ce mail confirme votre #{resource.class.model_name.human} au projet #{link_to(resource.project.name, project_url(resource.project))}. Votre paiement par carte bancaire via Stripe a été traité avec succès.
+br
+br
+|Montant de la #{resource.class.model_name.human}:
+strong #{number_to_currency resource.value, unit: (resource.project.currency || "EUR"), precision: 2}
+br
+|#{resource.class.model_name.human} effectuée le:
+strong #{l resource.created_at.to_date, format: :long}
+br
+br
+- if resource.payment_id.present?
+  |Référence du paiement Stripe:
+  strong #{resource.payment_id}
+  br
+br
+- if resource.is_a?(Contribution)
+  - if resource.project.flexible?
+    |Vous serez prévenu de l'avancement du financement du projet.
+  - else
+    |Si le projet atteint son objectif, vous serez débité du montant de votre contribution. Sinon, vous serez intégralement remboursé.
+  br
+br
+|Si vous souhaitez contacter #{resource.project.user.name}, envoyez un email à #{mail_to resource.project.user.email}.
+br
+br
+|Pour toute autre question, écrivez-nous à #{mail_to Configuration[:email_contact]} ou consultez nos #{link_to('FAQ', "#{Configuration[:base_url]}/faq")}.
+br
+br
+|Merci pour votre soutien !
+br
+br
+|Bien à vous,
+br
+|L'équipe #{Configuration[:company_name]}

@@ -42,6 +42,7 @@ Neighborly::Application.routes.draw do
 
   #mount Neighborly::Api::Engine => '/api/', as: :neighborly_api
   #mount Neighborly::Dashboard::Engine => '/dashboard/', as: :neighborly_dashboard
+  mount Neighborly::Stripe::Engine => '/stripe/', as: :neighborly_stripe
   mount Neighborly::Mangopay::Creditcard::Engine => '/mangopay/creditcard/', as: :neighborly_mangopay_creditcard
   mount Neighborly::Mangopay::Engine => '/mangopay/', as: :neighborly_mangopay
   #mount Neighborly::Balanced::Creditcard::Engine => '/balanced/creditcard/', as: :neighborly_balanced_creditcard

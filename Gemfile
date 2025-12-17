@@ -27,6 +27,10 @@ gem 'net-http-digest_auth'
 gem 'recursive-open-struct'
 gem 'faraday'
 # Payment engines
+# Stripe Connect
+gem 'stripe', '~> 10.0'
+gem 'neighborly-stripe', :path => "lib/neighborly-stripe-0.1.0"
+
 # Neighborly mangopay
 gem 'cocoon'
 gem 'country_select'

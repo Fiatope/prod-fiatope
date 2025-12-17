@@ -1,0 +1,156 @@
+<% content_for :title do %>
+  Contribution réussie - <%= @project.name %> | Fiatope
+<% end %>
+
+<div class="container" style="padding-top: 40px; padding-bottom: 60px; max-width: 800px; margin: 0 auto;">
+  <div class="row" style="display: flex; justify-content: center;">
+    <div class="col-12" style="max-width: 700px; margin: 0 auto;">
+      
+      <!-- Bandeau de succès -->
+      <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); border-radius: 12px; padding: 40px; text-align: center; color: white; margin-bottom: 30px; box-shadow: 0 10px 40px rgba(40, 167, 69, 0.3);">
+        <div style="width: 80px; height: 80px; background: white; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
+          <i class="fa fa-check" style="font-size: 40px; color: #28a745;"></i>
+        </div>
+        <h1 style="font-size: 28px; margin-bottom: 10px; font-weight: 600;">Paiement réussi !</h1>
+        <p style="font-size: 18px; opacity: 0.95; margin: 0;">Merci pour votre contribution au projet</p>
+      </div>
+
+      <!-- Détails de la contribution -->
+      <div style="background: white; border-radius: 12px; padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 25px;">
+        <h2 style="font-size: 20px; color: #333; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid #f0f0f0; text-align: center;">
+          <i class="fa fa-file-text-o" style="color: #6c5ce7; margin-right: 10px;"></i>
+          Récapitulatif de votre contribution
+        </h2>
+        
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 30px;">
+          <!-- Colonne projet -->
+          <div style="flex: 1; min-width: 250px; max-width: 300px; text-align: center;">
+            <% if @project.uploaded_image.present? %>
+              <div style="width: 100px; height: 75px; border-radius: 8px; overflow: hidden; margin: 0 auto 15px;">
+                <%= image_tag @project.uploaded_image.url, style: "width: 100%; height: 100%; object-fit: cover;" %>
+              </div>
+            <% end %>
+            <p style="color: #888; font-size: 12px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Projet</p>
+            <p style="font-size: 16px; font-weight: 600; color: #333; margin: 0;"><%= @project.name %></p>
+            <p style="font-size: 13px; color: #666; margin: 5px 0 0;">par <%= @project.user.display_name %></p>
+          </div>
+          
+          <!-- Colonne montant -->
+          <div style="flex: 1; min-width: 250px; max-width: 300px; text-align: center;">
+            <% if @contribution %>
+              <p style="color: #888; font-size: 12px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Montant de votre contribution</p>
+              <p style="font-size: 28px; font-weight: 700; color: #6c5ce7; margin: 0;">
+                <%= number_to_currency(@contribution.value, unit: @project.currency == 'EUR' ? '€' : @project.currency, format: '%n %u') %>
+              </p>
+            <% end %>
+          </div>
+        </div>
+        
+        <hr style="border: none; border-top: 1px solid #f0f0f0; margin: 20px 0;">
+        
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 30px;">
+          <div style="flex: 1; min-width: 200px; max-width: 250px; text-align: center;">
+            <p style="color: #888; font-size: 12px; margin-bottom: 5px;">Mode de paiement</p>
+            <p style="font-size: 14px; color: #333; margin: 0;">
+              <i class="fa fa-credit-card" style="color: #6772e5; margin-right: 8px;"></i>
+              Carte bancaire (Stripe)
+            </p>
+          </div>
+          <div style="flex: 1; min-width: 200px; max-width: 250px; text-align: center;">
+            <p style="color: #888; font-size: 12px; margin-bottom: 5px;">Date</p>
+            <p style="font-size: 14px; color: #333; margin: 0;"><%= l(Time.current, format: :long) %></p>
+          </div>
+        </div>
+        
+        <% if @payment_intent_id %>
+          <div style="background: #f8f9fa; border-radius: 8px; padding: 12px 15px; margin-top: 15px; text-align: center;">
+            <p style="color: #888; font-size: 12px; margin-bottom: 3px;">Référence de transaction</p>
+            <p style="font-size: 13px; color: #555; margin: 0; font-family: monospace;"><%= @payment_intent_id %></p>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Impact de la contribution -->
+      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 25px 30px; color: white; margin-bottom: 25px; text-align: center;">
+        <h3 style="font-size: 18px; margin-bottom: 8px; font-weight: 600;">
+          <i class="fa fa-heart" style="margin-right: 10px;"></i>
+          Votre impact compte !
+        </h3>
+        <p style="margin: 0 0 20px 0; opacity: 0.9; font-size: 14px;">
+          Grâce à vous, le projet "<%= @project.name %>" se rapproche de son objectif. 
+          Chaque contribution fait la différence !
+        </p>
+        <% real_progress = @project.goal.to_f > 0 ? (@project.pledged.to_f / @project.goal.to_f * 100) : 0 %>
+        <div style="font-size: 42px; font-weight: 700;"><%= number_with_precision(real_progress, precision: 1, strip_insignificant_zeros: true) %>%</div>
+        <div style="font-size: 14px; opacity: 0.8;">de l'objectif atteint</div>
+      </div>
+
+      <!-- Prochaines étapes -->
+      <div style="background: white; border-radius: 12px; padding: 25px 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 25px;">
+        <h3 style="font-size: 18px; color: #333; margin-bottom: 20px; text-align: center;">
+          <i class="fa fa-envelope" style="color: #17a2b8; margin-right: 10px;"></i>
+          Prochaines étapes
+        </h3>
+        <ul style="list-style: none; padding: 0; margin: 0;">
+          <li style="padding: 10px 0; border-bottom: 1px solid #f0f0f0; display: flex; align-items: flex-start;">
+            <span style="width: 24px; height: 24px; background: #e3f2fd; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px; flex-shrink: 0;">
+              <i class="fa fa-check" style="font-size: 12px; color: #1976d2;"></i>
+            </span>
+            <div>
+              <strong style="color: #333;">Email de confirmation</strong>
+              <p style="margin: 5px 0 0; color: #666; font-size: 13px;">Vous recevrez un email de confirmation dans quelques instants.</p>
+            </div>
+          </li>
+          <li style="padding: 10px 0; border-bottom: 1px solid #f0f0f0; display: flex; align-items: flex-start;">
+            <span style="width: 24px; height: 24px; background: #e8f5e9; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px; flex-shrink: 0;">
+              <i class="fa fa-bell" style="font-size: 12px; color: #388e3c;"></i>
+            </span>
+            <div>
+              <strong style="color: #333;">Suivi du projet</strong>
+              <p style="margin: 5px 0 0; color: #666; font-size: 13px;">Vous serez informé des actualités et de l'avancement du projet.</p>
+            </div>
+          </li>
+          <li style="padding: 10px 0; display: flex; align-items: flex-start;">
+            <span style="width: 24px; height: 24px; background: #fff3e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px; flex-shrink: 0;">
+              <i class="fa fa-gift" style="font-size: 12px; color: #f57c00;"></i>
+            </span>
+            <div>
+              <strong style="color: #333;">Contreparties</strong>
+              <p style="margin: 5px 0 0; color: #666; font-size: 13px;">Si vous avez choisi une contrepartie, le porteur de projet vous contactera pour l'envoi.</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Boutons d'action -->
+      <div class="text-center" style="margin-top: 30px;">
+        <%= link_to "/projects/#{@project.permalink}", class: "btn btn-lg", style: "background: linear-gradient(135deg, #6c5ce7 0%, #a55eea 100%); color: white; padding: 15px 40px; border-radius: 30px; font-weight: 600; margin: 5px; box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4);" do %>
+          <i class="fa fa-arrow-left" style="margin-right: 8px;"></i> Retour au projet
+        <% end %>
+        
+        <% if current_user %>
+          <%= link_to "/users/#{current_user.id}#contributions", class: "btn btn-lg", style: "background: white; color: #6c5ce7; padding: 15px 40px; border-radius: 30px; font-weight: 600; margin: 5px; border: 2px solid #6c5ce7;" do %>
+            <i class="fa fa-list" style="margin-right: 8px;"></i> Mes contributions
+          <% end %>
+        <% end %>
+      </div>
+
+      <!-- Partage social -->
+      <div style="text-align: center; margin-top: 40px; padding-top: 30px; border-top: 1px solid #eee;">
+        <p style="color: #888; font-size: 14px; margin-bottom: 15px;">Partagez votre soutien et encouragez d'autres personnes à contribuer !</p>
+        <div>
+          <%= link_to "https://www.facebook.com/sharer/sharer.php?u=#{request.base_url}/projects/#{@project.permalink}", target: "_blank", class: "btn", style: "background: #1877f2; color: white; border-radius: 20px; padding: 8px 20px; margin: 5px;" do %>
+            <i class="fa fa-facebook"></i> Facebook
+          <% end %>
+          <%= link_to "https://twitter.com/intent/tweet?text=Je viens de soutenir le projet #{@project.name} sur Fiatope !&url=#{request.base_url}/projects/#{@project.permalink}", target: "_blank", class: "btn", style: "background: #1da1f2; color: white; border-radius: 20px; padding: 8px 20px; margin: 5px;" do %>
+            <i class="fa fa-twitter"></i> Twitter
+          <% end %>
+          <%= link_to "https://wa.me/?text=Je viens de soutenir le projet #{@project.name} sur Fiatope ! #{request.base_url}/projects/#{@project.permalink}", target: "_blank", class: "btn", style: "background: #25d366; color: white; border-radius: 20px; padding: 8px 20px; margin: 5px;" do %>
+            <i class="fa fa-whatsapp"></i> WhatsApp
+          <% end %>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
