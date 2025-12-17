@@ -1,0 +1,7 @@
+en:
+  shared:
+    payments:
+      form:
+        payment-method:
+          stripe:
+            title: "Credit Card (Stripe)"
