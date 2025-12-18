@@ -1,6 +1,6 @@
 module Neighborly
   module Stripe
-    class Order < ActiveRecord::Base
+    class Order < Neighborly::Stripe::ApplicationRecord
       self.table_name = 'stripe_orders'
       
       belongs_to :user

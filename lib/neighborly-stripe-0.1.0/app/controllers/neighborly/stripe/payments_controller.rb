@@ -1,24 +1,105 @@
 module Neighborly
   module Stripe
-    class PaymentsController < ActionController::Base
-      include Devise::Controllers::Helpers
-      
+    class PaymentsController < ApplicationController
       before_action :authenticate_user!, except: [:success, :cancel]
-      
-      helper_method :current_user
       
       def new
         @project = ::Project.find(params[:project_id])
         @contribution = @project.contributions.find(params[:contribution_id]) if params[:contribution_id].present?
-        @amount = @contribution&.value || params[:amount]&.to_f || 10.0
+        @amount = @contribution&.value || params[:amount].to_f
         
         unless @project.use_stripe?
-          render html: "<div class='alert alert-warning'>#{I18n.t('stripe.project_not_ready', default: 'Ce projet ne peut pas encore accepter les paiements Stripe')}</div>".html_safe
-          return
+          flash[:alert] = I18n.t('stripe.project_not_ready', default: 'Ce projet ne peut pas encore accepter les paiements Stripe')
+          redirect_to "/projects/#{@project.permalink}" and return
         end
         
-        # Rendre la vue avec le formulaire de paiement
-        render :new, layout: false
+        # Créer directement la session Stripe Checkout et rediriger
+        begin
+          amount_cents = (@amount * 100).to_i
+          
+          # Vérifier si le compte Connect peut recevoir des transferts
+          connect_ready = false
+          if @project.stripe_account_id.present?
+            begin
+              account = ::Stripe::Account.retrieve(@project.stripe_account_id)
+              connect_ready = account.charges_enabled && account.capabilities&.transfers == 'active'
+            rescue ::Stripe::StripeError
+              connect_ready = false
+            end
+          end
+          
+          # Construire URL image valide (Stripe exige URL absolue https)
+          image_url = nil
+          if @project.uploaded_image.present?
+            img = @project.uploaded_image.url
+            if img.present?
+              if img.start_with?('http')
+                image_url = img
+              elsif img.start_with?('/')
+                image_url = "#{request.base_url}#{img}"
+              end
+            end
+          end
+          
+          product_data = {
+            name: @project.name.presence || "Projet #{@project.id}",
+            description: I18n.t('stripe.contribution_description', 
+              project: @project.name, 
+              default: "Contribution au projet #{@project.name}")[0..499]
+          }
+          product_data[:images] = [image_url] if image_url.present? && image_url.start_with?('https')
+          
+          session_params = {
+            payment_method_types: ['card'],
+            line_items: [{
+              price_data: {
+                currency: @project.currency.presence&.downcase || 'eur',
+                product_data: product_data,
+                unit_amount: amount_cents
+              },
+              quantity: 1
+            }],
+            mode: 'payment',
+            success_url: "#{request.base_url}/stripe/projects/#{@project.id}/payments/success?session_id={CHECKOUT_SESSION_ID}",
+            cancel_url: "#{request.base_url}/stripe/projects/#{@project.id}/payments/cancel",
+            customer: current_user.stripe_customer.id,
+            client_reference_id: current_user.id.to_s,
+            metadata: {
+              project_id: @project.id,
+              user_id: current_user.id,
+              contribution_id: @contribution&.id,
+              platform: 'fiatope'
+            }
+          }
+          
+          # Ajouter transfer_data seulement si le compte Connect est prêt
+          if connect_ready
+            platform_fee = @project.platform_fee_amount(amount_cents)
+            session_params[:payment_intent_data] = {
+              application_fee_amount: platform_fee,
+              transfer_data: {
+                destination: @project.stripe_account_id
+              },
+              metadata: {
+                project_id: @project.id,
+                project_name: @project.name,
+                user_id: current_user.id,
+                user_email: current_user.email
+              }
+            }
+            Rails.logger.info "Stripe Connect: Paiement avec transfert vers #{@project.stripe_account_id}"
+          else
+            Rails.logger.info "Stripe: Paiement direct (Connect non prêt)"
+          end
+          
+          session = ::Stripe::Checkout::Session.create(session_params)
+          
+          redirect_to session.url, allow_other_host: true
+        rescue ::Stripe::StripeError => e
+          Rails.logger.error "Stripe payment error: #{e.message}"
+          flash[:alert] = I18n.t('stripe.payment_error', error: e.message, default: "Erreur de paiement : #{e.message}")
+          redirect_to "/projects/#{@project.permalink}"
+        end
       end
       
       def create
