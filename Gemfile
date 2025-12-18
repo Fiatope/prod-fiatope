@@ -19,7 +19,6 @@ gem 'state_machines-activerecord'
 
 # Database and data related
 gem 'pg'
-gem 'sqlite3', '~> 1.6'  # Utilisé uniquement pour assets:precompile dans Docker
 gem 'postgres-copy'
 gem 'pg_search'
 

@@ -9,14 +9,13 @@ ENV RAILS_ENV=production \
     RAILS_SERVE_STATIC_FILES=enabled \
     RAILS_LOG_TO_STDOUT=enabled
 
-# Installation des dépendances système (optimisé)
+# Installation des dépendances système
 RUN apt-get update -qq && \
     apt-get install -y --no-install-recommends \
     build-essential \
     git \
     curl \
     libpq-dev \
-    libsqlite3-dev \
     postgresql-client \
     libxml2-dev \
     libxslt1-dev \
@@ -27,7 +26,7 @@ RUN apt-get update -qq && \
     wkhtmltopdf \
     && rm -rf /var/lib/apt/lists/*
 
-# Installation de Node.js 20 LTS (compatible avec npm@latest)
+# Installation de Node.js 20 LTS
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs && \
     npm install -g npm@latest && \
@@ -43,7 +42,7 @@ RUN gem install bundler -v $BUNDLER_VERSION
 COPY Gemfile Gemfile.lock ./
 COPY lib/ ./lib/
 
-# Installation des gems (avec cache)
+# Installation des gems
 RUN bundle config set --local deployment 'true' && \
     bundle config set --local without 'development test' && \
     bundle install --jobs 4 --retry 3 && \
@@ -52,29 +51,38 @@ RUN bundle config set --local deployment 'true' && \
 # Copie du reste de l'application
 COPY . .
 
-# Copie du fichier database.yml pour Docker (ignoré par git)
+# Copie du fichier database.yml pour Docker
 RUN cp config/database.yml.docker config/database.yml
 
-# Précompilation des assets (avec SQLite temporaire pour éviter connexion DB)
-RUN SECRET_KEY_BASE=dummy \
-    DATABASE_URL="sqlite3:///tmp/dummy.sqlite3" \
-    bundle exec rails assets:precompile && \
-    rm -rf tmp/cache
+# Créer le script d'entrée qui précompile les assets au premier démarrage
+RUN echo '#!/bin/bash\n\
+set -e\n\
+\n\
+# Démarrer Xvfb pour wkhtmltopdf\n\
+Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &\n\
+export DISPLAY=:99\n\
+\n\
+# Précompiler les assets au premier démarrage si nécessaire\n\
+if [ ! -f /app/public/assets/.precompiled ]; then\n\
+  echo "==> Précompilation des assets (premier démarrage)..."\n\
+  bundle exec rails assets:precompile\n\
+  touch /app/public/assets/.precompiled\n\
+  echo "==> Assets précompilés avec succès!"\n\
+fi\n\
+\n\
+# Exécuter la commande passée en argument\n\
+exec "$@"\n\
+' > /usr/local/bin/docker-entrypoint.sh && \
+    chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Nettoyage pour réduire la taille de l'image
-RUN apt-get purge -y --auto-remove build-essential git && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
-    rm -rf ~/.bundle ~/.gem
-
-# Configuration Xvfb pour wkhtmltopdf
-RUN echo '#!/bin/bash\nXvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &\nexec "$@"' > /usr/local/bin/entrypoint.sh && \
-    chmod +x /usr/local/bin/entrypoint.sh
+# Créer le dossier public/assets
+RUN mkdir -p /app/public/assets
 
 # Exposition du port
 EXPOSE 3000
 
 # Point d'entrée
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
 # Commande par défaut
 CMD ["bundle", "exec", "puma", "-C", "config/puma.rb"]
