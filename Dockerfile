@@ -4,7 +4,7 @@ FROM ruby:3.1.4-slim
 # Variables d'environnement
 ENV RAILS_ENV=production \
     RACK_ENV=production \
-    NODE_VERSION=18.20.2 \
+    NODE_VERSION=20.x \
     BUNDLER_VERSION=2.4.22 \
     RAILS_SERVE_STATIC_FILES=enabled \
     RAILS_LOG_TO_STDOUT=enabled
@@ -26,8 +26,8 @@ RUN apt-get update -qq && \
     wkhtmltopdf \
     && rm -rf /var/lib/apt/lists/*
 
-# Installation de Node.js
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+# Installation de Node.js 20 LTS (compatible avec npm@latest)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs && \
     npm install -g npm@latest && \
     rm -rf /var/lib/apt/lists/*
