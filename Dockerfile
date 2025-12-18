@@ -16,6 +16,7 @@ RUN apt-get update -qq && \
     git \
     curl \
     libpq-dev \
+    libsqlite3-dev \
     postgresql-client \
     libxml2-dev \
     libxslt1-dev \
@@ -54,8 +55,10 @@ COPY . .
 # Copie du fichier database.yml pour Docker (ignoré par git)
 RUN cp config/database.yml.docker config/database.yml
 
-# Précompilation des assets (avec cache)
-RUN SECRET_KEY_BASE=dummy bundle exec rails assets:precompile && \
+# Précompilation des assets (avec SQLite temporaire pour éviter connexion DB)
+RUN SECRET_KEY_BASE=dummy \
+    DATABASE_URL="sqlite3:///tmp/dummy.sqlite3" \
+    bundle exec rails assets:precompile && \
     rm -rf tmp/cache
 
 # Nettoyage pour réduire la taille de l'image
