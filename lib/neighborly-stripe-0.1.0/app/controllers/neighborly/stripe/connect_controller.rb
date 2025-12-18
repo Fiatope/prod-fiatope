@@ -1,7 +1,11 @@
 module Neighborly
   module Stripe
-    class ConnectController < ApplicationController
+    class ConnectController < ActionController::Base
+      include Devise::Controllers::Helpers
+      
       before_action :authenticate_user!
+      
+      helper_method :current_user
       
       def create_account
         if current_user.stripe_connect_account_id.blank?

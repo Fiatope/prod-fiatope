@@ -1,7 +1,11 @@
 module Neighborly
   module Stripe
-    class PaymentsController < ApplicationController
+    class PaymentsController < ActionController::Base
+      include Devise::Controllers::Helpers
+      
       before_action :authenticate_user!, except: [:success, :cancel]
+      
+      helper_method :current_user
       
       def new
         @project = ::Project.find(params[:project_id])
