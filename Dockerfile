@@ -51,6 +51,9 @@ RUN bundle config set --local deployment 'true' && \
 # Copie du reste de l'application
 COPY . .
 
+# Copie du fichier database.yml pour Docker (ignoré par git)
+RUN cp config/database.yml.docker config/database.yml
+
 # Précompilation des assets (avec cache)
 RUN SECRET_KEY_BASE=dummy bundle exec rails assets:precompile && \
     rm -rf tmp/cache
