@@ -70,6 +70,13 @@ PATH
       recursive-open-struct
       slim
 
+PATH
+  remote: lib/neighborly-stripe-0.1.0
+  specs:
+    neighborly-stripe (0.1.0)
+      rails (~> 6.1)
+      stripe (~> 10.0)
+
 GEM
   remote: http://rubygems.org/
   specs:
@@ -266,6 +273,7 @@ GEM
       net-http
     ffaker (2.23.0)
     ffi (1.16.3)
+    ffi (1.16.3-x64-mingw-ucrt)
     fog-aws (3.22.0)
       fog-core (~> 2.1)
       fog-json (~> 1.1)
@@ -354,6 +362,7 @@ GEM
       childprocess (~> 5.0)
     letter_opener (1.10.0)
       launchy (>= 2.2, < 4)
+    libv8-node (21.7.2.0)
     libv8-node (21.7.2.0-x86_64-darwin)
     libv8-node (21.7.2.0-x86_64-linux)
     loofah (2.22.0)
@@ -404,6 +413,8 @@ GEM
     net-ssh (7.2.3)
     net_http_timeout_errors (1.0.0)
     nio4r (2.7.1)
+    nokogiri (1.16.4-x64-mingw-ucrt)
+      racc (~> 1.4)
     nokogiri (1.16.4-x86_64-darwin)
       racc (~> 1.4)
     nokogiri (1.16.4-x86_64-linux)
@@ -462,6 +473,7 @@ GEM
     orm_adapter (0.5.0)
     ostruct (0.6.0)
     pg (1.5.6)
+    pg (1.5.6-x64-mingw-ucrt)
     pg_search (2.3.6)
       activerecord (>= 5.2)
       activesupport (>= 5.2)
@@ -640,6 +652,7 @@ GEM
     state_machines-activerecord (0.9.0)
       activerecord (>= 6.0)
       state_machines-activemodel (>= 0.9.0)
+    stripe (10.15.0)
     swd (2.0.3)
       activesupport (>= 3)
       attr_required (>= 0.0.5)
@@ -672,6 +685,7 @@ GEM
     unf (0.1.4)
       unf_ext
     unf_ext (0.0.9.1)
+    unf_ext (0.0.9.1-x64-mingw-ucrt)
     unicorn (6.1.0)
       kgio (~> 2.6)
       raindrops (~> 0.7)
@@ -712,6 +726,7 @@ GEM
       sass (>= 3.2.0)
 
 PLATFORMS
+  x64-mingw-ucrt
   x86_64-darwin-19
   x86_64-darwin-20
   x86_64-darwin-21
@@ -770,6 +785,7 @@ DEPENDENCIES
   neighborly-admin!
   neighborly-mangopay!
   neighborly-mangopay-creditcard!
+  neighborly-stripe!
   net-http-digest_auth
   net-sftp
   nprogress-rails
@@ -813,6 +829,7 @@ DEPENDENCIES
   sprockets (~> 3.7.2)
   state_machines
   state_machines-activerecord
+  stripe (~> 10.0)
   thin
   timezone
   turbolinks
