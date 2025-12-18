@@ -38,8 +38,9 @@ WORKDIR /app
 # Installation de bundler
 RUN gem install bundler -v $BUNDLER_VERSION
 
-# Copie des fichiers de dépendances
+# Copie des fichiers de dépendances ET des gems locales (lib/)
 COPY Gemfile Gemfile.lock ./
+COPY lib/ ./lib/
 
 # Installation des gems (avec cache)
 RUN bundle config set --local deployment 'true' && \
