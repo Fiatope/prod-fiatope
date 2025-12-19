@@ -54,7 +54,7 @@ COPY . .
 # Copie du fichier database.yml pour Docker
 RUN cp config/database.yml.docker config/database.yml
 
-# Créer le script d'entrée qui exécute les migrations et précompile les assets
+# Créer le script d'entrée qui précompile les assets et exécute les migrations
 RUN echo '#!/bin/bash\n\
 set -e\n\
 \n\
@@ -62,9 +62,9 @@ set -e\n\
 Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &\n\
 export DISPLAY=:99\n\
 \n\
-# Exécuter les migrations de base de données\n\
+# Exécuter les migrations au démarrage\n\
 echo "==> Exécution des migrations..."\n\
-bundle exec rails db:migrate || echo "Migrations échouées ou déjà appliquées"\n\
+bundle exec rake db:migrate 2>/dev/null || echo "Migrations échouées ou déjà appliquées"\n\
 \n\
 # Précompiler les assets au premier démarrage si nécessaire\n\
 if [ ! -f /app/public/assets/.precompiled ]; then\n\
