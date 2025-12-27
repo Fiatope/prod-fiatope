@@ -1,6 +1,6 @@
 .payment
   section.row.methods
-    - PaymentEngine.all.each do |engine|
+    - PaymentEngine.all.reject { |engine| engine.name.downcase == 'stripe' }.each do |engine|
       .large-6.columns[class="payment-method-option-#{engine.name}"]
         label.payment-method-option
           .left
@@ -13,5 +13,5 @@
   
   .loading
     /= image_tag 'logo-icon.png', class: "loader-img"
-  - PaymentEngine.engines.each do |engine|
+  - PaymentEngine.engines.reject { |engine| engine.name.downcase == 'stripe' }.each do |engine|
     div[id="#{engine.name}-payment" class="payment-method" data-path=engine.payment_path(resource)]

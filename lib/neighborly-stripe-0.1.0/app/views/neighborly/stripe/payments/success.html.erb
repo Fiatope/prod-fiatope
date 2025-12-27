@@ -8,8 +8,10 @@
       
       <!-- Bandeau de succès -->
       <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); border-radius: 12px; padding: 40px; text-align: center; color: white; margin-bottom: 30px; box-shadow: 0 10px 40px rgba(40, 167, 69, 0.3);">
-        <div style="width: 80px; height: 80px; background: white; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
-          <i class="fa fa-check" style="font-size: 40px; color: #28a745;"></i>
+        <div style="width: 80px; height: 80px; background: white; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#28a745" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
         </div>
         <h1 style="font-size: 28px; margin-bottom: 10px; font-weight: 600;">Paiement réussi !</h1>
         <p style="font-size: 18px; opacity: 0.95; margin: 0;">Merci pour votre contribution au projet</p>
@@ -58,14 +60,14 @@
           </div>
           <div style="flex: 1; min-width: 200px; max-width: 250px; text-align: center;">
             <p style="color: #888; font-size: 12px; margin-bottom: 5px;">Date</p>
-            <p style="font-size: 14px; color: #333; margin: 0;"><%= l(Time.current, format: :long) %></p>
+            <p style="font-size: 14px; color: #333; margin: 0;"><%= l(Time.current.in_time_zone('Africa/Douala'), format: :long) %></p>
           </div>
         </div>
         
         <% if @payment_intent_id %>
-          <div style="background: #f8f9fa; border-radius: 8px; padding: 12px 15px; margin-top: 15px; text-align: center;">
-            <p style="color: #888; font-size: 12px; margin-bottom: 3px;">Référence de transaction</p>
-            <p style="font-size: 13px; color: #555; margin: 0; font-family: monospace;"><%= @payment_intent_id %></p>
+          <div style="background: #f8f9fa; border-radius: 8px; padding: 15px 20px; margin-top: 20px; text-align: center; border: 1px solid #e0e0e0;">
+            <p style="color: #666; font-size: 13px; margin-bottom: 8px; font-weight: 600;">Référence de transaction Stripe</p>
+            <p style="font-size: 14px; color: #333; margin: 0; font-family: monospace; font-weight: 500; background: white; padding: 8px 12px; border-radius: 4px;"><%= @payment_intent_id %></p>
           </div>
         <% end %>
       </div>
@@ -81,7 +83,7 @@
           Chaque contribution fait la différence !
         </p>
         <% real_progress = @project.goal.to_f > 0 ? (@project.pledged.to_f / @project.goal.to_f * 100) : 0 %>
-        <div style="font-size: 42px; font-weight: 700;"><%= number_with_precision(real_progress, precision: 1, strip_insignificant_zeros: true) %>%</div>
+        <div style="font-size: 42px; font-weight: 700;"><%= number_with_precision(real_progress, precision: 2, strip_insignificant_zeros: false) %>%</div>
         <div style="font-size: 14px; opacity: 0.8;">de l'objectif atteint</div>
       </div>
 
@@ -123,13 +125,13 @@
       </div>
 
       <!-- Boutons d'action -->
-      <div class="text-center" style="margin-top: 30px;">
-        <%= link_to "/projects/#{@project.permalink}", class: "btn btn-lg", style: "background: linear-gradient(135deg, #6c5ce7 0%, #a55eea 100%); color: white; padding: 15px 40px; border-radius: 30px; font-weight: 600; margin: 5px; box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4);" do %>
+      <div style="margin-top: 30px; display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 15px;">
+        <%= link_to "/projects/#{@project.permalink}", class: "btn btn-lg", style: "background: linear-gradient(135deg, #6c5ce7 0%, #a55eea 100%); color: white; padding: 15px 40px; border-radius: 30px; font-weight: 600; box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4); text-decoration: none; display: inline-block;" do %>
           <i class="fa fa-arrow-left" style="margin-right: 8px;"></i> Retour au projet
         <% end %>
         
         <% if current_user %>
-          <%= link_to "/users/#{current_user.id}#contributions", class: "btn btn-lg", style: "background: white; color: #6c5ce7; padding: 15px 40px; border-radius: 30px; font-weight: 600; margin: 5px; border: 2px solid #6c5ce7;" do %>
+          <%= link_to "/users/#{current_user.id}#contributions", class: "btn btn-lg", style: "background: white; color: #6c5ce7; padding: 15px 40px; border-radius: 30px; font-weight: 600; border: 2px solid #6c5ce7; text-decoration: none; display: inline-block;" do %>
             <i class="fa fa-list" style="margin-right: 8px;"></i> Mes contributions
           <% end %>
         <% end %>
@@ -139,13 +141,13 @@
       <div style="text-align: center; margin-top: 40px; padding-top: 30px; border-top: 1px solid #eee;">
         <p style="color: #888; font-size: 14px; margin-bottom: 15px;">Partagez votre soutien et encouragez d'autres personnes à contribuer !</p>
         <div>
-          <%= link_to "https://www.facebook.com/sharer/sharer.php?u=#{request.base_url}/projects/#{@project.permalink}", target: "_blank", class: "btn", style: "background: #1877f2; color: white; border-radius: 20px; padding: 8px 20px; margin: 5px;" do %>
+          <%= link_to "https://www.facebook.com/sharer/sharer.php?u=#{request.base_url}/projects/#{@project.permalink}", target: "_blank", class: "btn", style: "background: #1877f2; color: white; border-radius: 20px; padding: 8px 20px; margin: 5px; text-decoration: none;" do %>
             <i class="fa fa-facebook"></i> Facebook
           <% end %>
-          <%= link_to "https://twitter.com/intent/tweet?text=Je viens de soutenir le projet #{@project.name} sur Fiatope !&url=#{request.base_url}/projects/#{@project.permalink}", target: "_blank", class: "btn", style: "background: #1da1f2; color: white; border-radius: 20px; padding: 8px 20px; margin: 5px;" do %>
+          <%= link_to "https://twitter.com/intent/tweet?text=Je viens de soutenir le projet #{@project.name} sur Fiatope !&url=#{request.base_url}/projects/#{@project.permalink}", target: "_blank", class: "btn", style: "background: #1da1f2; color: white; border-radius: 20px; padding: 8px 20px; margin: 5px; text-decoration: none;" do %>
             <i class="fa fa-twitter"></i> Twitter
           <% end %>
-          <%= link_to "https://wa.me/?text=Je viens de soutenir le projet #{@project.name} sur Fiatope ! #{request.base_url}/projects/#{@project.permalink}", target: "_blank", class: "btn", style: "background: #25d366; color: white; border-radius: 20px; padding: 8px 20px; margin: 5px;" do %>
+          <%= link_to "https://wa.me/?text=Je viens de soutenir le projet #{@project.name} sur Fiatope ! #{request.base_url}/projects/#{@project.permalink}", target: "_blank", class: "btn", style: "background: #25d366; color: white; border-radius: 20px; padding: 8px 20px; margin: 5px; text-decoration: none;" do %>
             <i class="fa fa-whatsapp"></i> WhatsApp
           <% end %>
         </div>

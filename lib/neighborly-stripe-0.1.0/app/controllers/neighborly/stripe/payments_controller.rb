@@ -1,7 +1,14 @@
 module Neighborly
   module Stripe
-    class PaymentsController < ApplicationController
+    class PaymentsController < ::ApplicationController
       before_action :authenticate_user!, except: [:success, :cancel]
+      layout false, only: [:success]
+      
+      helper_method :root_path
+      
+      def root_path
+        main_app.root_path
+      end
       
       def new
         @project = ::Project.find(params[:project_id])
