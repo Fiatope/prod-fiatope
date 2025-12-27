@@ -43,10 +43,13 @@ RUN gem install bundler -v $BUNDLER_VERSION
 COPY Gemfile Gemfile.lock ./
 COPY lib/ ./lib/
 
-# Installation des gems
+# Installation des gems (--jobs 1 pour limiter usage espace disque temporaire)
 RUN bundle config set --local without 'development test' && \
-    bundle install --jobs 4 --retry 3 && \
-    bundle clean --force
+    bundle install --jobs 1 --retry 3 && \
+    bundle clean --force && \
+    rm -rf /usr/local/bundle/cache/*.gem && \
+    find /usr/local/bundle/gems/ -name "*.c" -delete && \
+    find /usr/local/bundle/gems/ -name "*.o" -delete
 
 # Copie du reste de l'application
 COPY . .
