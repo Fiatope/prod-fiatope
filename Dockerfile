@@ -7,7 +7,8 @@ ENV RAILS_ENV=production \
     NODE_VERSION=20.x \
     BUNDLER_VERSION=2.4.22 \
     RAILS_SERVE_STATIC_FILES=enabled \
-    RAILS_LOG_TO_STDOUT=enabled
+    RAILS_LOG_TO_STDOUT=enabled \
+    BUNDLE_WITHOUT=development:test
 
 # Installation des dépendances système
 RUN apt-get update -qq && \
@@ -53,7 +54,13 @@ COPY . .
 # Copie du fichier database.yml pour Docker
 RUN cp config/database.yml.docker config/database.yml
 
-# Créer le script d'entrée qui précompile les assets et exécute les migrations
+# Configurer secret key base temporaire pour precompile
+ENV SECRET_KEY_BASE=dummy_key_for_precompile
+
+# Précompiler les assets pendant le build
+RUN bundle exec rails assets:precompile
+
+# Créer le script d'entrée simplifié pour migrations seulement
 RUN echo '#!/bin/bash\n\
 set -e\n\
 \n\
@@ -65,21 +72,10 @@ export DISPLAY=:99\n\
 echo "==> Exécution des migrations..."\n\
 bundle exec rake db:migrate 2>/dev/null || echo "Migrations échouées ou déjà appliquées"\n\
 \n\
-# Précompiler les assets au premier démarrage si nécessaire\n\
-if [ ! -f /app/public/assets/.precompiled ]; then\n\
-  echo "==> Précompilation des assets (premier démarrage)..."\n\
-  RAILS_ENV=production RAILS_GROUPS=assets bundle exec rails assets:precompile\n\
-  touch /app/public/assets/.precompiled\n\
-  echo "==> Assets précompilés avec succès!"\n\
-fi\n\
-\n\
 # Exécuter la commande passée en argument\n\
 exec "$@"\n\
 ' > /usr/local/bin/docker-entrypoint.sh && \
     chmod +x /usr/local/bin/docker-entrypoint.sh
-
-# Créer le dossier public/assets
-RUN mkdir -p /app/public/assets
 
 # Exposition du port
 EXPOSE 3000
