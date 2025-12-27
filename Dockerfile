@@ -43,8 +43,7 @@ COPY Gemfile Gemfile.lock ./
 COPY lib/ ./lib/
 
 # Installation des gems
-RUN bundle config set --local deployment 'true' && \
-    bundle config set --local without 'development test' && \
+RUN bundle config set --local without 'development test' && \
     bundle install --jobs 4 --retry 3 && \
     bundle clean --force
 
