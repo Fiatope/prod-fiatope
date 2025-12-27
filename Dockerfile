@@ -68,7 +68,7 @@ bundle exec rake db:migrate 2>/dev/null || echo "Migrations échouées ou déjà
 # Précompiler les assets au premier démarrage si nécessaire\n\
 if [ ! -f /app/public/assets/.precompiled ]; then\n\
   echo "==> Précompilation des assets (premier démarrage)..."\n\
-  bundle exec rails assets:precompile\n\
+  RAILS_ENV=production RAILS_GROUPS=assets bundle exec rails assets:precompile\n\
   touch /app/public/assets/.precompiled\n\
   echo "==> Assets précompilés avec succès!"\n\
 fi\n\
