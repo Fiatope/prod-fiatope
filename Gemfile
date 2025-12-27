@@ -50,7 +50,7 @@ gem 'draper'
 
 # PDF
 gem 'wicked_pdf'
-gem 'wkhtmltopdf-binary'
+# gem 'wkhtmltopdf-binary' # Commenté: utilise wkhtmltopdf système (apt) pour économiser espace disque Docker
 
 
 # Frontend stuff
