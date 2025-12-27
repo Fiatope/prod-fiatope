@@ -158,7 +158,7 @@ group :test do
   gem 'fakeweb', require: false
   gem 'launchy'
   gem 'database_cleaner'
-  gem 'shoulda-matchers'
+  # gem 'shoulda-matchers' # Commenté pour éviter erreur Docker build assets:precompile
   gem 'factory_girl_rails'
   gem 'capybara'
   gem 'coveralls', require: false
