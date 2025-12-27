@@ -83,7 +83,8 @@ gem 'kaminari'
 
 # Uploads
 gem 'carrierwave'
-gem 'rmagick', :require => 'rmagick'
+# gem 'rmagick', :require => 'rmagick' # Commenté: compilation native trop lourde pour espace disque Docker limité
+gem 'mini_magick' # Alternative légère à rmagick (wrapper shell ImageMagick)
 gem 'dropzonejs-rails'
 
 # Other Tools
