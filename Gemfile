@@ -50,7 +50,7 @@ gem 'draper'
 
 # PDF
 gem 'wicked_pdf'
-# gem 'wkhtmltopdf-binary' # Commenté: utilise wkhtmltopdf système (apt) pour économiser espace disque Docker
+gem 'wkhtmltopdf-binary'
 
 
 # Frontend stuff
@@ -83,8 +83,7 @@ gem 'kaminari'
 
 # Uploads
 gem 'carrierwave'
-# gem 'rmagick', :require => 'rmagick' # Commenté: compilation native trop lourde pour espace disque Docker limité
-gem 'mini_magick' # Alternative légère à rmagick (wrapper shell ImageMagick)
+gem 'rmagick', :require => 'rmagick'
 gem 'dropzonejs-rails'
 
 # Other Tools
@@ -159,7 +158,7 @@ group :test do
   gem 'fakeweb', require: false
   gem 'launchy'
   gem 'database_cleaner'
-  # gem 'shoulda-matchers' # Commenté pour éviter erreur Docker build assets:precompile
+  gem 'shoulda-matchers'
   gem 'factory_girl_rails'
   gem 'capybara'
   gem 'coveralls', require: false
