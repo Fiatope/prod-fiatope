@@ -57,19 +57,19 @@ COPY . .
 # Copie du fichier database.yml pour Docker
 RUN cp config/database.yml.docker config/database.yml
 
-# Configurer secret key base temporaire pour precompile
-ENV SECRET_KEY_BASE=dummy_key_for_precompile
-
-# Précompiler les assets pendant le build
-RUN bundle exec rails assets:precompile
-
-# Créer le script d'entrée simplifié pour migrations seulement
+# Créer le script d'entrée avec migrations ET assets:precompile au runtime
 RUN echo '#!/bin/bash\n\
 set -e\n\
 \n\
 # Démarrer Xvfb pour wkhtmltopdf\n\
 Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &\n\
 export DISPLAY=:99\n\
+\n\
+# Vérifier si assets doivent être précompilés (premier démarrage)\n\
+if [ ! -d "public/assets" ] || [ -z "$(ls -A public/assets 2>/dev/null)" ]; then\n\
+  echo "==> Précompilation des assets (premier démarrage)..."\n\
+  RAILS_ENV=production bundle exec rake assets:precompile\n\
+fi\n\
 \n\
 # Exécuter les migrations au démarrage\n\
 echo "==> Exécution des migrations..."\n\
