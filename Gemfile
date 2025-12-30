@@ -158,7 +158,7 @@ group :test do
   gem 'fakeweb', require: false
   gem 'launchy'
   gem 'database_cleaner'
-  gem 'shoulda-matchers'
+  # gem 'shoulda-matchers' # Désactivé: incompatible avec production sans gems development/test
   gem 'factory_girl_rails'
   gem 'capybara'
   gem 'coveralls', require: false
