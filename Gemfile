@@ -150,7 +150,7 @@ group :development, :test do
   gem 'awesome_print'
   gem 'dotenv-rails'
   gem 'minitest'
-  gem 'rspec-rails'
+  # gem 'rspec-rails' # DÉSACTIVÉ: Bundler 2.x vérifie toutes résolutions même avec --without
 end
 
 group :test do
