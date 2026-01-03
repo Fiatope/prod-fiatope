@@ -57,12 +57,7 @@ COPY . .
 # Copie du fichier database.yml pour Docker
 RUN cp config/database.yml.docker config/database.yml
 
-# Précompiler les assets PENDANT le build (pas au runtime)
-# Utiliser bin/rails directement pour éviter problèmes de résolution bundler
-ENV SECRET_KEY_BASE=dummy_secret_for_assets_precompile_only
-RUN bin/rails assets:precompile
-
-# Créer le script d'entrée simplifié (migrations seulement)
+# Créer le script d'entrée avec assets:precompile au runtime (nécessite DB)
 RUN echo '#!/bin/bash\n\
 set -e\n\
 \n\
@@ -70,11 +65,16 @@ set -e\n\
 Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &\n\
 export DISPLAY=:99\n\
 \n\
-# Exécuter les migrations au démarrage\n\
-echo "==> Exécution des migrations..."\n\
-bin/rails db:migrate 2>/dev/null || echo "Migrations déjà appliquées ou échouées"\n\
+# Précompiler assets si pas déjà fait\n\
+if [ ! -f "public/assets/.precompiled" ]; then\n\
+  echo "==> Précompilation des assets..."\n\
+  bin/rails assets:precompile && touch public/assets/.precompiled\n\
+fi\n\
 \n\
-# Exécuter la commande passée en argument\n\
+# Exécuter les migrations\n\
+echo "==> Exécution des migrations..."\n\
+bin/rails db:migrate 2>/dev/null || echo "Migrations déjà appliquées"\n\
+\n\
 exec "$@"\n\
 ' > /usr/local/bin/docker-entrypoint.sh && \
     chmod +x /usr/local/bin/docker-entrypoint.sh
