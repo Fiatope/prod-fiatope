@@ -1,4 +1,4 @@
 <%= link_to neighborly_stripe.payment_new_path(project_id: @contribution.project.id, contribution_id: @contribution.id), method: :get, class: "btn button--stripe" do %>
-  <%= image_tag("payments/stripe.png") %>
+  <%= image_tag("payments/stripe-logo.svg", alt: "Stripe", style: "height: 24px; vertical-align: middle;") %>
   <span>Payer avec Carte Bancaire (Stripe)</span>
 <% end %>
