@@ -57,7 +57,12 @@ COPY . .
 # Copie du fichier database.yml pour Docker
 RUN cp config/database.yml.docker config/database.yml
 
-# Créer le script d'entrée avec migrations ET assets:precompile au runtime
+# Précompiler les assets PENDANT le build (pas au runtime)
+# Utiliser bin/rails directement pour éviter problèmes de résolution bundler
+ENV SECRET_KEY_BASE=dummy_secret_for_assets_precompile_only
+RUN bin/rails assets:precompile
+
+# Créer le script d'entrée simplifié (migrations seulement)
 RUN echo '#!/bin/bash\n\
 set -e\n\
 \n\
@@ -65,15 +70,9 @@ set -e\n\
 Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &\n\
 export DISPLAY=:99\n\
 \n\
-# Vérifier si assets doivent être précompilés (premier démarrage)\n\
-if [ ! -d "public/assets" ] || [ -z "$(ls -A public/assets 2>/dev/null)" ]; then\n\
-  echo "==> Précompilation des assets (premier démarrage)..."\n\
-  RAILS_ENV=production bundle exec rake assets:precompile\n\
-fi\n\
-\n\
 # Exécuter les migrations au démarrage\n\
 echo "==> Exécution des migrations..."\n\
-bundle exec rake db:migrate 2>/dev/null || echo "Migrations échouées ou déjà appliquées"\n\
+bin/rails db:migrate 2>/dev/null || echo "Migrations déjà appliquées ou échouées"\n\
 \n\
 # Exécuter la commande passée en argument\n\
 exec "$@"\n\
