@@ -72,10 +72,22 @@ module Neighborly
             customer: current_user.stripe_customer.id,
             client_reference_id: current_user.id.to_s,
             metadata: {
-              project_id: @project.id,
-              user_id: current_user.id,
-              contribution_id: @contribution&.id,
-              platform: 'fiatope'
+              # CRITIQUE: user_id requis par méthode success pour comptabilisation
+              user_id: current_user.id.to_s,
+              contribution_id: @contribution&.id.to_s,
+              # Metadata enrichies pour filtrage Stripe
+              project_id: @project.id.to_s,
+              project_name: @project.name.to_s[0..99],
+              project_permalink: @project.permalink.to_s,
+              platform: determine_platform,
+              project_owner_id: @project.user_id.to_s,
+              project_owner_name: @project.user&.display_name.to_s[0..99],
+              project_owner_email: @project.user&.email.to_s,
+              contributor_id: current_user.id.to_s,
+              contributor_name: current_user.display_name.to_s[0..99],
+              contributor_email: current_user.email.to_s,
+              currency: @project.currency.presence || 'EUR',
+              amount: @amount.to_s
             }
           }
           
@@ -88,15 +100,42 @@ module Neighborly
                 destination: @project.stripe_account_id
               },
               metadata: {
-                project_id: @project.id,
-                project_name: @project.name,
-                user_id: current_user.id,
-                user_email: current_user.email
+                project_id: @project.id.to_s,
+                project_name: @project.name.to_s[0..99],
+                project_permalink: @project.permalink.to_s,
+                platform: determine_platform,
+                project_owner_id: @project.user_id.to_s,
+                project_owner_name: @project.user&.display_name.to_s[0..99],
+                project_owner_email: @project.user&.email.to_s,
+                contributor_id: current_user.id.to_s,
+                contributor_name: current_user.display_name.to_s[0..99],
+                contributor_email: current_user.email.to_s,
+                contribution_id: @contribution&.id.to_s,
+                currency: @project.currency.presence || 'EUR',
+                amount: @amount.to_s
               }
             }
             Rails.logger.info "Stripe Connect: Paiement avec transfert vers #{@project.stripe_account_id}"
           else
-            Rails.logger.info "Stripe: Paiement direct (Connect non prêt)"
+            # Créer payment_intent_data avec metadata même sans Connect pour filtrage
+            session_params[:payment_intent_data] = {
+              metadata: {
+                project_id: @project.id.to_s,
+                project_name: @project.name.to_s[0..99],
+                project_permalink: @project.permalink.to_s,
+                platform: determine_platform,
+                project_owner_id: @project.user_id.to_s,
+                project_owner_name: @project.user&.display_name.to_s[0..99],
+                project_owner_email: @project.user&.email.to_s,
+                contributor_id: current_user.id.to_s,
+                contributor_name: current_user.display_name.to_s[0..99],
+                contributor_email: current_user.email.to_s,
+                contribution_id: @contribution&.id.to_s,
+                currency: @project.currency.presence || 'EUR',
+                amount: @amount.to_s
+              }
+            }
+            Rails.logger.info "Stripe: Paiement direct (Connect non prêt) - Metadata pour filtrage"
           end
           
           session = ::Stripe::Checkout::Session.create(session_params)
@@ -182,10 +221,22 @@ module Neighborly
             customer: current_user.stripe_customer.id,
             client_reference_id: current_user.id.to_s,
             metadata: {
-              project_id: @project.id,
-              user_id: current_user.id,
-              contribution_id: @contribution&.id,
-              platform: 'fiatope'
+              # CRITIQUE: user_id requis par méthode success pour comptabilisation
+              user_id: current_user.id.to_s,
+              contribution_id: @contribution&.id.to_s,
+              # Metadata enrichies pour filtrage Stripe
+              project_id: @project.id.to_s,
+              project_name: @project.name.to_s[0..99],
+              project_permalink: @project.permalink.to_s,
+              platform: determine_platform,
+              project_owner_id: @project.user_id.to_s,
+              project_owner_name: @project.user&.display_name.to_s[0..99],
+              project_owner_email: @project.user&.email.to_s,
+              contributor_id: current_user.id.to_s,
+              contributor_name: current_user.display_name.to_s[0..99],
+              contributor_email: current_user.email.to_s,
+              currency: @project.currency.presence || 'EUR',
+              amount: @amount.to_s
             }
           }
           
@@ -197,12 +248,42 @@ module Neighborly
                 destination: @project.stripe_account_id
               },
               metadata: {
-                project_id: @project.id,
-                project_name: @project.name,
-                user_id: current_user.id,
-                user_email: current_user.email
+                project_id: @project.id.to_s,
+                project_name: @project.name.to_s[0..99],
+                project_permalink: @project.permalink.to_s,
+                platform: determine_platform,
+                project_owner_id: @project.user_id.to_s,
+                project_owner_name: @project.user&.display_name.to_s[0..99],
+                project_owner_email: @project.user&.email.to_s,
+                contributor_id: current_user.id.to_s,
+                contributor_name: current_user.display_name.to_s[0..99],
+                contributor_email: current_user.email.to_s,
+                contribution_id: @contribution&.id.to_s,
+                currency: @project.currency.presence || 'EUR',
+                amount: @amount.to_s
               }
             }
+            Rails.logger.info "Stripe Connect (create): Paiement avec transfert vers #{@project.stripe_account_id}"
+          else
+            # Créer payment_intent_data avec metadata même sans Connect pour filtrage
+            create_session_params[:payment_intent_data] = {
+              metadata: {
+                project_id: @project.id.to_s,
+                project_name: @project.name.to_s[0..99],
+                project_permalink: @project.permalink.to_s,
+                platform: determine_platform,
+                project_owner_id: @project.user_id.to_s,
+                project_owner_name: @project.user&.display_name.to_s[0..99],
+                project_owner_email: @project.user&.email.to_s,
+                contributor_id: current_user.id.to_s,
+                contributor_name: current_user.display_name.to_s[0..99],
+                contributor_email: current_user.email.to_s,
+                contribution_id: @contribution&.id.to_s,
+                currency: @project.currency.presence || 'EUR',
+                amount: @amount.to_s
+              }
+            }
+            Rails.logger.info "Stripe (create): Paiement direct - Metadata pour filtrage"
           end
           
           session = ::Stripe::Checkout::Session.create(create_session_params)
@@ -353,6 +434,24 @@ module Neighborly
           Rails.logger.info "Stripe: Email de notification envoyé au porteur de projet #{contribution.project.user.email}"
         rescue => e
           Rails.logger.error "Stripe: Erreur envoi notifications: #{e.message}"
+        end
+      end
+      
+      # Détermine la plateforme (Fiatope ou Kwendoo) basé sur le domaine
+      # Permet de filtrer dans Stripe: metadata:platform=fiatope ou metadata:platform=kwendoo
+      def determine_platform
+        host = request.host.to_s.downcase rescue ''
+        if host.include?('kwendoo')
+          'kwendoo'
+        elsif host.include?('fiatope')
+          'fiatope'
+        else
+          # Fallback basé sur le partenaire du projet si disponible
+          if @project&.respond_to?(:partner) && @project.partner&.name.to_s.downcase.include?('kwendoo')
+            'kwendoo'
+          else
+            'fiatope'
+          end
         end
       end
     end
