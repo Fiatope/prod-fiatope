@@ -43,8 +43,9 @@ Neighborly::Application.routes.draw do
   #mount Neighborly::Api::Engine => '/api/', as: :neighborly_api
   #mount Neighborly::Dashboard::Engine => '/dashboard/', as: :neighborly_dashboard
   mount Neighborly::Stripe::Engine => '/stripe/', as: :neighborly_stripe
-  mount Neighborly::Mangopay::Creditcard::Engine => '/mangopay/creditcard/', as: :neighborly_mangopay_creditcard
-  mount Neighborly::Mangopay::Engine => '/mangopay/', as: :neighborly_mangopay
+  # DÉSACTIVÉ - MangoPay n'est plus utilisé (remplacé par Stripe)
+  # mount Neighborly::Mangopay::Creditcard::Engine => '/mangopay/creditcard/', as: :neighborly_mangopay_creditcard
+  # mount Neighborly::Mangopay::Engine => '/mangopay/', as: :neighborly_mangopay
   #mount Neighborly::Balanced::Creditcard::Engine => '/balanced/creditcard/', as: :neighborly_balanced_creditcard
   #mount Neighborly::Balanced::Bankaccount::Engine => '/balanced/bankaccount/', as: :neighborly_balanced_bankaccount
   #mount Neighborly::Balanced::Engine => '/balanced/', as: :neighborly_balanced
@@ -161,7 +162,8 @@ Neighborly::Application.routes.draw do
 
   resources :tags, only: [:index]
 
-  get 'cards/:id/delete', to: 'neighborly/mangopay/creditcard/payments#delete'
+  # DÉSACTIVÉ - MangoPay n'est plus utilisé
+  # get 'cards/:id/delete', to: 'neighborly/mangopay/creditcard/payments#delete'
 
   namespace :reports do
     resources :contribution_reports_for_project_owners, only: [:index]
@@ -268,13 +270,13 @@ Neighborly::Application.routes.draw do
       get :settings
       get :credits
       get :payments
-      get :mangopay_authentications
+      # get :mangopay_authentications  # DÉSACTIVÉ - MangoPay n'est plus utilisé
       get :edit
       post :delete_recursive
       put :update_email
       put :update_password
       put :update_bank_information
-      put :mangopay_upload_kyc_files
+      # put :mangopay_upload_kyc_files  # DÉSACTIVÉ - MangoPay n'est plus utilisé
     end
   end
 
