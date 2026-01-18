@@ -1,8 +1,11 @@
 class MatchFinisher
   def complete!
     matches.each do |match|
-      refund = Neighborly::Mangopay::Refund.new(match)
-      refund.complete!
+      # DÉSACTIVÉ si MANGOPAY_ENABLED n'est pas true
+      if ENV['MANGOPAY_ENABLED']&.downcase == 'true'
+        refund = Neighborly::Mangopay::Refund.new(match)
+        refund.complete!
+      end
       match.complete!
       match.notify_observers :completed
     end

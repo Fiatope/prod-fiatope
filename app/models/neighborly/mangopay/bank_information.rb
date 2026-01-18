@@ -22,6 +22,9 @@ module Neighborly::Mangopay
     private
 
     def save_or_update_mangopay_bank_account
+      # DÉSACTIVÉ si MANGOPAY_ENABLED n'est pas true
+      return true unless ENV['MANGOPAY_ENABLED']&.downcase == 'true'
+      
       fr_key = save_or_update_mangopay_fr_bank_account
       # ca_key = save_or_update_mangopay_ca_bank_account
       # us_key = save_or_update_mangopay_us_bank_account
