@@ -71,9 +71,10 @@ if [ ! -f "public/assets/.precompiled" ]; then\n\
   bin/rails assets:precompile && touch public/assets/.precompiled\n\
 fi\n\
 \n\
-# Exécuter les migrations\n\
+# Exécuter les migrations (TOUJOURS, avec logs)\n\
 echo "==> Exécution des migrations..."\n\
-bin/rails db:migrate 2>/dev/null || echo "Migrations déjà appliquées"\n\
+bin/rails db:migrate\n\
+echo "==> Migrations terminées"\n\
 \n\
 exec "$@"\n\
 ' > /usr/local/bin/docker-entrypoint.sh && \
