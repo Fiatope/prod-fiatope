@@ -1,0 +1,115 @@
+# Docker Compose pour Fiatope - Environnement de préprod/test
+# Usage: docker-compose up -d
+
+version: '3.8'
+
+services:
+  db:
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_USER: fiatope
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fiatope_secret}
+      POSTGRES_DB: fiatope_production
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fiatope"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # === DATABASE ===
+      DATABASE_URL: postgresql://fiatope:${POSTGRES_PASSWORD:-fiatope_secret}@db:5432/fiatope_production
+      
+      # === RAILS ===
+      RAILS_ENV: production
+      RACK_ENV: production
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      RAILS_SERVE_STATIC_FILES: enabled
+      RAILS_LOG_TO_STDOUT: enabled
+      
+      # === STRIPE CONNECT (OBLIGATOIRE) ===
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      
+      # === COMMISSION FIATOPE ===
+      PLATFORM_FEE: ${PLATFORM_FEE:-5.0}
+      
+      # === MANGOPAY (DÉSACTIVÉ) ===
+      MANGOPAY_ENABLED: "false"
+      
+      # === REDIS ===
+      REDIS_URL: redis://redis:6379/0
+      
+      # === SIDEKIQ ===
+      SIDEKIQ_CONCURRENCY: ${SIDEKIQ_CONCURRENCY:-5}
+      
+      # === EMAILS ===
+      SMTP_ADDRESS: ${SMTP_ADDRESS}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_DOMAIN: ${SMTP_DOMAIN}
+      SMTP_USER_NAME: ${SMTP_USER_NAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      
+      # === AWS S3 (si utilisé) ===
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION:-eu-west-1}
+      AWS_BUCKET: ${AWS_BUCKET}
+    volumes:
+      - ./storage:/app/storage
+      - ./log:/app/log
+      - assets_data:/app/public/assets
+
+  worker:
+    build: .
+    command: bundle exec sidekiq -C config/sidekiq.yml
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://fiatope:${POSTGRES_PASSWORD:-fiatope_secret}@db:5432/fiatope_production
+      RAILS_ENV: production
+      RACK_ENV: production
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      REDIS_URL: redis://redis:6379/0
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      PLATFORM_FEE: ${PLATFORM_FEE:-5.0}
+      MANGOPAY_ENABLED: "false"
+    volumes:
+      - ./storage:/app/storage
+      - ./log:/app/log
+
+volumes:
+  postgres_data:
+  redis_data:
+  assets_data:
