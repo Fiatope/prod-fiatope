@@ -1,4 +1,4 @@
-\restrict upicj7BAce2RuLghasvzT1ZzkGpJ5BvdvGauaViZXDksEQVGfvFBvJNq2XJizts
+\restrict XcY9LmBB2rMjblDdmnNBiu0DpHc1HRusLvL7NbMNypdNnc96aJjUA6xC8fXMClF
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6
@@ -103,6 +103,11 @@ CREATE TABLE public.contributions (
     response_code character varying(255),
     transaction_number character varying(255),
     response_message character varying(255),
+    stripe_transferred boolean DEFAULT false,
+    stripe_transfer_id character varying,
+    stripe_refunded boolean DEFAULT false,
+    stripe_refund_id character varying,
+    stripe_charge_id character varying,
     CONSTRAINT backers_value_positive CHECK ((value >= (0)::numeric))
 );
 
@@ -211,6 +216,9 @@ CREATE TABLE public.projects (
     show_on_homepage boolean DEFAULT false,
     stripe_account_id character varying,
     use_stripe boolean DEFAULT true,
+    stripe_transfer_id character varying,
+    stripe_settled_at timestamp without time zone,
+    stripe_settlement_type character varying,
     CONSTRAINT projects_about_not_blank CHECK ((length(btrim(about)) > 0)),
     CONSTRAINT projects_headline_length_within CHECK (((length(headline) >= 1) AND (length(headline) <= 140))),
     CONSTRAINT projects_headline_not_blank CHECK ((length(btrim(headline)) > 0))
@@ -4278,6 +4286,20 @@ CREATE INDEX index_contributions_on_reward_id ON public.contributions USING btre
 
 
 --
+-- Name: index_contributions_on_stripe_refunded; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_contributions_on_stripe_refunded ON public.contributions USING btree (stripe_refunded);
+
+
+--
+-- Name: index_contributions_on_stripe_transferred; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_contributions_on_stripe_transferred ON public.contributions USING btree (stripe_transferred);
+
+
+--
 -- Name: index_contributions_on_user_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4506,6 +4528,13 @@ CREATE UNIQUE INDEX index_projects_on_permalink ON public.projects USING btree (
 --
 
 CREATE INDEX index_projects_on_stripe_account_id ON public.projects USING btree (stripe_account_id);
+
+
+--
+-- Name: index_projects_on_stripe_settled_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_projects_on_stripe_settled_at ON public.projects USING btree (stripe_settled_at);
 
 
 --
@@ -5288,7 +5317,7 @@ ALTER TABLE ONLY public.updates
 -- PostgreSQL database dump complete
 --
 
-\unrestrict upicj7BAce2RuLghasvzT1ZzkGpJ5BvdvGauaViZXDksEQVGfvFBvJNq2XJizts
+\unrestrict XcY9LmBB2rMjblDdmnNBiu0DpHc1HRusLvL7NbMNypdNnc96aJjUA6xC8fXMClF
 
 SET search_path TO "$user", public;
 
@@ -5593,6 +5622,9 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20251215120100'),
 ('20251215120200'),
 ('20251223100000'),
-('20251227080000');
+('20251227080000'),
+('20260116120000'),
+('20260120213751'),
+('20260122121145');
 
 

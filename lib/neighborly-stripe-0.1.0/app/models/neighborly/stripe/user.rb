@@ -3,6 +3,23 @@ module Neighborly::Stripe::User
   
   included do
     has_many :stripe_orders, class_name: 'Neighborly::Stripe::Order', foreign_key: 'user_id'
+    
+    # Synchroniser le compte Stripe sur tous les projets quand il change
+    after_save :sync_stripe_account_to_all_projects, if: :saved_change_to_stripe_connect_account_id?
+  end
+  
+  # Synchronise le compte Stripe connecté sur TOUS les projets du porteur
+  def sync_stripe_account_to_all_projects
+    return unless stripe_connect_account_id.present?
+    
+    projects.find_each do |project|
+      project.update_columns(
+        stripe_account_id: stripe_connect_account_id,
+        use_stripe: true
+      )
+    end
+    
+    Rails.logger.info "Stripe: Compte #{stripe_connect_account_id} synchronisé sur #{projects.count} projets pour #{email}"
   end
   
   def stripe_customer
@@ -39,7 +56,13 @@ module Neighborly::Stripe::User
       }
     })
     
-    update_column(:stripe_connect_account_id, account.id)
+    # IMPORTANT: Utiliser update() et non update_column() pour déclencher le callback
+    # qui synchronise le compte Stripe sur tous les projets du porteur
+    update(stripe_connect_account_id: account.id)
+    
+    # Double vérification: synchroniser explicitement au cas où
+    sync_stripe_account_to_all_projects
+    
     account.id
   end
   

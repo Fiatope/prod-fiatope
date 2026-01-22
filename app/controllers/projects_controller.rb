@@ -195,7 +195,7 @@ class ProjectsController < ApplicationController
         return true
       else
         messages = []
-        messages << t('projects.new.not_mangopay_ready') unless current_user.light_authentication_ready?
+        messages << t('projects.new.profile_incomplete', default: 'Veuillez compléter votre profil') unless current_user.light_authentication_ready?
         messages << t('projects.new.missing_mobile_phone_for_new_project') unless has_project_prerequisites?
         flash.alert = messages.join('<br/>').html_safe
         redirect_to edit_user_path(current_user, redirect_url: new_project_path) and return false

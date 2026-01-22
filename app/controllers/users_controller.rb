@@ -1,6 +1,8 @@
 # coding: utf-8
 class UsersController < ApplicationController
-  before_action :has_mangopay_prerequisites, only: [:payments, :update_bank_information, :mangopay_authentications, :mangopay_upload_kyc_files]
+  # MangoPay désactivé - Stripe Connect utilisé à la place
+  # before_action :has_mangopay_prerequisites, only: [:payments, :update_bank_information, :mangopay_authentications, :mangopay_upload_kyc_files]
+  before_action :has_mangopay_prerequisites, only: [:payments, :update_bank_information]
   after_action :verify_authorized, except: :show
 
   inherit_resources
@@ -62,40 +64,40 @@ class UsersController < ApplicationController
     @bank_information = @user.bank_information || @user.build_bank_information
   end
 
-  def mangopay_authentications
-    authorize resource
-    @user = current_user
-    @kycs = @user.kycs_updatable_elements
-  end
+  # MangoPay désactivé - ces méthodes ne sont plus utilisées
+  # def mangopay_authentications
+  #   authorize resource
+  #   @user = current_user
+  #   @kycs = @user.kycs_updatable_elements
+  # end
 
-  def mangopay_upload_kyc_files
-    authorize resource
-
-    update! do |success, failure|
-      success.html do
-        flash.notice = update_success_flash_message unless params[:investment_prospect]
-        return redirect_to settings_user_path(@user) if params[:settings]
-        if params[:investment_prospect]
-          flash.delete(:notice)
-          return redirect_to root_path
-        end
-        return redirect_to mangopay_authentications_user_path(@user)
-      end
-      failure.html do
-        flash.alert = @user.errors.full_messages.to_sentence
-        return redirect_to settings_user_path(@user) if params[:settings]
-        @user.build_organization unless @user.organization
-        return render 'edit'
-      end
-      success.json do
-        @user.reload
-        return render json: { status: :success, uploaded_image: @user.uploaded_image_url(:thumb_avatar), :"organization_attributes[image]" => (@user.organization.image_url(:thumb) rescue nil ) }
-      end
-      failure.json do
-        return render json: { status: :error }
-      end
-    end
-  end
+  # def mangopay_upload_kyc_files
+  #   authorize resource
+  #   update! do |success, failure|
+  #     success.html do
+  #       flash.notice = update_success_flash_message unless params[:investment_prospect]
+  #       return redirect_to settings_user_path(@user) if params[:settings]
+  #       if params[:investment_prospect]
+  #         flash.delete(:notice)
+  #         return redirect_to root_path
+  #       end
+  #       return redirect_to mangopay_authentications_user_path(@user)
+  #     end
+  #     failure.html do
+  #       flash.alert = @user.errors.full_messages.to_sentence
+  #       return redirect_to settings_user_path(@user) if params[:settings]
+  #       @user.build_organization unless @user.organization
+  #       return render 'edit'
+  #     end
+  #     success.json do
+  #       @user.reload
+  #       return render json: { status: :success, uploaded_image: @user.uploaded_image_url(:thumb_avatar), :"organization_attributes[image]" => (@user.organization.image_url(:thumb) rescue nil ) }
+  #     end
+  #     failure.json do
+  #       return render json: { status: :error }
+  #     end
+  #   end
+  # end
 
   def settings
     authorize resource

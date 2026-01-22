@@ -207,7 +207,12 @@ Neighborly::Application.routes.draw do
 
     member do
       put :show_project_on_homepage, to: 'neighborly/admin/projects#show_project_on_homepage' 
-      put :remove_project_on_homepage, to: 'neighborly/admin/projects#remove_project_on_homepage' 
+      put :remove_project_on_homepage, to: 'neighborly/admin/projects#remove_project_on_homepage'
+      # Actions Stripe Admin
+      put :enable_stripe, to: 'neighborly/admin/projects#enable_stripe'
+      get :stripe_onboarding_link, to: 'neighborly/admin/projects#stripe_onboarding_link'
+      put :process_stripe_transfer, to: 'neighborly/admin/projects#process_stripe_transfer'
+      put :process_stripe_refund, to: 'neighborly/admin/projects#process_stripe_refund'
     end
 
     member do
@@ -307,6 +312,11 @@ Neighborly::Application.routes.draw do
         put 'approve', to: "neighborly/admin/projects#approve"
         put 'launch', to: "neighborly/admin/projects#launch"
         put 'reject', to: "neighborly/admin/projects#reject"
+        # Actions Stripe Admin
+        put 'enable_stripe', to: "neighborly/admin/projects#enable_stripe"
+        get 'stripe_onboarding_link', to: "neighborly/admin/projects#stripe_onboarding_link"
+        put 'process_stripe_transfer', to: "neighborly/admin/projects#process_stripe_transfer"
+        put 'process_stripe_refund', to: "neighborly/admin/projects#process_stripe_refund"
       end
     end
 

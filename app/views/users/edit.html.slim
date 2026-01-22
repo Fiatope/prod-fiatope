@@ -18,7 +18,8 @@
         li = tab_link_to t('.tabs.ive_contributed'), user_contributions_path(@user)
       li = tab_link_to t('.tabs.credits'), credits_user_path(@user)
       li = tab_link_to t('.tabs.payments'), payments_user_path(@user)
-      li = tab_link_to t('.tabs.mangopay_authentications'), mangopay_authentications_user_path(@user)
+      /= MangoPay désactivé - utilisation de Stripe uniquement
+      / li = tab_link_to t('.tabs.mangopay_authentications'), mangopay_authentications_user_path(@user)
       li = tab_link_to t('.tabs.settings'), settings_user_path(@user)
   .row.page-main-content
     section.large-12.columns.main

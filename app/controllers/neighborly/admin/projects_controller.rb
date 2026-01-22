@@ -79,6 +79,159 @@ module Neighborly::Admin
       resource.push_to_trash! if resource.can_push_to_trash?
       redirect_to projects_path
     end
+    
+    # === ACTIONS STRIPE ===
+    
+    # Active Stripe pour un projet et crée/réutilise le compte connecté du porteur
+    def enable_stripe
+      @project = Project.find_by_permalink params[:id]
+      
+      if @project.use_stripe?
+        # Vérifier si on doit mettre à jour le compte
+        if @project.stripe_account_id != @project.user.stripe_connect_account_id && @project.user.stripe_connect_account_id.present?
+          @project.update_column(:stripe_account_id, @project.user.stripe_connect_account_id)
+          flash[:notice] = "Compte Stripe mis à jour avec le compte existant du porteur."
+        else
+          flash[:notice] = "Stripe est déjà activé pour ce projet."
+        end
+      else
+        begin
+          # enable_stripe! réutilise le compte existant ou en crée un nouveau
+          @project.enable_stripe!
+          
+          if @project.user.stripe_onboarding_complete?
+            flash[:success] = "Stripe activé! Le porteur a déjà un compte configuré - prêt pour les paiements."
+          else
+            flash[:success] = "Stripe activé! Le porteur doit compléter son profil Stripe (générer un lien d'onboarding)."
+          end
+        rescue => e
+          flash[:alert] = "Erreur lors de l'activation de Stripe: #{e.message}"
+        end
+      end
+      
+      redirect_back(fallback_location: projects_path)
+    end
+    
+    # Génère le lien d'onboarding Stripe pour le porteur
+    def stripe_onboarding_link
+      @project = Project.find_by_permalink params[:id]
+      
+      unless @project.use_stripe?
+        flash[:alert] = "Stripe n'est pas activé pour ce projet. Activez-le d'abord."
+        return redirect_back(fallback_location: projects_path)
+      end
+      
+      if @project.user.stripe_onboarding_complete?
+        flash[:notice] = "Le porteur a déjà complété son profil Stripe. Pas besoin de lien d'onboarding."
+        return redirect_back(fallback_location: projects_path)
+      end
+      
+      begin
+        base_url = request.base_url
+        onboarding_url = @project.user.stripe_account_onboarding_url(
+          refresh_url: "#{base_url}/stripe/connect/refresh",
+          return_url: "#{base_url}/stripe/connect/return"
+        )
+        
+        flash[:stripe_onboarding_url] = onboarding_url
+        flash[:success] = "Lien généré pour #{@project.user.name}. Envoyez-le par email."
+      rescue => e
+        flash[:alert] = "Erreur: #{e.message}"
+      end
+      
+      redirect_back(fallback_location: projects_path)
+    end
+    
+    # Transfère les fonds au porteur (peu importe si objectif atteint ou non)
+    # On transfère ce qu'on a collecté au porteur
+    def process_stripe_transfer
+      @project = Project.find_by_permalink params[:id]
+      
+      unless @project.use_stripe?
+        flash[:alert] = "Stripe n'est pas activé pour ce projet."
+        return redirect_back(fallback_location: projects_path)
+      end
+      
+      unless @project.user.stripe_onboarding_complete?
+        flash[:alert] = "Le porteur n'a pas complété son profil Stripe. Générez un lien d'onboarding."
+        return redirect_back(fallback_location: projects_path)
+      end
+      
+      if @project.stripe_settlement_type == 'transferred'
+        flash[:notice] = "Les fonds ont déjà été transférés au porteur."
+        return redirect_back(fallback_location: projects_path)
+      end
+      
+      # Vérifier qu'il y a des contributions à transférer
+      contributions = @project.contributions.where(payment_method: 'Stripe', state: 'confirmed')
+                              .where(stripe_refunded: [false, nil])
+      if contributions.empty?
+        flash[:alert] = "Aucune contribution Stripe à transférer."
+        return redirect_back(fallback_location: projects_path)
+      end
+      
+      begin
+        settlement = Neighborly::Stripe::CampaignSettlement.new(@project)
+        
+        if settlement.process!
+          total = contributions.sum(:value)
+          flash[:success] = "✅ Transfert de #{total}€ effectué! Les fonds ont été envoyés au porteur #{@project.user.name}."
+        else
+          flash[:alert] = "Erreur: #{settlement.errors.join(', ')}"
+        end
+      rescue => e
+        flash[:alert] = "Erreur: #{e.message}"
+        Rails.logger.error "Stripe Transfer Error: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
+      end
+      
+      redirect_back(fallback_location: projects_path)
+    end
+    
+    # Rembourse tous les contributeurs (peut être fait à tout moment)
+    # Utilisé en cas de problème avec le porteur ou annulation
+    def process_stripe_refund
+      @project = Project.find_by_permalink params[:id]
+      
+      unless @project.use_stripe?
+        flash[:alert] = "Stripe n'est pas activé pour ce projet."
+        return redirect_back(fallback_location: projects_path)
+      end
+      
+      if @project.stripe_settlement_type == 'refunded'
+        flash[:notice] = "Les contributions ont déjà été remboursées."
+        return redirect_back(fallback_location: projects_path)
+      end
+      
+      # CRITIQUE: Bloquer le remboursement si les fonds ont déjà été transférés
+      # Selon Stripe: "Refunding a charge has no impact on any associated transfers"
+      if @project.stripe_settlement_type == 'transferred' || @project.stripe_transfer_id.present?
+        flash[:alert] = "Impossible de rembourser: les fonds ont déjà été transférés au porteur. Contactez le porteur directement."
+        return redirect_back(fallback_location: projects_path)
+      end
+      
+      # Vérifier qu'il y a des contributions à rembourser
+      contributions = @project.contributions.where(payment_method: 'Stripe', state: 'confirmed')
+                              .where(stripe_refunded: [false, nil])
+      if contributions.empty?
+        flash[:alert] = "Aucune contribution à rembourser."
+        return redirect_back(fallback_location: projects_path)
+      end
+      
+      begin
+        settlement = Neighborly::Stripe::CampaignSettlement.new(@project)
+        
+        if settlement.process_refunds!
+          flash[:success] = "✅ #{contributions.count} contribution(s) remboursée(s)! Les contributeurs recevront leur argent sous 5-10 jours."
+        else
+          flash[:alert] = "Erreur: #{settlement.errors.join(', ')}"
+        end
+      rescue => e
+        flash[:alert] = "Erreur: #{e.message}"
+        Rails.logger.error "Stripe Refund Error: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
+      end
+      
+      redirect_back(fallback_location: projects_path)
+    end
 
     protected
     def collection

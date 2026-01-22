@@ -10,7 +10,8 @@ module Neighborly::Mangopay::User
 
     accepts_nested_attributes_for :kycs, :reject_if => :all_blank, :allow_destroy => true
 
-    before_update :update_mangopay_user
+    # DÉSACTIVÉ - MangoPay n'est plus utilisé (Stripe Connect à la place)
+    # before_update :update_mangopay_user
 
     def registered_cards_with_currency(currency)
       registered_cards.where(currency: currency)

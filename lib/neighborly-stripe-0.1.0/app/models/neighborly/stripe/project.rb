@@ -18,13 +18,23 @@ module Neighborly::Stripe::Project
   end
   
   def enable_stripe!
-    setup_stripe_account! if stripe_account_id.blank?
+    # Si le user a déjà un compte connecté, le réutiliser
+    if user.stripe_connect_account_id.present?
+      update_column(:stripe_account_id, user.stripe_connect_account_id)
+    else
+      setup_stripe_account!
+    end
     
-    # Recharger pour avoir les dernières données
     reload
-    
-    # Activer même si onboarding pas terminé (à compléter plus tard)
     update_column(:use_stripe, true)
+    
+    # Activer Stripe pour TOUS les autres projets du même user
+    user.projects.where(use_stripe: false).find_each do |p|
+      p.update_columns(
+        use_stripe: true,
+        stripe_account_id: user.stripe_connect_account_id
+      )
+    end
     
     stripe_ready?
   end
