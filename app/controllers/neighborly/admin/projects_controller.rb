@@ -82,15 +82,35 @@ module Neighborly::Admin
     
     # === ACTIONS STRIPE ===
     
+    # Synchronise le compte Stripe du porteur sur ce projet (et tous ses projets)
+    # Utilisé quand le porteur a un compte mais les projets ne sont pas synchro
+    def sync_stripe_account
+      @project = Project.find_by_permalink params[:id]
+      
+      unless @project.user.stripe_connect_account_id.present?
+        flash[:alert] = "Le porteur #{@project.user.name} n'a pas encore de compte Stripe Connect."
+        return redirect_back(fallback_location: projects_path)
+      end
+      
+      begin
+        synced = @project.sync_all_user_projects!
+        flash[:success] = "✅ Synchronisation terminée! #{synced} projet(s) mis à jour avec le compte #{@project.user.stripe_connect_account_id}."
+      rescue => e
+        flash[:alert] = "Erreur: #{e.message}"
+      end
+      
+      redirect_back(fallback_location: projects_path)
+    end
+    
     # Active Stripe pour un projet et crée/réutilise le compte connecté du porteur
     def enable_stripe
       @project = Project.find_by_permalink params[:id]
       
       if @project.use_stripe?
-        # Vérifier si on doit mettre à jour le compte
-        if @project.stripe_account_id != @project.user.stripe_connect_account_id && @project.user.stripe_connect_account_id.present?
-          @project.update_column(:stripe_account_id, @project.user.stripe_connect_account_id)
-          flash[:notice] = "Compte Stripe mis à jour avec le compte existant du porteur."
+        # Forcer la synchronisation même si Stripe est déjà activé
+        if @project.user.stripe_connect_account_id.present?
+          synced = @project.sync_all_user_projects!
+          flash[:notice] = "Compte Stripe synchronisé (#{synced} projet(s) mis à jour)."
         else
           flash[:notice] = "Stripe est déjà activé pour ce projet."
         end

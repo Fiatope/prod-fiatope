@@ -27,12 +27,35 @@ module Neighborly
       
       def return_url
         if current_user.stripe_onboarding_complete?
-          flash[:notice] = I18n.t('stripe.onboarding.success', default: 'Votre compte Stripe est configuré avec succès !')
+          # CRITIQUE: Synchroniser tous les projets du porteur
+          sync_user_projects_on_return
+          
+          flash[:notice] = I18n.t('stripe.onboarding.success', default: 'Votre compte Stripe est configuré avec succès ! Vos projets ont été mis à jour.')
           redirect_to "/users/#{current_user.id}/edit#settings"
         else
           flash[:alert] = I18n.t('stripe.onboarding.incomplete', default: 'Veuillez compléter votre profil Stripe')
           redirect_to "/users/#{current_user.id}/edit#settings"
         end
+      end
+      
+      private
+      
+      # Synchronise tous les projets du porteur quand il revient de l'onboarding
+      def sync_user_projects_on_return
+        return unless current_user.stripe_connect_account_id.present?
+        
+        synced = 0
+        current_user.projects.find_each do |project|
+          if project.stripe_account_id != current_user.stripe_connect_account_id
+            project.update_columns(
+              stripe_account_id: current_user.stripe_connect_account_id,
+              use_stripe: true
+            )
+            synced += 1
+          end
+        end
+        
+        Rails.logger.info "Connect Return: Synchronisé #{synced} projet(s) pour #{current_user.email}"
       end
       
       def dashboard

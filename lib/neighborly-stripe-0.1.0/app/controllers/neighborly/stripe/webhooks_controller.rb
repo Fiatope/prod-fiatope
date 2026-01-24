@@ -164,7 +164,30 @@ module Neighborly
         if account.charges_enabled && account.payouts_enabled
           user.update(stripe_onboarding_complete: true)
           Rails.logger.info "Account updated: User #{user.id} onboarding complete"
+          
+          # CRITIQUE: Synchroniser tous les projets du porteur
+          # C'est ici que la magie opère - quand l'onboarding est complété,
+          # on s'assure que tous les projets ont le bon stripe_account_id
+          sync_user_projects(user)
         end
+      end
+      
+      # Synchronise le stripe_account_id sur TOUS les projets du porteur
+      def sync_user_projects(user)
+        return unless user.stripe_connect_account_id.present?
+        
+        synced_count = 0
+        user.projects.find_each do |project|
+          if project.stripe_account_id != user.stripe_connect_account_id
+            project.update_columns(
+              stripe_account_id: user.stripe_connect_account_id,
+              use_stripe: true
+            )
+            synced_count += 1
+          end
+        end
+        
+        Rails.logger.info "Webhook: Synchronisé #{synced_count} projet(s) pour #{user.email} avec compte #{user.stripe_connect_account_id}"
       end
       
       def handle_transfer_created(transfer)

@@ -1,5 +1,45 @@
 - content_for :page_content do
   #user-settings-content.row
+    /= === SECTION STRIPE CONNECT ===
+    - if @user.projects.any?
+      .large-8.columns
+        h3
+          i.icon-et-credit-card
+          = " Stripe Connect - Recevoir des paiements"
+        
+        - if @user.stripe_connect_account_id.present?
+          .panel.callout.radius
+            - if @user.stripe_onboarding_complete?
+              p
+                span.label.success ✅ Compte configuré
+              p
+                | Votre compte Stripe est prêt à recevoir des paiements.
+              p
+                strong Compte: 
+                code= @user.stripe_connect_account_id
+              p
+                = link_to neighborly_stripe.connect_dashboard_path, class: 'button small', target: '_blank' do
+                  i.icon-et-external-link
+                  = " Accéder au Dashboard Stripe"
+            - else
+              p
+                span.label.warning ⏳ Onboarding incomplet
+              p
+                | Vous devez compléter votre profil Stripe pour recevoir des paiements.
+              p
+                = link_to neighborly_stripe.connect_create_path, method: :post, class: 'button small alert' do
+                  i.icon-et-link
+                  = " Compléter mon profil Stripe"
+        - else
+          .panel.radius
+            p
+              | Pour recevoir les contributions de vos projets, vous devez créer un compte Stripe Connect.
+            p
+              = link_to neighborly_stripe.connect_create_path, method: :post, class: 'button small success' do
+                i.icon-et-credit-card
+                = " Créer mon compte Stripe"
+        hr
+
     = simple_form_for(@user, url: { action: :update_password }, html: { method: :put }) do |f|
       .large-8.columns
         h3= t('.change_password')

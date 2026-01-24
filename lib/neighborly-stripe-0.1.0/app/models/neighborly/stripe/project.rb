@@ -20,23 +20,45 @@ module Neighborly::Stripe::Project
   def enable_stripe!
     # Si le user a déjà un compte connecté, le réutiliser
     if user.stripe_connect_account_id.present?
-      update_column(:stripe_account_id, user.stripe_connect_account_id)
+      # Utiliser update_columns pour ce projet spécifique (plus rapide)
+      update_columns(
+        stripe_account_id: user.stripe_connect_account_id,
+        use_stripe: true
+      )
     else
       setup_stripe_account!
+      update_column(:use_stripe, true)
     end
     
     reload
-    update_column(:use_stripe, true)
     
-    # Activer Stripe pour TOUS les autres projets du même user
-    user.projects.where(use_stripe: false).find_each do |p|
-      p.update_columns(
-        use_stripe: true,
-        stripe_account_id: user.stripe_connect_account_id
-      )
-    end
+    # CRITIQUE: Synchroniser TOUS les projets du même porteur
+    # Utilise la méthode centralisée pour cohérence
+    sync_all_user_projects!
     
     stripe_ready?
+  end
+  
+  # Synchronise le stripe_account_id sur TOUS les projets du porteur
+  # Appelable depuis admin ou webhook
+  def sync_all_user_projects!
+    return unless user.stripe_connect_account_id.present?
+    
+    synced = 0
+    user.projects.find_each do |project|
+      needs_sync = project.stripe_account_id != user.stripe_connect_account_id || !project.use_stripe?
+      
+      if needs_sync
+        project.update_columns(
+          stripe_account_id: user.stripe_connect_account_id,
+          use_stripe: true
+        )
+        synced += 1
+      end
+    end
+    
+    Rails.logger.info "Stripe: Synchronisé #{synced} projet(s) pour #{user.email}"
+    synced
   end
   
   def process_stripe_payout(amount_cents:)
