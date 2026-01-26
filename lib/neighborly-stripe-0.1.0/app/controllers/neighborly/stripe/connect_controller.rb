@@ -38,6 +38,44 @@ module Neighborly
         end
       end
       
+      def dashboard
+        dashboard_url = current_user.stripe_dashboard_url
+        
+        if dashboard_url
+          redirect_to dashboard_url, allow_other_host: true
+        else
+          flash[:alert] = I18n.t('stripe.dashboard.unavailable', default: 'Dashboard Stripe non disponible')
+          redirect_to request.referer || "/"
+        end
+      end
+      
+      # Synchronisation COMPLÈTE depuis l'API Stripe
+      # Récupère: infos compte, projets, contributions (transferts, remboursements)
+      def sync_account
+        unless current_user.stripe_connect_account_id.present?
+          flash[:alert] = "Vous n'avez pas encore de compte Stripe Connect."
+          return redirect_back(fallback_location: "/users/#{current_user.id}/edit")
+        end
+        
+        begin
+          service = SyncService.new(current_user)
+          
+          if service.sync_all!
+            results = service.results
+            flash[:success] = "✅ Synchronisation complète! " \
+              "#{results[:projects].count} projet(s), " \
+              "#{results[:contributions].count} contribution(s) vérifiée(s)."
+          else
+            flash[:alert] = "Erreur: #{service.errors.join(', ')}"
+          end
+        rescue => e
+          flash[:alert] = "Erreur: #{e.message}"
+          Rails.logger.error "[SyncAccount] Error: #{e.message}"
+        end
+        
+        redirect_back(fallback_location: "/users/#{current_user.id}/edit")
+      end
+      
       private
       
       # Synchronise tous les projets du porteur quand il revient de l'onboarding
@@ -56,17 +94,6 @@ module Neighborly
         end
         
         Rails.logger.info "Connect Return: Synchronisé #{synced} projet(s) pour #{current_user.email}"
-      end
-      
-      def dashboard
-        dashboard_url = current_user.stripe_dashboard_url
-        
-        if dashboard_url
-          redirect_to dashboard_url, allow_other_host: true
-        else
-          flash[:alert] = I18n.t('stripe.dashboard.unavailable', default: 'Dashboard Stripe non disponible')
-          redirect_to request.referer || "/"
-        end
       end
     end
   end

@@ -3,6 +3,7 @@ Neighborly::Stripe::Engine.routes.draw do
   get 'connect/refresh', to: 'connect#refresh', as: :connect_refresh
   get 'connect/return', to: 'connect#return_url', as: :connect_return
   get 'connect/dashboard', to: 'connect#dashboard', as: :connect_dashboard
+  post 'connect/sync', to: 'connect#sync_account', as: :sync_account
   
   scope '/projects/:project_id' do
     get 'payments/new', to: 'payments#new', as: :payment_new

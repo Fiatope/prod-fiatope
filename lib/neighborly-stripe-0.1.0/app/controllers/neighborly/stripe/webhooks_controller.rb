@@ -6,18 +6,33 @@ module Neighborly
       
       def create
         case @event.type
+        # === CHECKOUT SESSIONS ===
         when 'checkout.session.completed'
           handle_checkout_completed(@event.data.object)
+        when 'checkout.session.async_payment_succeeded'
+          # Pour paiements différés (SEPA, etc.) - confirmation finale
+          handle_async_payment_succeeded(@event.data.object)
+        when 'checkout.session.async_payment_failed'
+          # Pour paiements différés qui échouent
+          handle_async_payment_failed(@event.data.object)
+        # === PAYMENT INTENTS ===
         when 'payment_intent.succeeded'
           handle_payment_succeeded(@event.data.object)
         when 'payment_intent.payment_failed'
           handle_payment_failed(@event.data.object)
+        # === CHARGES ===
         when 'charge.refunded'
           handle_charge_refunded(@event.data.object)
+        when 'charge.dispute.created'
+          handle_dispute_created(@event.data.object)
+        # === CONNECT ACCOUNTS ===
         when 'account.updated'
           handle_account_updated(@event.data.object)
+        # === TRANSFERS ===
         when 'transfer.created'
           handle_transfer_created(@event.data.object)
+        when 'transfer.reversed'
+          handle_transfer_reversed(@event.data.object)
         else
           Rails.logger.info "Unhandled Stripe event type: #{@event.type}"
         end
@@ -196,6 +211,100 @@ module Neighborly
         
         stripe_order.update(stripe_transfer_id: transfer.id)
         Rails.logger.info "Transfer created: Order #{stripe_order.id} transfer #{transfer.id}"
+      end
+      
+      # Paiement asynchrone réussi (SEPA, etc.)
+      def handle_async_payment_succeeded(session)
+        contribution_id = session.metadata['contribution_id']
+        return unless contribution_id.present?
+        
+        contribution = ::Contribution.find_by(id: contribution_id)
+        return unless contribution
+        
+        # Confirmer la contribution
+        if contribution.state != 'confirmed'
+          begin
+            contribution.confirm!
+            Rails.logger.info "Webhook: Async payment succeeded - Contribution #{contribution.id} confirmée"
+          rescue => e
+            Rails.logger.warn "Webhook: Impossible de confirmer contribution async: #{e.message}"
+          end
+        end
+        
+        # Mettre à jour le stripe_order si existe
+        stripe_order = Order.find_by(stripe_checkout_session_id: session.id)
+        stripe_order&.update(status: 'completed')
+      end
+      
+      # Paiement asynchrone échoué (SEPA, etc.)
+      def handle_async_payment_failed(session)
+        contribution_id = session.metadata['contribution_id']
+        return unless contribution_id.present?
+        
+        contribution = ::Contribution.find_by(id: contribution_id)
+        return unless contribution
+        
+        # Annuler la contribution
+        if contribution.state == 'pending'
+          begin
+            contribution.cancel!
+            Rails.logger.info "Webhook: Async payment failed - Contribution #{contribution.id} annulée"
+          rescue => e
+            Rails.logger.warn "Webhook: Impossible d'annuler contribution async: #{e.message}"
+          end
+        end
+        
+        # Mettre à jour le stripe_order si existe
+        stripe_order = Order.find_by(stripe_checkout_session_id: session.id)
+        stripe_order&.update(status: 'failed')
+      end
+      
+      # Litige/dispute créé - CRITIQUE pour la gestion financière
+      def handle_dispute_created(dispute)
+        charge_id = dispute.charge
+        return unless charge_id.present?
+        
+        # Trouver la contribution via le stripe_order
+        stripe_order = Order.find_by(stripe_charge_id: charge_id)
+        return unless stripe_order
+        
+        contribution = stripe_order.contribution
+        return unless contribution
+        
+        # Logger l'alerte - les litiges doivent être traités manuellement
+        Rails.logger.error "DISPUTE CRÉÉ: Contribution #{contribution.id}, Projet #{contribution.project.name}, Montant #{contribution.value}€"
+        Rails.logger.error "Dispute ID: #{dispute.id}, Raison: #{dispute.reason}"
+        
+        # Notifier l'admin (si méthode existe)
+        begin
+          AdminMailer.dispute_alert(contribution, dispute).deliver_later if defined?(AdminMailer)
+        rescue => e
+          Rails.logger.warn "Impossible d'envoyer alerte dispute: #{e.message}"
+        end
+      end
+      
+      # Transfert inversé/annulé
+      def handle_transfer_reversed(transfer)
+        # Trouver la contribution via le transfer_id
+        contribution = ::Contribution.find_by(stripe_transfer_id: transfer.id)
+        
+        if contribution
+          contribution.update_columns(
+            stripe_transferred: false,
+            stripe_transfer_id: nil
+          )
+          Rails.logger.warn "Transfer reversed: Contribution #{contribution.id} - transfert annulé"
+        end
+        
+        # Mettre à jour le projet si c'est le transfert principal
+        project = ::Project.find_by(stripe_transfer_id: transfer.id)
+        if project
+          project.update_columns(
+            stripe_transfer_id: nil,
+            stripe_settlement_type: nil
+          )
+          Rails.logger.warn "Transfer reversed: Projet #{project.id} - règlement annulé"
+        end
       end
     end
   end

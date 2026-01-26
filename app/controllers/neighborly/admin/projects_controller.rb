@@ -82,8 +82,8 @@ module Neighborly::Admin
     
     # === ACTIONS STRIPE ===
     
-    # Synchronise le compte Stripe du porteur sur ce projet (et tous ses projets)
-    # Utilisé quand le porteur a un compte mais les projets ne sont pas synchro
+    # Synchronisation COMPLÈTE depuis Stripe API
+    # Récupère: infos compte, projets, contributions (transferts, remboursements)
     def sync_stripe_account
       @project = Project.find_by_permalink params[:id]
       
@@ -93,10 +93,20 @@ module Neighborly::Admin
       end
       
       begin
-        synced = @project.sync_all_user_projects!
-        flash[:success] = "✅ Synchronisation terminée! #{synced} projet(s) mis à jour avec le compte #{@project.user.stripe_connect_account_id}."
+        service = Neighborly::Stripe::SyncService.new(@project.user)
+        
+        if service.sync_all!
+          results = service.results
+          flash[:success] = "✅ Synchronisation complète! " \
+            "Compte: #{results[:user][:charges_enabled] ? 'Actif' : 'En attente'}, " \
+            "#{results[:projects].count} projet(s), " \
+            "#{results[:contributions].count} contribution(s) vérifiée(s)."
+        else
+          flash[:alert] = "Erreur: #{service.errors.join(', ')}"
+        end
       rescue => e
         flash[:alert] = "Erreur: #{e.message}"
+        Rails.logger.error "[Admin] Sync error: #{e.message}\n#{e.backtrace.first(3).join("\n")}"
       end
       
       redirect_back(fallback_location: projects_path)
