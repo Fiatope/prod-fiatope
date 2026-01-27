@@ -6,6 +6,31 @@
       h4
         strong= "#{@total_projects} "
         = t('.total_projects')
+      
+      /= Affichage du lien onboarding Stripe si généré
+      - if flash[:stripe_onboarding_url].present?
+        .alert-box.success.stripe-onboarding-link
+          h5
+            i.icon-et-link
+            |  Lien d'onboarding Stripe généré
+          p Copiez ce lien et envoyez-le au porteur de projet pour qu'il complète son profil Stripe:
+          .row
+            .large-10.columns
+              input#stripe-onboarding-url.input-text type="text" value="#{flash[:stripe_onboarding_url]}" readonly=""
+            .large-2.columns
+              button.button.small.expand#copy-btn type="button" 📋 Copier
+          p.help-text
+            strong ⚠️ 
+            | Ce lien expire dans 24 heures. Le porteur doit l'utiliser rapidement.
+        javascript:
+          document.getElementById('copy-btn').addEventListener('click', function() {
+            var input = document.getElementById('stripe-onboarding-url');
+            input.select();
+            input.setSelectionRange(0, 99999);
+            document.execCommand('copy');
+            this.innerHTML = '✅ Copié!';
+            setTimeout(function() { document.getElementById('copy-btn').innerHTML = '📋 Copier'; }, 2000);
+          });
 
       .filters
         = form_tag projects_path, method: :get, class: 'form-horizontal' do |f|
@@ -84,6 +109,7 @@
                   span.sort-order
                 th= t('.state')
                 th= t('.wallet_id')
+                th Stripe
                 th= t('.doc')
                 th
             tbody
@@ -130,6 +156,32 @@
                   td
                     = project.mangopay_wallet_handler.try(:wallet_key)
                   td
+                    - if project.respond_to?(:use_stripe?)
+                      - if project.use_stripe?
+                        - stripe_account = project.stripe_account_id.presence || project.user.stripe_connect_account_id
+                        - if project.user.stripe_onboarding_complete?
+                          span.label.label-success title="Compte: #{stripe_account}" ✅ Prêt
+                        - else
+                          span.label.label-warning title="Compte: #{stripe_account}\nLe porteur doit compléter son profil Stripe" ⏳ Onboarding
+                        - if project.stripe_settlement_type == 'transferred'
+                          br
+                          span.label.label-info title="Transféré le #{project.stripe_settled_at&.strftime('%d/%m/%Y %H:%M')}" 💰 Transféré
+                        - elsif project.stripe_settlement_type == 'refunded'
+                          br
+                          span.label.label-alert title="Remboursé le #{project.stripe_settled_at&.strftime('%d/%m/%Y %H:%M')}" ↩️ Remboursé
+                        - else
+                          /= Afficher les contributions EN ATTENTE (non traitées)
+                          - stripe_contributions_pending = project.contributions.where(payment_method: 'Stripe', state: 'confirmed').where(stripe_refunded: [false, nil]).where(stripe_transferred: [false, nil])
+                          - if stripe_contributions_pending.any?
+                            br
+                            span.label.label-primary title="#{stripe_contributions_pending.count} contribution(s) en attente - #{number_to_currency(stripe_contributions_pending.sum(:value), unit: '€', format: '%n %u')} brut" 💳 #{stripe_contributions_pending.count} en attente
+                      - else
+                        - if project.user.stripe_connect_account_id.present?
+                          = link_to sync_stripe_account_project_path(project), method: :put, class: 'label label-warning', title: "Compte porteur: #{project.user.stripe_connect_account_id}\nCliquer pour synchroniser", data: { confirm: "Synchroniser ce projet avec le compte Stripe #{project.user.stripe_connect_account_id} ?" }
+                            | 🔗 Synchroniser
+                        - else
+                          span.label ❌ Non activé
+                  td
                     / - if project.user.kycs.other_documents.present?
                     /   - project.user.kycs.other_documents.each do |kyc|
                     /     = link_to kyc.uploaded_image.url do
@@ -161,10 +213,11 @@
                             = link_to reject_project_path(project), method: :put  do
                               = t('.reject')
 
-                        - if project.waiting_funds?
-                          li
-                            = link_to neighborly_mangopay.payout_project_path(project), method: :put  do
-                              =t('.payout')
+                        /= MangoPay désactivé - Stripe Connect utilisé pour les transferts
+                        /- if project.waiting_funds?
+                        /  li
+                        /    = link_to neighborly_mangopay.payout_project_path(project), method: :put  do
+                        /      =t('.payout')
 
                         - if project.can_push_to_draft?
                           li
@@ -199,5 +252,54 @@
                           li
                             = link_to main_app.show_project_on_homepage_project_path(project), method: :put do
                               = "Mettre en page d'accueil"
+                        
+                        /= === OPTIONS STRIPE ===
+                        li.divider
+                        - if project.respond_to?(:use_stripe?)
+                          - unless project.use_stripe?
+                            /= Activer Stripe (crée ou réutilise le compte du porteur)
+                            li
+                              = link_to main_app.enable_stripe_project_path(project), method: :put do
+                                i.icon-et-credit-card
+                                = " Activer Stripe"
+                          - else
+                            /= Lien onboarding (seulement si pas encore configuré)
+                            - unless project.user.stripe_onboarding_complete?
+                              li
+                                = link_to main_app.stripe_onboarding_link_project_path(project), method: :get do
+                                  i.icon-et-link
+                                  = " Lien Onboarding Stripe"
+                            
+                            /= Contributions Stripe NON TRAITÉES (ni transférées, ni remboursées)
+                            - stripe_contribs_pending = project.contributions.where(payment_method: 'Stripe', state: 'confirmed').where(stripe_refunded: [false, nil]).where(stripe_transferred: [false, nil])
+                            - has_pending_contributions = stripe_contribs_pending.any?
+                            - total_brut = stripe_contribs_pending.sum(:value)
+                            /= Estimation du montant NET (après frais Stripe ~2.5% + 0.25€ par transaction, et commission Fiatope 5%)
+                            - stripe_fees_estimate = stripe_contribs_pending.count * 0.25 + total_brut * 0.025
+                            - net_after_stripe = total_brut - stripe_fees_estimate
+                            - fiatope_commission = net_after_stripe * 0.05
+                            - net_to_owner = net_after_stripe - fiatope_commission
+                            
+                            /= TRANSFERT: si contributions EN ATTENTE + onboarding complété + pas déjà transféré + pas de transfer_id existant
+                            - can_transfer = has_pending_contributions && project.user.stripe_onboarding_complete? && project.stripe_settlement_type != 'transferred' && project.stripe_transfer_id.blank?
+                            - if can_transfer
+                              li
+                                - transfer_url = main_app.process_stripe_transfer_project_path(project)
+                                - stripe_acct = project.stripe_account_id.presence || project.user.stripe_connect_account_id
+                                = link_to "javascript:openTransferModal('#{j(project.name)}', '#{j(project.user.name)}', '#{stripe_acct}', '#{number_to_currency(total_brut, unit: '€', format: '%n %u')}', '#{number_to_currency(stripe_fees_estimate, unit: '€', format: '%n %u')}', '#{number_to_currency(fiatope_commission, unit: '€', format: '%n %u')}', '#{number_to_currency(net_to_owner, unit: '€', format: '%n %u')}', '#{transfer_url}')" do
+                                  i.icon-et-money
+                                  = " 💰 Transférer (~#{number_to_currency(net_to_owner, unit: '€', format: '%n %u')} net)"
+                            
+                            /= REMBOURSEMENT: si contributions EN ATTENTE + pas déjà remboursé + pas déjà transféré (impossible de rembourser après transfert!)
+                            - can_refund = has_pending_contributions && project.stripe_settlement_type != 'refunded' && project.stripe_settlement_type != 'transferred' && project.stripe_transfer_id.blank?
+                            - if can_refund
+                              li
+                                - refund_url = main_app.process_stripe_refund_project_path(project)
+                                = link_to "javascript:openRefundModal('#{j(project.name)}', '#{j(project.user.name)}', #{stripe_contribs_pending.count}, '#{number_to_currency(total_brut, unit: '€', format: '%n %u')}', '#{refund_url}')" do
+                                  i.icon-et-undo
+                                  = " ↩️ Rembourser (#{stripe_contribs_pending.count} contrib.)"
                               
         = paginate @projects
+
+/= Modals Stripe pour transfert et remboursement (UI professionnelle)
+= render 'neighborly/admin/projects/stripe_modals'

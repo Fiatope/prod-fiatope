@@ -38,7 +38,9 @@ module Shared::PaymentStateMachineHandler
         }
       end
 
-      before_transition all => :refunded, :do => :mangopay_refund
+      # Remboursement: utilise Stripe si disponible, sinon MangoPay (désactivé)
+      # La méthode mangopay_refund dans Contribution gère automatiquement la redirection vers Stripe
+      before_transition all => :refunded, :do => :process_refund
 
       event :refund do
         transition [:requested_refund, :confirmed] => :refunded

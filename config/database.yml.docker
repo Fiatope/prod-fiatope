@@ -1,0 +1,17 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  timeout: 5000
+
+development:
+  <<: *default
+  database: fiatope_development
+
+test:
+  <<: *default
+  database: fiatope_test
+
+production:
+  <<: *default
+  url: <%= ENV.fetch("DATABASE_URL", "postgresql://localhost/fiatope_production") %>

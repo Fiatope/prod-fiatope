@@ -117,4 +117,46 @@ class Contribution < ActiveRecord::Base
       read_attribute(:payment_service_fee)
     end
   end
+  
+  # Méthode de remboursement agnostique du système de paiement
+  # Priorité: Stripe > MangoPay (désactivé) > Manuel
+  def process_refund
+    # 1. Si c'est une contribution Stripe, utiliser Stripe
+    if payment_id.present? && payment_id.start_with?('pi_')
+      return stripe_refund if respond_to?(:stripe_refund)
+    end
+    
+    # 2. Si MangoPay est activé (ce n'est plus le cas), utiliser MangoPay
+    if ENV['MANGOPAY_ENABLED']&.downcase == 'true' && respond_to?(:mangopay_refund)
+      return mangopay_refund
+    end
+    
+    # 3. Sinon, remboursement géré manuellement (pas d'erreur)
+    Rails.logger.info "Contribution ##{id}: Remboursement manuel requis (pas de système de paiement automatique)"
+    true
+  end
+  
+  # Remboursement via Stripe
+  def stripe_refund
+    return true unless payment_id.present? && payment_id.start_with?('pi_')
+    
+    begin
+      # Récupérer le charge_id si disponible
+      charge_id = stripe_charge_id
+      
+      if charge_id.present?
+        ::Stripe::Refund.create(charge: charge_id)
+      else
+        # Sinon, rembourser via le PaymentIntent
+        ::Stripe::Refund.create(payment_intent: payment_id)
+      end
+      
+      update_column(:stripe_refunded, true)
+      Rails.logger.info "Contribution ##{id}: Remboursement Stripe effectué"
+      true
+    rescue ::Stripe::StripeError => e
+      Rails.logger.error "Contribution ##{id}: Erreur remboursement Stripe - #{e.message}"
+      false
+    end
+  end
 end

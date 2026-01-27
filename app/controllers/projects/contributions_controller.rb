@@ -1,7 +1,8 @@
 class Projects::ContributionsController < ApplicationController
   after_action :verify_authorized, except: :index
   skip_before_action :set_persistent_warning
-  before_action :has_mangopay_prerequisites, only: [:new, :create]
+  # Renommé: vérification des pré-requis utilisateur (indépendant de MangoPay)
+  before_action :has_user_prerequisites, only: [:new, :create]
   skip_before_action :verify_authenticity_token, only: :orange_money_payment_confirmation
   skip_after_action :verify_authorized, only: [:cancel, :orange_money_payment_confirmation, :pay_plus_africa_payment_confirmation, :touch_payment_initialization]
 
@@ -403,16 +404,19 @@ class Projects::ContributionsController < ApplicationController
 
   private
 
-  def has_mangopay_prerequisites
+  # Vérifie que l'utilisateur a complété son profil de base
+  # (nom, prénom, date de naissance, etc.) - indépendant du système de paiement
+  def has_user_prerequisites
     if user_signed_in?
       if current_user.light_authentication_ready?
         return true
       else
-        flash.alert = t('projects.contributions.new.not_mangopay_ready')
+        # Message générique, pas spécifique à MangoPay
+        flash.alert = t('projects.contributions.new.profile_incomplete', 
+                        default: 'Veuillez compléter votre profil avant de contribuer.')
         redirect_to edit_user_path(current_user, redirect_url: new_project_contribution_path(parent.permalink)) and return false
       end
     else
-      #redirect_to new_user_session_path
       redirect_to new_user_registration_path(:from_contribution => parent)
     end
   end

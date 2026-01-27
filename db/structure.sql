@@ -1,6 +1,12 @@
+\restrict XcY9LmBB2rMjblDdmnNBiu0DpHc1HRusLvL7NbMNypdNnc96aJjUA6xC8fXMClF
+
+-- Dumped from database version 17.6
+-- Dumped by pg_dump version 17.6
+
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SELECT pg_catalog.set_config('search_path', '', false);
@@ -97,6 +103,11 @@ CREATE TABLE public.contributions (
     response_code character varying(255),
     transaction_number character varying(255),
     response_message character varying(255),
+    stripe_transferred boolean DEFAULT false,
+    stripe_transfer_id character varying,
+    stripe_refunded boolean DEFAULT false,
+    stripe_refund_id character varying,
+    stripe_charge_id character varying,
     CONSTRAINT backers_value_positive CHECK ((value >= (0)::numeric))
 );
 
@@ -203,6 +214,11 @@ CREATE TABLE public.projects (
     numero_ifu character varying,
     numero_rccm character varying,
     show_on_homepage boolean DEFAULT false,
+    stripe_account_id character varying,
+    use_stripe boolean DEFAULT true,
+    stripe_transfer_id character varying,
+    stripe_settled_at timestamp without time zone,
+    stripe_settlement_type character varying,
     CONSTRAINT projects_about_not_blank CHECK ((length(btrim(about)) > 0)),
     CONSTRAINT projects_headline_length_within CHECK (((length(headline) >= 1) AND (length(headline) <= 140))),
     CONSTRAINT projects_headline_not_blank CHECK ((length(btrim(headline)) > 0))
@@ -1433,6 +1449,9 @@ CREATE TABLE public.users (
     residence_country character varying(255),
     partner_id integer,
     mobile_phone character varying(255),
+    stripe_customer_id character varying,
+    stripe_connect_account_id character varying,
+    stripe_onboarding_complete boolean DEFAULT false,
     CONSTRAINT users_bio_length_within CHECK (((length(bio) >= 0) AND (length(bio) <= 140)))
 );
 
@@ -2555,9 +2574,9 @@ ALTER SEQUENCE public.projects_id_seq OWNED BY public.projects.id;
 --
 
 CREATE VIEW public.recommendations AS
- SELECT recommendations.user_id,
-    recommendations.project_id,
-    (sum(recommendations.count))::bigint AS count
+ SELECT user_id,
+    project_id,
+    (sum(count))::bigint AS count
    FROM ( SELECT b.user_id,
             recommendations_1.id AS project_id,
             count(DISTINCT recommenders.user_id) AS count
@@ -2581,8 +2600,8 @@ CREATE VIEW public.recommendations AS
   WHERE (NOT (EXISTS ( SELECT true AS bool
            FROM public.contributions b2
           WHERE (((b2.state)::text = 'confirmed'::text) AND (b2.user_id = recommendations.user_id) AND (b2.project_id = recommendations.project_id)))))
-  GROUP BY recommendations.user_id, recommendations.project_id
-  ORDER BY ((sum(recommendations.count))::bigint) DESC;
+  GROUP BY user_id, project_id
+  ORDER BY ((sum(count))::bigint) DESC;
 
 
 --
@@ -2701,6 +2720,48 @@ CREATE SEQUENCE public.states_id_seq
 --
 
 ALTER SEQUENCE public.states_id_seq OWNED BY public.states.id;
+
+
+--
+-- Name: stripe_orders; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.stripe_orders (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    project_id bigint NOT NULL,
+    contribution_id bigint,
+    stripe_payment_intent_id character varying,
+    stripe_checkout_session_id character varying,
+    stripe_charge_id character varying,
+    stripe_transfer_id character varying,
+    amount_cents integer NOT NULL,
+    currency character varying DEFAULT 'eur'::character varying,
+    platform_fee_cents integer,
+    status character varying,
+    metadata text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: stripe_orders_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.stripe_orders_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: stripe_orders_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.stripe_orders_id_seq OWNED BY public.stripe_orders.id;
 
 
 --
@@ -3328,6 +3389,13 @@ ALTER TABLE ONLY public.states ALTER COLUMN id SET DEFAULT nextval('public.state
 
 
 --
+-- Name: stripe_orders id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.stripe_orders ALTER COLUMN id SET DEFAULT nextval('public.stripe_orders_id_seq'::regclass);
+
+
+--
 -- Name: taggings id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -3817,6 +3885,14 @@ ALTER TABLE ONLY public.states
 
 
 --
+-- Name: stripe_orders stripe_orders_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.stripe_orders
+    ADD CONSTRAINT stripe_orders_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: taggings taggings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4210,6 +4286,20 @@ CREATE INDEX index_contributions_on_reward_id ON public.contributions USING btre
 
 
 --
+-- Name: index_contributions_on_stripe_refunded; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_contributions_on_stripe_refunded ON public.contributions USING btree (stripe_refunded);
+
+
+--
+-- Name: index_contributions_on_stripe_transferred; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_contributions_on_stripe_transferred ON public.contributions USING btree (stripe_transferred);
+
+
+--
 -- Name: index_contributions_on_user_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4434,6 +4524,20 @@ CREATE UNIQUE INDEX index_projects_on_permalink ON public.projects USING btree (
 
 
 --
+-- Name: index_projects_on_stripe_account_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_projects_on_stripe_account_id ON public.projects USING btree (stripe_account_id);
+
+
+--
+-- Name: index_projects_on_stripe_settled_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_projects_on_stripe_settled_at ON public.projects USING btree (stripe_settled_at);
+
+
+--
 -- Name: index_projects_on_user_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4445,6 +4549,48 @@ CREATE INDEX index_projects_on_user_id ON public.projects USING btree (user_id);
 --
 
 CREATE INDEX index_rewards_on_project_id ON public.rewards USING btree (project_id);
+
+
+--
+-- Name: index_stripe_orders_on_contribution_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_stripe_orders_on_contribution_id ON public.stripe_orders USING btree (contribution_id);
+
+
+--
+-- Name: index_stripe_orders_on_project_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_stripe_orders_on_project_id ON public.stripe_orders USING btree (project_id);
+
+
+--
+-- Name: index_stripe_orders_on_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_stripe_orders_on_status ON public.stripe_orders USING btree (status);
+
+
+--
+-- Name: index_stripe_orders_on_stripe_checkout_session_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_stripe_orders_on_stripe_checkout_session_id ON public.stripe_orders USING btree (stripe_checkout_session_id);
+
+
+--
+-- Name: index_stripe_orders_on_stripe_payment_intent_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_stripe_orders_on_stripe_payment_intent_id ON public.stripe_orders USING btree (stripe_payment_intent_id);
+
+
+--
+-- Name: index_stripe_orders_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_stripe_orders_on_user_id ON public.stripe_orders USING btree (user_id);
 
 
 --
@@ -4522,6 +4668,20 @@ CREATE INDEX index_users_on_partner_id ON public.users USING btree (partner_id);
 --
 
 CREATE UNIQUE INDEX index_users_on_reset_password_token ON public.users USING btree (reset_password_token);
+
+
+--
+-- Name: index_users_on_stripe_connect_account_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_users_on_stripe_connect_account_id ON public.users USING btree (stripe_connect_account_id);
+
+
+--
+-- Name: index_users_on_stripe_customer_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_users_on_stripe_customer_id ON public.users USING btree (stripe_customer_id);
 
 
 --
@@ -4962,11 +5122,35 @@ ALTER TABLE ONLY public.article_orders
 
 
 --
+-- Name: stripe_orders fk_rails_3346390b5a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.stripe_orders
+    ADD CONSTRAINT fk_rails_3346390b5a FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: stripe_orders fk_rails_3931d11aee; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.stripe_orders
+    ADD CONSTRAINT fk_rails_3931d11aee FOREIGN KEY (contribution_id) REFERENCES public.contributions(id);
+
+
+--
 -- Name: active_storage_variant_records fk_rails_993965df05; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.active_storage_variant_records
     ADD CONSTRAINT fk_rails_993965df05 FOREIGN KEY (blob_id) REFERENCES public.active_storage_blobs(id);
+
+
+--
+-- Name: stripe_orders fk_rails_c3a2f46289; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.stripe_orders
+    ADD CONSTRAINT fk_rails_c3a2f46289 FOREIGN KEY (project_id) REFERENCES public.projects(id);
 
 
 --
@@ -5132,6 +5316,8 @@ ALTER TABLE ONLY public.updates
 --
 -- PostgreSQL database dump complete
 --
+
+\unrestrict XcY9LmBB2rMjblDdmnNBiu0DpHc1HRusLvL7NbMNypdNnc96aJjUA6xC8fXMClF
 
 SET search_path TO "$user", public;
 
@@ -5430,6 +5616,15 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20220717132136'),
 ('20230306120457'),
 ('20230323061850'),
-('20230329105849');
+('20230329105849'),
+('20241227'),
+('20251215120000'),
+('20251215120100'),
+('20251215120200'),
+('20251223100000'),
+('20251227080000'),
+('20260116120000'),
+('20260120213751'),
+('20260122121145');
 
 

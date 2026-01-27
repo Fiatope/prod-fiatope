@@ -30,13 +30,13 @@ class PaymentObserver < ActiveRecord::Observer
 
   def notify_confirmation(resource)
     resource.update(confirmed_at: Time.now)
-    unless resource.payment_method == "Orange Money"
+    unless resource.payment_method.in?(["Orange Money", "Stripe"])
       resource.notify_owner(:payment_confirmed,
                             { },
                             { project: resource.project,
                               bcc: Configuration[:email_payments] })
+      resource.project.notify_owner(:project_owner_contribution_confirmed)
     end
-    resource.project.notify_owner( :project_owner_contribution_confirmed)
 
     if resource.project.expires_at < 7.days.ago
       notification_for_backoffice(resource, :payment_confirmed_after_finished_project)

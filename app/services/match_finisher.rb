@@ -1,8 +1,12 @@
 class MatchFinisher
   def complete!
     matches.each do |match|
-      refund = Neighborly::Mangopay::Refund.new(match)
-      refund.complete!
+      # MangoPay désactivé - utilisation de Stripe ou remboursement manuel
+      # Tenter le remboursement via Stripe si applicable
+      if match.respond_to?(:process_refund)
+        match.process_refund
+      end
+      
       match.complete!
       match.notify_observers :completed
     end

@@ -57,6 +57,9 @@ class Project < ActiveRecord::Base
 
   # Auto-assign default channel to new projects
   after_commit :assign_default_channel, on: :create
+  
+  # Synchroniser automatiquement stripe_account_id depuis le porteur
+  after_commit :sync_stripe_account_from_user, on: :create
 
   # acts_as_likeable
 
@@ -264,6 +267,22 @@ class Project < ActiveRecord::Base
     Rails.logger.info("✅ Canal '#{default_channel.name}' assigné au projet '#{self.name}' (ID: #{self.id})")
   rescue => e
     Rails.logger.error("❌ Erreur assignation canal au projet #{self.id}: #{e.message}")
+  end
+  
+  # Synchronise stripe_account_id depuis le compte Stripe Connect du porteur
+  def sync_stripe_account_from_user
+    return unless user.present?
+    return if stripe_account_id.present?
+    return unless user.stripe_connect_account_id.present?
+    
+    update_columns(
+      stripe_account_id: user.stripe_connect_account_id,
+      use_stripe: true
+    )
+    
+    Rails.logger.info("✅ Stripe account #{user.stripe_connect_account_id} synchronisé sur projet '#{name}' (ID: #{id})")
+  rescue => e
+    Rails.logger.error("❌ Erreur sync Stripe projet #{id}: #{e.message}")
   end
   
   def self.get_routes

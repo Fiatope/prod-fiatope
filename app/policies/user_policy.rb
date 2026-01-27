@@ -11,9 +11,10 @@ class UserPolicy < ApplicationPolicy
     is_owned_by?(user)
   end
 
-  def mangopay_authentications?
-    is_owned_by?(user)
-  end
+  # MangoPay désactivé - conservé pour compatibilité
+  # def mangopay_authentications?
+  #   is_owned_by?(user)
+  # end
 
   def settings?
     update?
@@ -27,9 +28,10 @@ class UserPolicy < ApplicationPolicy
     update?
   end
 
-  def mangopay_upload_kyc_files?
-    update?
-  end
+  # MangoPay désactivé - conservé pour compatibilité
+  # def mangopay_upload_kyc_files?
+  #   update?
+  # end
 
   def update_email?
     update?

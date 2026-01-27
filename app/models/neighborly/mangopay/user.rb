@@ -268,6 +268,8 @@ module Neighborly::Mangopay::User
     end
 
     def update_mangopay_user
+      # DÉSACTIVÉ si MANGOPAY_ENABLED n'est pas true
+      return unless ENV['MANGOPAY_ENABLED']&.downcase == 'true'
       Neighborly::Mangopay::Customer.new(self, {}).update! if light_authentication_ready?
     end
 

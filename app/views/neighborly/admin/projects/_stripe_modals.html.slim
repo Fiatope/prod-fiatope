@@ -1,0 +1,215 @@
+/= Modals pour les actions Stripe - UI professionnelle
+
+/= Modal de confirmation de transfert
+#stripeTransferModal.modal.fade[tabindex="-1" role="dialog" aria-labelledby="stripeTransferModalLabel" aria-hidden="true"]
+  .modal-dialog.modal-lg[role="document"]
+    .modal-content
+      .modal-header.bg-success.text-white
+        h5#stripeTransferModalLabel.modal-title
+          i.fa.fa-money.mr-2
+          |  Transfert des fonds au porteur
+        button.close.text-white[type="button" data-dismiss="modal" aria-label="Fermer"]
+          span[aria-hidden="true"] &times;
+      .modal-body
+        .alert.alert-info
+          i.fa.fa-info-circle.mr-2
+          strong Important:
+          |  Cette action transfère définitivement les fonds vers le compte Stripe du porteur de projet.
+        
+        .card.mb-3
+          .card-header.bg-light
+            strong Détails du projet
+          .card-body
+            table.table.table-sm.mb-0
+              tbody
+                tr
+                  td.font-weight-bold Projet:
+                  td#transferProjectName
+                tr
+                  td.font-weight-bold Porteur:
+                  td#transferOwnerName
+                tr
+                  td.font-weight-bold Compte Stripe:
+                  td#transferStripeAccount
+        
+        .card.mb-3
+          .card-header.bg-light
+            strong Récapitulatif financier
+          .card-body
+            table.table.table-sm.mb-0
+              tbody
+                tr
+                  td.font-weight-bold Montant brut collecté:
+                  td.text-right#transferGrossAmount
+                tr
+                  td.font-weight-bold Frais Stripe estimés (~2.9%):
+                  td.text-right.text-danger#transferStripeFees
+                tr
+                  td.font-weight-bold Commission Fiatope (5%):
+                  td.text-right.text-warning#transferPlatformFee
+                tr.table-success
+                  td.font-weight-bold Montant NET pour le porteur:
+                  td.text-right.font-weight-bold#transferNetAmount
+        
+        .alert.alert-warning
+          i.fa.fa-exclamation-triangle.mr-2
+          strong Attention:
+          |  Cette action est IRRÉVERSIBLE. Une fois le transfert effectué, les fonds ne peuvent plus être remboursés aux contributeurs.
+        
+        .form-check.mb-3
+          input#confirmTransferCheck.form-check-input[type="checkbox"]
+          label.form-check-label[for="confirmTransferCheck"]
+            |  Je confirme vouloir transférer les fonds au porteur
+      
+      .modal-footer
+        button.btn.btn-secondary[type="button" data-dismiss="modal"]
+          i.fa.fa-times.mr-1
+          |  Annuler
+        form#transferForm.d-inline[method="post" style="display:inline;"]
+          input[type="hidden" name="_method" value="put"]
+          input[type="hidden" name="authenticity_token" value=""]
+          button#confirmTransferBtn.btn.btn-success[type="submit" disabled="disabled"]
+            i.fa.fa-check.mr-1
+            |  Confirmer le transfert
+
+/= Modal de confirmation de remboursement
+#stripeRefundModal.modal.fade[tabindex="-1" role="dialog" aria-labelledby="stripeRefundModalLabel" aria-hidden="true"]
+  .modal-dialog.modal-lg[role="document"]
+    .modal-content
+      .modal-header.bg-danger.text-white
+        h5#stripeRefundModalLabel.modal-title
+          i.fa.fa-undo.mr-2
+          |  Remboursement des contributeurs
+        button.close.text-white[type="button" data-dismiss="modal" aria-label="Fermer"]
+          span[aria-hidden="true"] &times;
+      .modal-body
+        .alert.alert-danger
+          i.fa.fa-exclamation-circle.mr-2
+          strong Attention:
+          |  Cette action rembourse TOUS les contributeurs du projet. Les fonds seront recrédités sous 5-10 jours ouvrés.
+        
+        .card.mb-3
+          .card-header.bg-light
+            strong Détails du projet
+          .card-body
+            table.table.table-sm.mb-0
+              tbody
+                tr
+                  td.font-weight-bold Projet:
+                  td#refundProjectName
+                tr
+                  td.font-weight-bold Porteur:
+                  td#refundOwnerName
+        
+        .card.mb-3
+          .card-header.bg-light
+            strong Récapitulatif du remboursement
+          .card-body
+            table.table.table-sm.mb-0
+              tbody
+                tr
+                  td.font-weight-bold Nombre de contributeurs:
+                  td.text-right#refundContributorsCount
+                tr.table-danger
+                  td.font-weight-bold Montant total à rembourser:
+                  td.text-right.font-weight-bold#refundTotalAmount
+        
+        .alert.alert-info
+          i.fa.fa-info-circle.mr-2
+          |  Les contributeurs recevront un email de confirmation et seront remboursés sur leur moyen de paiement original.
+        
+        .form-check.mb-3
+          input#confirmRefundCheck.form-check-input[type="checkbox"]
+          label.form-check-label[for="confirmRefundCheck"]
+            |  Je confirme vouloir rembourser tous les contributeurs
+      
+      .modal-footer
+        button.btn.btn-secondary[type="button" data-dismiss="modal"]
+          i.fa.fa-times.mr-1
+          |  Annuler
+        form#refundForm.d-inline[method="post" style="display:inline;"]
+          input[type="hidden" name="_method" value="put"]
+          input[type="hidden" name="authenticity_token" value=""]
+          button#confirmRefundBtn.btn.btn-danger[type="submit" disabled="disabled"]
+            i.fa.fa-undo.mr-1
+            |  Confirmer le remboursement
+
+javascript:
+  $(document).ready(function() {
+    // Récupérer le token CSRF pour les formulaires
+    var csrfToken = $('meta[name="csrf-token"]').attr('content');
+    $('#transferForm input[name="authenticity_token"]').val(csrfToken);
+    $('#refundForm input[name="authenticity_token"]').val(csrfToken);
+    
+    // Gestion du checkbox de confirmation pour le transfert
+    $('#confirmTransferCheck').on('change', function() {
+      if ($(this).is(':checked')) {
+        $('#confirmTransferBtn').prop('disabled', false).removeClass('disabled');
+      } else {
+        $('#confirmTransferBtn').prop('disabled', true).addClass('disabled');
+      }
+    });
+    
+    // Gestion du checkbox de confirmation pour le remboursement
+    $('#confirmRefundCheck').on('change', function() {
+      if ($(this).is(':checked')) {
+        $('#confirmRefundBtn').prop('disabled', false).removeClass('disabled');
+      } else {
+        $('#confirmRefundBtn').prop('disabled', true).addClass('disabled');
+      }
+    });
+    
+    // Reset checkboxes quand les modals se ferment
+    $('#stripeTransferModal, #stripeRefundModal').on('hidden.bs.modal', function() {
+      $(this).find('input[type="checkbox"]').prop('checked', false);
+      $(this).find('button[type="submit"]').prop('disabled', true).addClass('disabled');
+    });
+    
+    // Confirmation supplémentaire avant soumission
+    $('#transferForm').on('submit', function(e) {
+      if (!$('#confirmTransferCheck').is(':checked')) {
+        e.preventDefault();
+        alert('Veuillez cocher la case de confirmation avant de continuer.');
+        return false;
+      }
+      $('#confirmTransferBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin mr-1"></i> Transfert en cours...');
+    });
+    
+    $('#refundForm').on('submit', function(e) {
+      if (!$('#confirmRefundCheck').is(':checked')) {
+        e.preventDefault();
+        alert('Veuillez cocher la case de confirmation avant de continuer.');
+        return false;
+      }
+      $('#confirmRefundBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin mr-1"></i> Remboursement en cours...');
+    });
+  });
+  
+  // Fonction pour ouvrir le modal de transfert
+  function openTransferModal(projectName, ownerName, stripeAccount, grossAmount, stripeFees, platformFee, netAmount, transferUrl) {
+    $('#transferProjectName').text(projectName);
+    $('#transferOwnerName').text(ownerName);
+    $('#transferStripeAccount').text(stripeAccount);
+    $('#transferGrossAmount').text(grossAmount);
+    $('#transferStripeFees').text('-' + stripeFees);
+    $('#transferPlatformFee').text('-' + platformFee);
+    $('#transferNetAmount').text(netAmount);
+    $('#transferForm').attr('action', transferUrl);
+    // Reset état
+    $('#confirmTransferCheck').prop('checked', false);
+    $('#confirmTransferBtn').prop('disabled', true).addClass('disabled').html('<i class="fa fa-check mr-1"></i> Confirmer le transfert');
+    $('#stripeTransferModal').modal('show');
+  }
+  
+  // Fonction pour ouvrir le modal de remboursement
+  function openRefundModal(projectName, ownerName, contributorsCount, totalAmount, refundUrl) {
+    $('#refundProjectName').text(projectName);
+    $('#refundOwnerName').text(ownerName);
+    $('#refundContributorsCount').text(contributorsCount + ' contributeur(s)');
+    $('#refundTotalAmount').text(totalAmount);
+    $('#refundForm').attr('action', refundUrl);
+    // Reset état
+    $('#confirmRefundCheck').prop('checked', false);
+    $('#confirmRefundBtn').prop('disabled', true).addClass('disabled').html('<i class="fa fa-undo mr-1"></i> Confirmer le remboursement');
+    $('#stripeRefundModal').modal('show');
+  }

@@ -1,0 +1,4 @@
+Placeholder for Stripe logo
+Please download the official Stripe logo from: https://stripe.com/newsroom/brand-assets
+Recommended: Use the blue "Stripe" wordmark (635BFF color)
+Save as: stripe.png in this directory

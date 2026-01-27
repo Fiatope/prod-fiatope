@@ -1,11 +1,15 @@
 module UsersHelper
-  def required_by_mangopay(for_element, text_content)
+  # Champ requis pour le profil utilisateur (anciennement required_by_mangopay)
+  def required_field(for_element, text_content)
     label_tag for_element do
-      concat content_tag(:abbr, '**', class: 'required_by_mangopay', title: I18n.t('users.edit.mangopay.required').capitalize)
+      concat content_tag(:abbr, '**', class: 'required_field', title: I18n.t('users.edit.required_field', default: 'Champ requis').capitalize)
       concat ' '
       concat text_content
     end
   end
+  
+  # Alias pour compatibilité avec les vues existantes
+  alias_method :required_by_mangopay, :required_field
 
   def required_for_projects(required, for_element, text_content)
     label_tag for_element do

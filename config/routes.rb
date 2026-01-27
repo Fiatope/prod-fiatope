@@ -42,8 +42,10 @@ Neighborly::Application.routes.draw do
 
   #mount Neighborly::Api::Engine => '/api/', as: :neighborly_api
   #mount Neighborly::Dashboard::Engine => '/dashboard/', as: :neighborly_dashboard
-  mount Neighborly::Mangopay::Creditcard::Engine => '/mangopay/creditcard/', as: :neighborly_mangopay_creditcard
-  mount Neighborly::Mangopay::Engine => '/mangopay/', as: :neighborly_mangopay
+  mount Neighborly::Stripe::Engine => '/stripe/', as: :neighborly_stripe
+  # DÉSACTIVÉ - MangoPay n'est plus utilisé (remplacé par Stripe)
+  # mount Neighborly::Mangopay::Creditcard::Engine => '/mangopay/creditcard/', as: :neighborly_mangopay_creditcard
+  # mount Neighborly::Mangopay::Engine => '/mangopay/', as: :neighborly_mangopay
   #mount Neighborly::Balanced::Creditcard::Engine => '/balanced/creditcard/', as: :neighborly_balanced_creditcard
   #mount Neighborly::Balanced::Bankaccount::Engine => '/balanced/bankaccount/', as: :neighborly_balanced_bankaccount
   #mount Neighborly::Balanced::Engine => '/balanced/', as: :neighborly_balanced
@@ -160,7 +162,8 @@ Neighborly::Application.routes.draw do
 
   resources :tags, only: [:index]
 
-  get 'cards/:id/delete', to: 'neighborly/mangopay/creditcard/payments#delete'
+  # DÉSACTIVÉ - MangoPay n'est plus utilisé
+  # get 'cards/:id/delete', to: 'neighborly/mangopay/creditcard/payments#delete'
 
   namespace :reports do
     resources :contribution_reports_for_project_owners, only: [:index]
@@ -204,7 +207,13 @@ Neighborly::Application.routes.draw do
 
     member do
       put :show_project_on_homepage, to: 'neighborly/admin/projects#show_project_on_homepage' 
-      put :remove_project_on_homepage, to: 'neighborly/admin/projects#remove_project_on_homepage' 
+      put :remove_project_on_homepage, to: 'neighborly/admin/projects#remove_project_on_homepage'
+      # Actions Stripe Admin
+      put :enable_stripe, to: 'neighborly/admin/projects#enable_stripe'
+      put :sync_stripe_account, to: 'neighborly/admin/projects#sync_stripe_account'
+      get :stripe_onboarding_link, to: 'neighborly/admin/projects#stripe_onboarding_link'
+      put :process_stripe_transfer, to: 'neighborly/admin/projects#process_stripe_transfer'
+      put :process_stripe_refund, to: 'neighborly/admin/projects#process_stripe_refund'
     end
 
     member do
@@ -267,13 +276,13 @@ Neighborly::Application.routes.draw do
       get :settings
       get :credits
       get :payments
-      get :mangopay_authentications
+      # get :mangopay_authentications  # DÉSACTIVÉ - MangoPay n'est plus utilisé
       get :edit
       post :delete_recursive
       put :update_email
       put :update_password
       put :update_bank_information
-      put :mangopay_upload_kyc_files
+      # put :mangopay_upload_kyc_files  # DÉSACTIVÉ - MangoPay n'est plus utilisé
     end
   end
 
@@ -304,6 +313,12 @@ Neighborly::Application.routes.draw do
         put 'approve', to: "neighborly/admin/projects#approve"
         put 'launch', to: "neighborly/admin/projects#launch"
         put 'reject', to: "neighborly/admin/projects#reject"
+        # Actions Stripe Admin
+        put 'enable_stripe', to: "neighborly/admin/projects#enable_stripe"
+        put 'sync_stripe_account', to: "neighborly/admin/projects#sync_stripe_account"
+        get 'stripe_onboarding_link', to: "neighborly/admin/projects#stripe_onboarding_link"
+        put 'process_stripe_transfer', to: "neighborly/admin/projects#process_stripe_transfer"
+        put 'process_stripe_refund', to: "neighborly/admin/projects#process_stripe_refund"
       end
     end
 

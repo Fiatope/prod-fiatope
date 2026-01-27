@@ -15,8 +15,9 @@
      h5
        |Pour pouvoir continuer, veuillez renseigner vos informations Bancaires (IBAN et BIC)
        = link_to t('.iban'), payments_user_path(current_user)
-       | et télécharger votre pièce d'identité
-       = link_to t('.cni'), mangopay_authentications_user_path(current_user)
+       /= MangoPay désactivé - Stripe Connect utilisé à la place
+       / | et télécharger votre pièce d'identité
+       / = link_to t('.cni'), mangopay_authentications_user_path(current_user)
               
     aside.large-3.medium-4.columns.sidebar
       .call-to-action

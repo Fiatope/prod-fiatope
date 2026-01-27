@@ -3,7 +3,7 @@
 - if !defined?(:contribution)
   - contribution = nil
 
-= cache [:project_box, project, project.progress, project.pledged, large, contribution, defined?(:columns), browser.device.mobile?, browser.ie?(8), project.remaining_days] do
+= cache [:project_box, project, project.progress, project.pledged, large, contribution, defined?(:columns), browser.device.mobile?, browser.ie?(8), project.remaining_days, project.uploaded_image.to_s, project.video_thumbnail.to_s] do
 
   .project-box[itemscope itemtype="http://schema.org/CreativeWork" class=project_box_classes(project, large, contribution, try(:columns))]
     meta[ itemprop="dateCreated" content=project.created_at.to_date ]

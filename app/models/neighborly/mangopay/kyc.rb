@@ -53,6 +53,8 @@ module Neighborly::Mangopay
     private
 
     def send_to_mangopay
+      # DÉSACTIVÉ si MANGOPAY_ENABLED n'est pas true
+      return unless ENV['MANGOPAY_ENABLED']&.downcase == 'true'
       if self.class.natural_document_type.include?(self.proof_type) ||  self.class.legal_document_type.include?(self.proof_type)
         self.upload_document
       end
