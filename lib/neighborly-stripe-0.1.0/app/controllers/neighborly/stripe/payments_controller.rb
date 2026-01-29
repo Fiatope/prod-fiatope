@@ -91,51 +91,33 @@ module Neighborly
             }
           }
           
-          # Ajouter transfer_data seulement si le compte Connect est prêt
+          # CROWDFUNDING: PAS de transfert automatique!
+          # L'argent reste sur le compte plateforme jusqu'à validation admin
+          # L'admin utilise CampaignSettlement pour transférer manuellement
+          session_params[:payment_intent_data] = {
+            metadata: {
+              project_id: @project.id.to_s,
+              project_name: @project.name.to_s[0..99],
+              project_permalink: @project.permalink.to_s,
+              platform: determine_platform,
+              project_owner_id: @project.user_id.to_s,
+              project_owner_name: @project.user&.display_name.to_s[0..99],
+              project_owner_email: @project.user&.email.to_s,
+              contributor_id: current_user.id.to_s,
+              contributor_name: current_user.display_name.to_s[0..99],
+              contributor_email: current_user.email.to_s,
+              contribution_id: @contribution&.id.to_s,
+              currency: @project.currency.presence || 'EUR',
+              amount: @amount.to_s,
+              # Stocker l'ID du compte Connect pour transfert futur par admin
+              destination_account: connect_ready ? @project.stripe_account_id : nil
+            }
+          }
+          
           if connect_ready
-            platform_fee = @project.platform_fee_amount(amount_cents)
-            session_params[:payment_intent_data] = {
-              application_fee_amount: platform_fee,
-              transfer_data: {
-                destination: @project.stripe_account_id
-              },
-              metadata: {
-                project_id: @project.id.to_s,
-                project_name: @project.name.to_s[0..99],
-                project_permalink: @project.permalink.to_s,
-                platform: determine_platform,
-                project_owner_id: @project.user_id.to_s,
-                project_owner_name: @project.user&.display_name.to_s[0..99],
-                project_owner_email: @project.user&.email.to_s,
-                contributor_id: current_user.id.to_s,
-                contributor_name: current_user.display_name.to_s[0..99],
-                contributor_email: current_user.email.to_s,
-                contribution_id: @contribution&.id.to_s,
-                currency: @project.currency.presence || 'EUR',
-                amount: @amount.to_s
-              }
-            }
-            Rails.logger.info "Stripe Connect: Paiement avec transfert vers #{@project.stripe_account_id}"
+            Rails.logger.info "Stripe CROWDFUNDING: Paiement sur compte plateforme (transfert manuel admin requis vers #{@project.stripe_account_id})"
           else
-            # Créer payment_intent_data avec metadata même sans Connect pour filtrage
-            session_params[:payment_intent_data] = {
-              metadata: {
-                project_id: @project.id.to_s,
-                project_name: @project.name.to_s[0..99],
-                project_permalink: @project.permalink.to_s,
-                platform: determine_platform,
-                project_owner_id: @project.user_id.to_s,
-                project_owner_name: @project.user&.display_name.to_s[0..99],
-                project_owner_email: @project.user&.email.to_s,
-                contributor_id: current_user.id.to_s,
-                contributor_name: current_user.display_name.to_s[0..99],
-                contributor_email: current_user.email.to_s,
-                contribution_id: @contribution&.id.to_s,
-                currency: @project.currency.presence || 'EUR',
-                amount: @amount.to_s
-              }
-            }
-            Rails.logger.info "Stripe: Paiement direct (Connect non prêt) - Metadata pour filtrage"
+            Rails.logger.info "Stripe: Paiement direct - Compte Connect non prêt"
           end
           
           session = ::Stripe::Checkout::Session.create(session_params)
@@ -240,50 +222,33 @@ module Neighborly
             }
           }
           
-          # Ajouter transfer_data seulement si Connect est prêt
+          # CROWDFUNDING: PAS de transfert automatique!
+          # L'argent reste sur le compte plateforme jusqu'à validation admin
+          # L'admin utilise CampaignSettlement pour transférer manuellement
+          create_session_params[:payment_intent_data] = {
+            metadata: {
+              project_id: @project.id.to_s,
+              project_name: @project.name.to_s[0..99],
+              project_permalink: @project.permalink.to_s,
+              platform: determine_platform,
+              project_owner_id: @project.user_id.to_s,
+              project_owner_name: @project.user&.display_name.to_s[0..99],
+              project_owner_email: @project.user&.email.to_s,
+              contributor_id: current_user.id.to_s,
+              contributor_name: current_user.display_name.to_s[0..99],
+              contributor_email: current_user.email.to_s,
+              contribution_id: @contribution&.id.to_s,
+              currency: @project.currency.presence || 'EUR',
+              amount: @amount.to_s,
+              # Stocker l'ID du compte Connect pour transfert futur par admin
+              destination_account: connect_ready_create ? @project.stripe_account_id : nil
+            }
+          }
+          
           if connect_ready_create
-            create_session_params[:payment_intent_data] = {
-              application_fee_amount: platform_fee,
-              transfer_data: {
-                destination: @project.stripe_account_id
-              },
-              metadata: {
-                project_id: @project.id.to_s,
-                project_name: @project.name.to_s[0..99],
-                project_permalink: @project.permalink.to_s,
-                platform: determine_platform,
-                project_owner_id: @project.user_id.to_s,
-                project_owner_name: @project.user&.display_name.to_s[0..99],
-                project_owner_email: @project.user&.email.to_s,
-                contributor_id: current_user.id.to_s,
-                contributor_name: current_user.display_name.to_s[0..99],
-                contributor_email: current_user.email.to_s,
-                contribution_id: @contribution&.id.to_s,
-                currency: @project.currency.presence || 'EUR',
-                amount: @amount.to_s
-              }
-            }
-            Rails.logger.info "Stripe Connect (create): Paiement avec transfert vers #{@project.stripe_account_id}"
+            Rails.logger.info "Stripe CROWDFUNDING (create): Paiement sur compte plateforme (transfert manuel admin requis vers #{@project.stripe_account_id})"
           else
-            # Créer payment_intent_data avec metadata même sans Connect pour filtrage
-            create_session_params[:payment_intent_data] = {
-              metadata: {
-                project_id: @project.id.to_s,
-                project_name: @project.name.to_s[0..99],
-                project_permalink: @project.permalink.to_s,
-                platform: determine_platform,
-                project_owner_id: @project.user_id.to_s,
-                project_owner_name: @project.user&.display_name.to_s[0..99],
-                project_owner_email: @project.user&.email.to_s,
-                contributor_id: current_user.id.to_s,
-                contributor_name: current_user.display_name.to_s[0..99],
-                contributor_email: current_user.email.to_s,
-                contribution_id: @contribution&.id.to_s,
-                currency: @project.currency.presence || 'EUR',
-                amount: @amount.to_s
-              }
-            }
-            Rails.logger.info "Stripe (create): Paiement direct - Metadata pour filtrage"
+            Rails.logger.info "Stripe (create): Paiement direct - Compte Connect non prêt"
           end
           
           session = ::Stripe::Checkout::Session.create(create_session_params)
@@ -322,12 +287,24 @@ module Neighborly
                   @contribution = ::Contribution.find_by(id: contribution_id)
                 end
                 
+                # Récupérer charge_id depuis PaymentIntent
+                # CROWDFUNDING: Pas de transfert automatique - l'admin transfère manuellement
+                charge_id = nil
+                begin
+                  payment_intent = ::Stripe::PaymentIntent.retrieve(session.payment_intent)
+                  charge_id = payment_intent.latest_charge
+                  Rails.logger.info "Stripe CROWDFUNDING: Paiement #{charge_id} reçu sur compte plateforme (transfert admin requis)"
+                rescue ::Stripe::StripeError => e
+                  Rails.logger.warn "Could not retrieve charge info: #{e.message}"
+                end
+                
                 if @contribution
                   # Mise à jour de la contribution existante
                   @contribution.update(
                     payment_method: 'Stripe',
                     payment_id: session.payment_intent,
                     payment_service_fee: calculate_stripe_fee(amount),
+                    stripe_charge_id: charge_id,
                     confirmed_at: Time.current
                   )
                 else
@@ -339,6 +316,7 @@ module Neighborly
                     payment_method: 'Stripe',
                     payment_id: session.payment_intent,
                     payment_service_fee: calculate_stripe_fee(amount),
+                    stripe_charge_id: charge_id,
                     confirmed_at: Time.current
                   )
                   @contribution.save!

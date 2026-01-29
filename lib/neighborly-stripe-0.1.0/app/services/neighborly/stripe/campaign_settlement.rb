@@ -19,12 +19,13 @@ module Neighborly
         transfer_to_owner!
       end
       
-      # Rembourse tous les contributeurs (appelé en cas de problème avec le porteur)
+      # Rembourse les contributeurs sélectionnés (ou tous si aucun ID spécifié)
       # Peut être fait À TOUT MOMENT si des contributions existent
+      # @param contribution_ids [Array<Integer>, nil] IDs des contributions à rembourser (nil = toutes)
       # @return [Boolean] true si le traitement a réussi
-      def process_refunds!
-        return false unless valid_for_refund?
-        refund_all_contributions!
+      def process_refunds!(contribution_ids = nil)
+        return false unless valid_for_refund?(contribution_ids)
+        refund_contributions!(contribution_ids)
       end
       
       # Transfère les fonds au porteur de projet
@@ -49,7 +50,7 @@ module Neighborly
         Rails.logger.info "  - Brut collecté: #{total_collected_gross}€"
         Rails.logger.info "  - Frais Stripe: #{total_stripe_fees}€"
         Rails.logger.info "  - Net après Stripe: #{total_net_amount}€"
-        Rails.logger.info "  - Commission Fiatope (5% du net): #{platform_fee}€"
+        Rails.logger.info "  - Commission Fiatope (#{(ENV.fetch('PLATFORM_FEE', '5.0').to_f)}% du net): #{platform_fee}€"
         Rails.logger.info "  - Total à transférer: #{total_to_transfer}€"
         Rails.logger.info "  - Nombre de contributions: #{contributions.count}"
         
@@ -81,6 +82,9 @@ module Neighborly
           
           # Notifier le porteur
           notify_owner_transfer_complete(nil, total_to_transfer)
+        else
+          # Aucun transfert réussi
+          @errors << "Aucun transfert n'a pu être effectué" if @errors.empty?
         end
         
         if failed_contributions.any?
@@ -88,7 +92,8 @@ module Neighborly
           Rails.logger.error "CampaignSettlement: Erreurs - #{failed_contributions.inspect}"
         end
         
-        success_count == contributions.count
+        # Succès si au moins un transfert a réussi (le projet est marqué comme transféré)
+        success_count > 0
       end
       
       # Transfère une seule contribution en utilisant source_transaction
@@ -112,7 +117,8 @@ module Neighborly
         # Calculer le montant net pour cette contribution
         stripe_fee = calculate_stripe_fee_for_contribution(contribution)
         net_amount = contribution.value - stripe_fee
-        platform_fee = (net_amount * 0.05).round(2) # 5% commission Fiatope
+        fee_percentage = ENV.fetch('PLATFORM_FEE', '5.0').to_f / 100
+        platform_fee = (net_amount * fee_percentage).round(2) # Commission Fiatope configurable
         amount_to_transfer = ((net_amount - platform_fee) * 100).to_i # en centimes
         
         return { success: false, error: "Montant trop faible" } if amount_to_transfer <= 0
@@ -169,10 +175,16 @@ module Neighborly
         estimate_stripe_fee(contribution.value)
       end
       
-      # Rembourse toutes les contributions (problème avec porteur, annulation)
-      # Peut être appelé À TOUT MOMENT
-      def refund_all_contributions!
-        contributions = stripe_contributions.where(state: 'confirmed').where(stripe_refunded: [false, nil])
+      # Rembourse les contributions sélectionnées (ou toutes si aucun ID spécifié)
+      # @param contribution_ids [Array<Integer>, nil] IDs des contributions à rembourser (nil = toutes)
+      def refund_contributions!(contribution_ids = nil)
+        contributions = stripe_contributions.where(state: 'confirmed')
+                                           .where(stripe_refunded: [false, nil])
+                                           .where(stripe_transferred: [false, nil])
+        
+        # Filtrer par IDs si spécifiés
+        contributions = contributions.where(id: contribution_ids) if contribution_ids.present?
+        
         return add_error("Aucune contribution à rembourser") if contributions.empty?
         
         Rails.logger.info "CampaignSettlement: Remboursement de #{contributions.count} contributions pour projet #{project.name}"
@@ -188,22 +200,29 @@ module Neighborly
           end
         end
         
-        # Marquer le projet comme remboursé
-        project.update(
-          stripe_settled_at: Time.current,
-          stripe_settlement_type: 'refunded'
-        )
-        
-        Rails.logger.info "CampaignSettlement: #{success_count}/#{contributions.count} contributions remboursées"
+        # Marquer le projet comme remboursé si au moins un remboursement a réussi
+        if success_count > 0
+          project.update(
+            stripe_settled_at: Time.current,
+            stripe_settlement_type: 'refunded'
+          )
+          Rails.logger.info "CampaignSettlement: #{success_count}/#{contributions.count} contributions remboursées"
+        else
+          @errors << "Aucun remboursement n'a pu être effectué" if @errors.empty?
+        end
         
         if failed_contributions.any?
           @errors << "#{failed_contributions.count} contributions non remboursées: #{failed_contributions.join(', ')}"
         end
         
-        success_count == contributions.count
+        # Succès si au moins un remboursement a réussi
+        success_count > 0
       end
       
       # Rembourse une contribution spécifique
+      # IMPORTANT: On rembourse le montant NET (après déduction frais Stripe + commission plateforme)
+      # Le contributeur ne reçoit PAS 100% car les frais Stripe sont non-remboursables
+      # et la plateforme retient sa commission
       def refund_contribution(contribution)
         return false unless contribution.payment_id.present?
         
@@ -214,29 +233,84 @@ module Neighborly
           
           return false unless charge_id.present?
           
-          # Créer le remboursement
+          # IMPORTANT: Si la contribution a été transférée, reverser le transfert d'abord
+          # Stripe docs: "refunding a charge has no impact on any associated transfers"
+          if contribution.stripe_transferred && contribution.stripe_transfer_id.present?
+            begin
+              ::Stripe::Transfer.create_reversal(
+                contribution.stripe_transfer_id,
+                {
+                  metadata: {
+                    contribution_id: contribution.id,
+                    project_id: project.id,
+                    reason: 'refund'
+                  }
+                }
+              )
+              Rails.logger.info "CampaignSettlement: Transfert #{contribution.stripe_transfer_id} reversé"
+            rescue ::Stripe::StripeError => e
+              Rails.logger.warn "CampaignSettlement: Impossible de reverser le transfert: #{e.message}"
+              # Continue avec le remboursement même si le reversal échoue
+            end
+          end
+          
+          # Calculer le montant NET à rembourser au contributeur:
+          # Montant brut - Frais Stripe (2.9% + 0.25€) - Commission plateforme (X%)
+          gross_amount = contribution.value
+          stripe_fee = calculate_stripe_fee_for_contribution(contribution)
+          platform_fee_pct = ENV.fetch('PLATFORM_FEE', '5.0').to_f / 100
+          platform_fee = (gross_amount * platform_fee_pct).round(2)
+          
+          # Montant net à rembourser
+          net_refund_amount = gross_amount - stripe_fee - platform_fee
+          net_refund_amount = 0 if net_refund_amount < 0
+          refund_amount_cents = (net_refund_amount * 100).to_i
+          
+          Rails.logger.info "CampaignSettlement: Remboursement contribution #{contribution.id}"
+          Rails.logger.info "  - Montant brut: #{gross_amount}€"
+          Rails.logger.info "  - Frais Stripe: #{stripe_fee}€"
+          Rails.logger.info "  - Commission plateforme (#{ENV.fetch('PLATFORM_FEE', '5.0')}%): #{platform_fee}€"
+          Rails.logger.info "  - Montant remboursé: #{net_refund_amount}€"
+          
+          # Créer le remboursement PARTIEL (montant net seulement)
           refund = ::Stripe::Refund.create({
             charge: charge_id,
+            amount: refund_amount_cents, # Remboursement PARTIEL en centimes
             metadata: {
               contribution_id: contribution.id,
               project_id: project.id,
-              reason: 'campaign_failed'
+              gross_amount: gross_amount,
+              stripe_fee_retained: stripe_fee,
+              platform_fee_retained: platform_fee,
+              net_refunded: net_refund_amount,
+              reason: 'campaign_cancelled'
             }
           })
           
           # Mettre à jour la contribution
           contribution.update(
             stripe_refunded: true,
-            stripe_refund_id: refund.id
+            stripe_refund_id: refund.id,
+            stripe_refund_amount: net_refund_amount # Stocker le montant réellement remboursé
           )
           
-          # Changer l'état de la contribution
-          contribution.refund! if contribution.respond_to?(:refund!)
+          # Changer l'état de la contribution (ignorer les erreurs de callbacks externes)
+          begin
+            contribution.refund! if contribution.respond_to?(:refund!) && contribution.can_refund?
+          rescue => e
+            Rails.logger.warn "CampaignSettlement: Impossible de changer l'état: #{e.message}"
+            # Forcer l'état manuellement si la transition échoue
+            contribution.update_column(:state, 'refunded') if contribution.respond_to?(:state)
+          end
           
-          # Notifier le contributeur
-          notify_contributor_refund(contribution)
+          # Notifier le contributeur avec le montant réel remboursé
+          begin
+            notify_contributor_refund(contribution, net_refund_amount, stripe_fee, platform_fee)
+          rescue => e
+            Rails.logger.warn "CampaignSettlement: Erreur notification: #{e.message}"
+          end
           
-          Rails.logger.info "CampaignSettlement: Contribution #{contribution.id} remboursée (refund #{refund.id})"
+          Rails.logger.info "CampaignSettlement: Contribution #{contribution.id} remboursée #{net_refund_amount}€ (refund #{refund.id})"
           true
         rescue ::Stripe::StripeError => e
           @errors << "Erreur remboursement contribution #{contribution.id}: #{e.message}"
@@ -295,8 +369,10 @@ module Neighborly
         true
       end
       
-      # Validation pour le remboursement - peut être fait À TOUT MOMENT
-      def valid_for_refund?
+      # Validation pour le remboursement - vérifie les contributions INDIVIDUELLES
+      # Note: On peut rembourser des contributions non transférées même si d'autres ont été transférées
+      # @param contribution_ids [Array<Integer>, nil] IDs des contributions à vérifier (nil = toutes)
+      def valid_for_refund?(contribution_ids = nil)
         unless project.present?
           return add_error("Projet non trouvé")
         end
@@ -305,21 +381,32 @@ module Neighborly
           return add_error("Stripe n'est pas activé pour ce projet")
         end
         
-        # Vérifier si déjà remboursé
-        if project.stripe_settlement_type == 'refunded'
-          return add_error("Les contributions ont déjà été remboursées")
-        end
+        # Vérifier s'il reste des contributions remboursables:
+        # - Confirmées
+        # - NON remboursées (stripe_refunded = false ou nil)
+        # - NON transférées (stripe_transferred = false ou nil)
+        contributions = stripe_contributions.where(state: 'confirmed')
+                                           .where(stripe_refunded: [false, nil])
+                                           .where(stripe_transferred: [false, nil])
         
-        # Vérifier si déjà transféré - on ne peut PAS rembourser après un transfert!
-        # Les fonds ne sont plus sur notre compte plateforme
-        if project.stripe_settlement_type == 'transferred' || project.stripe_transfer_id.present?
-          return add_error("Impossible de rembourser: les fonds ont déjà été transférés au porteur")
-        end
+        # Filtrer par IDs si spécifiés
+        contributions = contributions.where(id: contribution_ids) if contribution_ids.present?
         
-        # Vérifier s'il reste des contributions non remboursées ET non transférées
-        contributions = stripe_contributions.where(state: 'confirmed').where(stripe_refunded: [false, nil]).where(stripe_transferred: [false, nil])
         if contributions.empty?
-          return add_error("Aucune contribution à rembourser (toutes déjà traitées ou aucune contribution Stripe)")
+          # Donner un message plus précis sur la raison
+          total_stripe = stripe_contributions.count
+          already_refunded = stripe_contributions.where(stripe_refunded: true).count
+          already_transferred = stripe_contributions.where(stripe_transferred: true).count
+          
+          if already_transferred > 0 && already_refunded == 0
+            return add_error("Toutes les contributions (#{already_transferred}) ont déjà été transférées au porteur")
+          elsif already_refunded > 0 && already_transferred == 0
+            return add_error("Toutes les contributions (#{already_refunded}) ont déjà été remboursées")
+          elsif already_refunded > 0 && already_transferred > 0
+            return add_error("Toutes les contributions ont été traitées (#{already_transferred} transférées, #{already_refunded} remboursées)")
+          else
+            return add_error("Aucune contribution Stripe confirmée à rembourser")
+          end
         end
         
         true
@@ -372,7 +459,7 @@ module Neighborly
       def notify_owner_transfer_complete(transfer, amount)
         begin
           project.notify_owner(:stripe_transfer_complete, {
-            transfer_id: transfer.id,
+            transfer_id: transfer&.id,
             amount: amount,
             currency: project.currency || 'EUR'
           })
@@ -381,11 +468,14 @@ module Neighborly
         end
       end
       
-      def notify_contributor_refund(contribution)
+      def notify_contributor_refund(contribution, net_amount = nil, stripe_fee = nil, platform_fee = nil)
         begin
           contribution.notify_owner(:stripe_refund_complete, {
             project: project,
-            amount: contribution.value
+            gross_amount: contribution.value,
+            net_amount: net_amount || contribution.value,
+            stripe_fee: stripe_fee || 0,
+            platform_fee: platform_fee || 0
           })
         rescue => e
           Rails.logger.warn "CampaignSettlement: Erreur notification remboursement - #{e.message}"
