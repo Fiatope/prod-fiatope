@@ -11,7 +11,8 @@ class Project < ActiveRecord::Base
           Project::CustomValidators,
           Project::OrganizationType,
           Shared::LocationHandler,
-          Shared::Notifiable
+          Shared::Notifiable,
+          StripeProject
 
   mount_uploader :uploaded_image, ProjectUploader, mount_on: :uploaded_image
   mount_uploader :hero_image, HeroImageUploader, mount_on: :hero_image

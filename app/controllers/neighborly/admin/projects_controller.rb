@@ -205,19 +205,25 @@ module Neighborly::Admin
         
         if settlement.process!
           total = contributions.sum(:value)
-          flash[:success] = "✅ Transfert de #{total}€ effectué! Les fonds ont été envoyés au porteur #{@project.user.name}."
+          # Afficher avertissement si certains transferts ont échoué
+          if settlement.errors.any?
+            flash[:success] = "✅ Transfert effectué avec avertissements: #{settlement.errors.join(', ')}"
+          else
+            flash[:success] = "✅ Transfert de #{total}€ effectué! Les fonds ont été envoyés au porteur #{@project.user.name}."
+          end
         else
-          flash[:alert] = "Erreur: #{settlement.errors.join(', ')}"
+          error_msg = settlement.errors.any? ? settlement.errors.join(', ') : "Une erreur inconnue s'est produite"
+          flash[:alert] = "Erreur: #{error_msg}"
         end
       rescue => e
-        flash[:alert] = "Erreur: #{e.message}"
+        flash[:alert] = "Erreur technique: #{e.message}"
         Rails.logger.error "Stripe Transfer Error: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
       end
       
       redirect_back(fallback_location: projects_path)
     end
     
-    # Rembourse tous les contributeurs (peut être fait à tout moment)
+    # Rembourse les contributeurs sélectionnés (ou tous si aucun ID spécifié)
     # Utilisé en cas de problème avec le porteur ou annulation
     def process_stripe_refund
       @project = Project.find_by_permalink params[:id]
@@ -227,36 +233,41 @@ module Neighborly::Admin
         return redirect_back(fallback_location: projects_path)
       end
       
-      if @project.stripe_settlement_type == 'refunded'
-        flash[:notice] = "Les contributions ont déjà été remboursées."
-        return redirect_back(fallback_location: projects_path)
-      end
+      # Récupérer les IDs des contributions sélectionnées (si spécifiés)
+      contribution_ids = params[:contribution_ids].present? ? params[:contribution_ids].split(',').map(&:to_i) : nil
       
-      # CRITIQUE: Bloquer le remboursement si les fonds ont déjà été transférés
-      # Selon Stripe: "Refunding a charge has no impact on any associated transfers"
-      if @project.stripe_settlement_type == 'transferred' || @project.stripe_transfer_id.present?
-        flash[:alert] = "Impossible de rembourser: les fonds ont déjà été transférés au porteur. Contactez le porteur directement."
-        return redirect_back(fallback_location: projects_path)
-      end
-      
-      # Vérifier qu'il y a des contributions à rembourser
+      # Filtrer les contributions remboursables
       contributions = @project.contributions.where(payment_method: 'Stripe', state: 'confirmed')
                               .where(stripe_refunded: [false, nil])
+                              .where(stripe_transferred: [false, nil])
+      
+      # Si des IDs sont spécifiés, filtrer uniquement ces contributions
+      if contribution_ids.present?
+        contributions = contributions.where(id: contribution_ids)
+      end
+      
       if contributions.empty?
-        flash[:alert] = "Aucune contribution à rembourser."
+        flash[:alert] = "Aucune contribution sélectionnée ou toutes déjà traitées."
         return redirect_back(fallback_location: projects_path)
       end
       
       begin
         settlement = Neighborly::Stripe::CampaignSettlement.new(@project)
         
-        if settlement.process_refunds!
-          flash[:success] = "✅ #{contributions.count} contribution(s) remboursée(s)! Les contributeurs recevront leur argent sous 5-10 jours."
+        # Passer les IDs des contributions à rembourser
+        if settlement.process_refunds!(contribution_ids)
+          # Afficher avertissement si certains remboursements ont échoué
+          if settlement.errors.any?
+            flash[:success] = "✅ Remboursements effectués avec avertissements: #{settlement.errors.join(', ')}"
+          else
+            flash[:success] = "✅ #{contributions.count} contribution(s) remboursée(s)! Les contributeurs recevront leur argent (moins frais) sous 5-10 jours."
+          end
         else
-          flash[:alert] = "Erreur: #{settlement.errors.join(', ')}"
+          error_msg = settlement.errors.any? ? settlement.errors.join(', ') : "Une erreur inconnue s'est produite"
+          flash[:alert] = "Erreur: #{error_msg}"
         end
       rescue => e
-        flash[:alert] = "Erreur: #{e.message}"
+        flash[:alert] = "Erreur technique: #{e.message}"
         Rails.logger.error "Stripe Refund Error: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
       end
       

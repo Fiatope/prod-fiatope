@@ -1,4 +1,4 @@
-\restrict XcY9LmBB2rMjblDdmnNBiu0DpHc1HRusLvL7NbMNypdNnc96aJjUA6xC8fXMClF
+\restrict 262gWVe1ZK3Ao9d6qIzyMC6e5PsJoBASdiyLAdTeka9539b5NYhEZl42XSjKT3y
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6
@@ -108,6 +108,7 @@ CREATE TABLE public.contributions (
     stripe_refunded boolean DEFAULT false,
     stripe_refund_id character varying,
     stripe_charge_id character varying,
+    stripe_refund_amount numeric(10,2),
     CONSTRAINT backers_value_positive CHECK ((value >= (0)::numeric))
 );
 
@@ -1452,6 +1453,9 @@ CREATE TABLE public.users (
     stripe_customer_id character varying,
     stripe_connect_account_id character varying,
     stripe_onboarding_complete boolean DEFAULT false,
+    stripe_account_type character varying,
+    stripe_charges_enabled boolean DEFAULT false,
+    stripe_payouts_enabled boolean DEFAULT false,
     CONSTRAINT users_bio_length_within CHECK (((length(bio) >= 0) AND (length(bio) <= 140)))
 );
 
@@ -5317,7 +5321,7 @@ ALTER TABLE ONLY public.updates
 -- PostgreSQL database dump complete
 --
 
-\unrestrict XcY9LmBB2rMjblDdmnNBiu0DpHc1HRusLvL7NbMNypdNnc96aJjUA6xC8fXMClF
+\unrestrict 262gWVe1ZK3Ao9d6qIzyMC6e5PsJoBASdiyLAdTeka9539b5NYhEZl42XSjKT3y
 
 SET search_path TO "$user", public;
 
@@ -5625,6 +5629,9 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20251227080000'),
 ('20260116120000'),
 ('20260120213751'),
-('20260122121145');
+('20260122121145'),
+('20260122172500'),
+('20260127150500'),
+('20260129140000');
 
 

@@ -8,9 +8,11 @@ require 'neighborly/stripe/fee_calculator'
 
 module Neighborly
   module Stripe
-    autoload :Engine,         "neighborly/stripe/engine"
-    autoload :Version,        "neighborly/stripe/version"
-    autoload :Interface,      "neighborly/stripe/interface"
-    autoload :FeeCalculator,  "neighborly/stripe/fee_calculator"
+    autoload :Engine,             "neighborly/stripe/engine"
+    autoload :Version,            "neighborly/stripe/version"
+    autoload :Interface,          "neighborly/stripe/interface"
+    autoload :FeeCalculator,      "neighborly/stripe/fee_calculator"
+    autoload :CampaignSettlement, "neighborly/stripe/campaign_settlement"
+    autoload :SyncService,        "neighborly/stripe/sync_service"
   end
 end

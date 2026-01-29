@@ -1,5 +1,7 @@
 Neighborly::Stripe::Engine.routes.draw do
   post 'connect/create', to: 'connect#create_account', as: :connect_create
+  post 'connect/link_existing', to: 'connect#link_existing_account', as: :connect_link_existing
+  get 'connect/find_existing', to: 'connect#find_existing_account', as: :connect_find_existing
   get 'connect/refresh', to: 'connect#refresh', as: :connect_refresh
   get 'connect/return', to: 'connect#return_url', as: :connect_return
   get 'connect/dashboard', to: 'connect#dashboard', as: :connect_dashboard

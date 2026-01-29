@@ -3,46 +3,149 @@
     /= === SECTION STRIPE CONNECT ===
     - if @user.projects.any?
       .large-8.columns
-        h3
-          i.icon-et-credit-card
-          = " Stripe Connect - Recevoir des paiements"
+        / Header Stripe Connect
+        .panel style="background: linear-gradient(135deg, #635bff 0%, #7a73ff 100%); border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem;"
+          .row
+            .large-2.columns.text-center style="padding-top: 0.5rem;"
+              i.icon-et-credit-card style="font-size: 2.5rem; color: white;"
+            .large-10.columns
+              h3 style="color: white; margin-bottom: 0.5rem; font-weight: 600;"
+                | Stripe Connect
+              p style="color: rgba(255,255,255,0.9); margin-bottom: 0; font-size: 0.95rem;"
+                | Recevez les contributions de vos projets directement sur votre compte bancaire
         
         - if @user.stripe_connect_account_id.present?
-          .panel.callout.radius
-            - if @user.stripe_onboarding_complete?
-              p
-                span.label.success ✅ Compte configuré
-              p
-                | Votre compte Stripe est prêt à recevoir des paiements.
-              p
-                strong Compte: 
-                code= @user.stripe_connect_account_id
+          - if @user.stripe_onboarding_complete?
+            / Compte actif
+            .panel style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 1.25rem;"
+              .row
+                .large-1.columns.text-center
+                  i.icon-et-check style="font-size: 1.8rem; color: #22c55e;"
+                .large-11.columns
+                  h5 style="color: #166534; margin-bottom: 0.25rem; font-weight: 600;"
+                    | Compte actif
+                  p style="color: #15803d; margin-bottom: 0; font-size: 0.9rem;"
+                    | Votre compte Stripe Connect est configuré et prêt à recevoir des paiements.
+                  p style="color: #6b7280; margin-bottom: 0; font-size: 0.8rem; margin-top: 0.5rem;"
+                    code style="background: #e5e7eb; padding: 2px 6px; border-radius: 4px;"
+                      = @user.stripe_connect_account_id
+              
+              hr style="margin: 1rem 0; border-color: #d1fae5;"
+              
               .row
                 .large-6.columns
-                  = link_to neighborly_stripe.connect_dashboard_path, class: 'button small', target: '_blank' do
+                  = link_to neighborly_stripe.connect_dashboard_path, class: 'button small radius', style: 'background: #635bff; width: 100%;', target: '_blank' do
                     i.icon-et-external-link
                     = " Dashboard Stripe"
                 .large-6.columns
-                  = link_to neighborly_stripe.sync_account_path, method: :post, class: 'button small secondary', data: { disable_with: 'Synchronisation...' } do
+                  = link_to neighborly_stripe.sync_account_path, method: :post, class: 'button small secondary radius', style: 'width: 100%;', data: { disable_with: 'Sync...' } do
                     i.icon-et-refresh
-                    = " Synchroniser mes données"
-            - else
-              p
-                span.label.warning ⏳ Onboarding incomplet
-              p
-                | Vous devez compléter votre profil Stripe pour recevoir des paiements.
-              p
-                = link_to neighborly_stripe.connect_create_path, method: :post, class: 'button small alert' do
-                  i.icon-et-link
-                  = " Compléter mon profil Stripe"
+                    = " Synchroniser"
+          - else
+            / Onboarding incomplet
+            .panel style="background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px; padding: 1.25rem;"
+              .row
+                .large-1.columns.text-center
+                  i.icon-et-alert style="font-size: 1.8rem; color: #f59e0b;"
+                .large-11.columns
+                  h5 style="color: #92400e; margin-bottom: 0.25rem; font-weight: 600;"
+                    | Configuration incomplète
+                  p style="color: #a16207; margin-bottom: 1rem; font-size: 0.9rem;"
+                    | Veuillez compléter votre profil Stripe pour activer les paiements.
+                  
+                  = link_to neighborly_stripe.connect_create_path, method: :post, class: 'button radius', style: 'background: #f59e0b;' do
+                    i.icon-et-arrow-right
+                    = " Compléter mon profil"
         - else
-          .panel.radius
-            p
-              | Pour recevoir les contributions de vos projets, vous devez créer un compte Stripe Connect.
-            p
-              = link_to neighborly_stripe.connect_create_path, method: :post, class: 'button small success' do
-                i.icon-et-credit-card
-                = " Créer mon compte Stripe"
+          / Pas de compte
+          .panel style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.25rem;"
+            .row
+              .large-1.columns.text-center
+                i.icon-et-info style="font-size: 1.8rem; color: #3b82f6;"
+              .large-11.columns
+                h5 style="color: #1e40af; margin-bottom: 0.25rem; font-weight: 600;"
+                  | Connectez votre compte
+                p style="color: #475569; margin-bottom: 0; font-size: 0.9rem;"
+                  | Pour recevoir les contributions, configurez Stripe Connect.
+            
+            hr style="margin: 1.25rem 0; border-color: #e2e8f0;"
+            
+            .row
+              .large-6.columns style="margin-bottom: 0.5rem;"
+                = link_to neighborly_stripe.connect_create_path, method: :post, class: 'button radius', style: 'background: #22c55e; width: 100%; margin-bottom: 0;' do
+                  i.icon-et-plus
+                  = " Nouveau compte"
+              .large-6.columns
+                a.button.secondary.radius href="#" data-toggle="link-existing-form" style="width: 100%; margin-bottom: 0;"
+                  i.icon-et-link
+                  = " Lier un compte existant"
+            
+            #link-existing-form style="display: none; margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid #e2e8f0;"
+              h6 style="color: #334155; font-weight: 600; margin-bottom: 0.75rem;"
+                i.icon-et-link style="margin-right: 0.5rem;"
+                | Lier un compte Stripe existant
+              
+              p style="color: #64748b; font-size: 0.85rem; margin-bottom: 1rem;"
+                | Entrez l'identifiant de votre compte Stripe Connect existant.
+              
+              = form_tag neighborly_stripe.connect_link_existing_path, method: :post do
+                .row
+                  .large-9.columns
+                    = text_field_tag :stripe_account_id, nil, placeholder: 'acct_xxxxxxxxxx', style: 'margin-bottom: 0; font-family: monospace;'
+                  .large-3.columns
+                    = submit_tag 'Lier', class: 'button small radius', style: 'width: 100%; margin-bottom: 0; background: #635bff;'
+              
+              p style="color: #94a3b8; font-size: 0.8rem; margin-top: 0.75rem; margin-bottom: 0;"
+                i.icon-et-help style="margin-right: 0.25rem;"
+                | Trouvez cet ID dans votre dashboard Stripe ou sur l'autre plateforme.
+          
+          javascript:
+            document.addEventListener('DOMContentLoaded', function() {
+              var toggleBtn = document.querySelector('[data-toggle="link-existing-form"]');
+              var form = document.getElementById('link-existing-form');
+              if (toggleBtn && form) {
+                toggleBtn.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+                });
+              }
+            });
+        
+        / Tableau des projets
+        - if @user.projects.count > 0
+          h4 style="color: #334155; margin-top: 1.5rem; margin-bottom: 1rem; font-weight: 600;"
+            i.icon-et-folder style="margin-right: 0.5rem; color: #635bff;"
+            | Mes projets
+          
+          table style="width: 100%; border-collapse: collapse;"
+            thead
+              tr style="background: #f8fafc;"
+                th style="text-align: left; padding: 0.75rem; border-bottom: 2px solid #e2e8f0; color: #475569; font-weight: 600;"
+                  | Projet
+                th style="text-align: center; padding: 0.75rem; border-bottom: 2px solid #e2e8f0; color: #475569; font-weight: 600;"
+                  | Stripe
+                th style="text-align: center; padding: 0.75rem; border-bottom: 2px solid #e2e8f0; color: #475569; font-weight: 600;"
+                  | Statut
+            tbody
+              - @user.projects.each do |project|
+                tr style="border-bottom: 1px solid #f1f5f9;"
+                  td style="padding: 0.75rem;"
+                    = link_to project.name, project_path(project), style: 'color: #3b82f6; text-decoration: none; font-weight: 500;'
+                  td style="text-align: center; padding: 0.75rem;"
+                    - if project.stripe_account_id.present?
+                      span style="background: #dcfce7; color: #166534; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 500;"
+                        | Connecté
+                    - else
+                      span style="background: #f1f5f9; color: #64748b; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem;"
+                        | Non connecté
+                  td style="text-align: center; padding: 0.75rem;"
+                    - if project.stripe_account_ready?
+                      span style="background: #dcfce7; color: #166534; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 500;"
+                        i.icon-et-check style="margin-right: 4px;"
+                        | Prêt
+                    - else
+                      span style="background: #fef3c7; color: #92400e; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem;"
+                        | En attente
         hr
 
     = simple_form_for(@user, url: { action: :update_password }, html: { method: :put }) do |f|
