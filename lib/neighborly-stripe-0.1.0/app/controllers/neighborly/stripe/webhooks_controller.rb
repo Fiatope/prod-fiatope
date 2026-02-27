@@ -33,6 +33,11 @@ module Neighborly
           handle_transfer_created(@event.data.object)
         when 'transfer.reversed'
           handle_transfer_reversed(@event.data.object)
+        # === PAYOUTS (virement vers banque porteur) ===
+        when 'payout.paid'
+          handle_payout_paid(@event.data.object)
+        when 'payout.failed'
+          handle_payout_failed(@event.data.object)
         else
           Rails.logger.info "Unhandled Stripe event type: #{@event.type}"
         end
@@ -280,6 +285,51 @@ module Neighborly
           AdminMailer.dispute_alert(contribution, dispute).deliver_later if defined?(AdminMailer)
         rescue => e
           Rails.logger.warn "Impossible d'envoyer alerte dispute: #{e.message}"
+        end
+      end
+      
+      # Payout réussi: argent arrivé sur le compte bancaire du porteur
+      # Déclenché sur le compte CONNECT (Express) du porteur, pas sur le compte plateforme
+      def handle_payout_paid(payout)
+        account_id = @event.account rescue nil
+        return unless account_id.present?
+        
+        user = ::User.find_by(stripe_connect_account_id: account_id)
+        return unless user
+        
+        amount = payout.amount / 100.0
+        Rails.logger.info "PAYOUT RÉUSSI: #{amount}€ vers compte bancaire de #{user.email} (#{account_id})"
+        
+        # Notifier le porteur que son argent est arrivé
+        # Note: notify_owner ne prend que des colonnes valides de la table notifications
+        # Le template calcule les montants depuis @notification.project directement
+        begin
+          user.projects.where(stripe_settlement_type: 'transferred').find_each do |project|
+            project.notify_owner(:stripe_payout_paid)
+          end
+        rescue => e
+          Rails.logger.warn "Impossible de notifier le porteur du payout: #{e.message}"
+        end
+      end
+      
+      # Payout échoué: virement vers banque du porteur a échoué (IBAN invalide, compte bloqué, etc.)
+      def handle_payout_failed(payout)
+        account_id = @event.account rescue nil
+        return unless account_id.present?
+        
+        user = ::User.find_by(stripe_connect_account_id: account_id)
+        return unless user
+        
+        amount = payout.amount / 100.0
+        failure_message = payout.failure_message || payout.failure_code || 'raison inconnue'
+        
+        Rails.logger.error "PAYOUT ÉCHOUÉ: #{amount}€ pour #{user.email} (#{account_id}) - #{failure_message}"
+        
+        # Notifier l'admin - action manuelle requise
+        begin
+          AdminMailer.payout_failed_alert(user, amount, failure_message).deliver_later if defined?(AdminMailer)
+        rescue => e
+          Rails.logger.warn "Impossible d'envoyer alerte payout échoué: #{e.message}"
         end
       end
       

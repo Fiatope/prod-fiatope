@@ -8,6 +8,9 @@ module Neighborly
           current_user.create_stripe_connect_account!
         end
         
+        # Mémoriser la page de retour après onboarding (ex: page pay d'un projet)
+        session[:stripe_onboarding_return_to] = params[:return_to] || request.referer
+        
         redirect_url = current_user.stripe_account_onboarding_url(
           refresh_url: "#{request.base_url}/stripe/connect/refresh",
           return_url: "#{request.base_url}/stripe/connect/return"
@@ -27,13 +30,27 @@ module Neighborly
       
       def return_url
         if current_user.stripe_onboarding_complete?
-          # CRITIQUE: Synchroniser tous les projets du porteur
           sync_user_projects_on_return
           
-          flash[:notice] = I18n.t('stripe.onboarding.success', default: 'Votre compte Stripe est configuré avec succès ! Vos projets ont été mis à jour.')
-          redirect_to "/users/#{current_user.id}/edit#settings"
+          flash[:notice] = I18n.t('stripe.onboarding.success',
+            default: 'Votre compte Stripe est configuré avec succès ! Vous pouvez maintenant retirer vos fonds.')
+          
+          # Rediriger vers la page de retrait du projet si elle a été mémorisée
+          return_to = session.delete(:stripe_onboarding_return_to)
+          if return_to.present?
+            redirect_to return_to
+          else
+            # Par défaut: aller vers le premier projet actif du porteur s'il en a un
+            first_project = current_user.projects.where(use_stripe: true).first
+            if first_project
+              redirect_to "/projects/#{first_project.permalink}/pay"
+            else
+              redirect_to "/users/#{current_user.id}/edit#settings"
+            end
+          end
         else
-          flash[:alert] = I18n.t('stripe.onboarding.incomplete', default: 'Veuillez compléter votre profil Stripe')
+          flash[:alert] = I18n.t('stripe.onboarding.incomplete',
+            default: 'Veuillez compléter votre profil Stripe pour pouvoir recevoir vos fonds.')
           redirect_to "/users/#{current_user.id}/edit#settings"
         end
       end

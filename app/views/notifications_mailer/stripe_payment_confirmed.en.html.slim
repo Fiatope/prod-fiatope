@@ -6,7 +6,7 @@
 |Dear #{resource.user.display_name}!
 br
 br
-|This email confirms your #{resource.class.model_name.human} to the project #{link_to(resource.project.name, project_url(resource.project))}. Your credit card payment via Stripe has been successfully processed.
+|This email confirms your #{resource.class.model_name.human} to the project #{link_to(resource.project.name, project_url(resource.project))}. Your credit card payment has been successfully processed.
 br
 br
 |#{resource.class.model_name.human} amount:
@@ -17,7 +17,7 @@ strong #{l resource.created_at.to_date, format: :long}
 br
 br
 - if resource.payment_id.present?
-  |Stripe payment reference:
+  |Payment reference:
   strong #{resource.payment_id}
   br
 br

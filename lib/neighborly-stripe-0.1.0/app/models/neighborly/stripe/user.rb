@@ -80,20 +80,34 @@ module Neighborly::Stripe::User
   end
   
   def stripe_onboarding_complete?
+    # Chemin rapide: la DB dit que c'est complet → pas d'appel API
+    # Cela évite N appels Stripe par page pour chaque porteur
+    return true if self[:stripe_onboarding_complete] == true
+
     return false unless stripe_connect_account_id.present?
-    
+
     begin
       account = ::Stripe::Account.retrieve(stripe_connect_account_id)
       complete = account.charges_enabled && account.payouts_enabled
-      
-      if complete && !stripe_onboarding_complete
-        update_column(:stripe_onboarding_complete, true)
-      end
-      
+
+      # Mettre à jour le cache DB si le compte est maintenant complet
+      update_column(:stripe_onboarding_complete, true) if complete
+
       complete
     rescue ::Stripe::InvalidRequestError
       false
+    rescue ::Stripe::StripeError => e
+      Rails.logger.warn "stripe_onboarding_complete? API error for #{stripe_connect_account_id}: #{e.message}"
+      false
     end
+  end
+
+  # Force la re-vérification depuis Stripe (ignore le cache DB)
+  def stripe_onboarding_complete!(force_check: false)
+    if force_check
+      update_column(:stripe_onboarding_complete, false)
+    end
+    stripe_onboarding_complete?
   end
   
   def stripe_dashboard_url

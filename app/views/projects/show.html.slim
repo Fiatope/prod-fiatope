@@ -150,10 +150,38 @@
 
         /= render 'projects/matches_aside' unless browser.device.mobile?
 
-        - if @project.successful?  
-          - if !(@project.state == 'request_funds') && !(@project.state == 'draft') && !(@project.state == 'fraud_suspiscion')
-
-            = link_to t('.pay'), pay_project_path(@project), class: "button" if policy(@project).update?
+        / --- Bouton de retrait pour le porteur (Crowdfunding) ---
+        / @stripe_onboarding_complete est pré-calculé dans ProjectsController#show (pas d'appel API ici)
+        - can_request_payout = user_signed_in? && current_user == @project.user && @project.use_stripe?
+        - payout_states = ['successful', 'waiting_funds', 'online', 'request_funds', 'paid']
+        - if can_request_payout && payout_states.include?(@project.state)
+          - already_paid = @project.stripe_settlement_type == 'transferred' || @project.state == 'paid'
+          - payout_pending = @project.state == 'request_funds' && !already_paid
+          - stripe_ready = @stripe_onboarding_complete
+          - stripe_contributions_exist = @project.contributions.where(payment_method: 'Stripe', state: 'confirmed').any?
+          hr
+          - if already_paid
+            .alert-box.success.radius[style="margin-top:10px;"]
+              i.fa.fa-check-circle
+              strong |  Fonds virés ✓
+              p.small | Vos fonds ont été virés directement sur votre compte bancaire.
+          - elsif payout_pending
+            .alert-box[style="background:#f39c12;color:#fff;border-radius:5px;padding:10px;margin-top:10px;"]
+              i.fa.fa-clock-o
+              strong |  Demande en cours de traitement
+              p.small | Notre équipe traite votre demande de virement. Vous recevrez un email de confirmation.
+          - elsif !stripe_ready
+            = link_to pay_project_path(@project), class: "btn btn-block btn-warning" do
+              i.fa.fa-exclamation-triangle
+              |  ⚙ Configurer mon espace de virement
+          - elsif stripe_contributions_exist
+            = link_to pay_project_path(@project), class: "btn btn-block btn-success" do
+              i.fa.fa-paper-plane
+              |  💰 Demander le retrait de mes fonds
+          - else
+            = link_to pay_project_path(@project), class: "btn btn-block btn-default" do
+              i.fa.fa-info-circle
+              |  Informations de retrait
 
 
       /= simple_form_for(current_user, url: user_unsubscribes_path(user_id: current_user.id), html:{ method: :post}) do |f|

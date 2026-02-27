@@ -39,19 +39,23 @@ module Neighborly
                                            .where(stripe_transferred: [false, nil])
         return add_error("Aucune contribution à transférer") if contributions.empty?
         
-        # Calculer les totaux pour le log
-        total_collected_gross = contributions.sum(:value)
-        total_stripe_fees = calculate_total_stripe_fees(contributions)
-        total_net_amount = total_collected_gross - total_stripe_fees
-        platform_fee = calculate_platform_fee(total_net_amount)
-        total_to_transfer = total_net_amount - platform_fee
+        # Calcul des totaux
+        # PLATFORM_FEE est le % TOTAL annoncé au porteur (il inclut les frais Stripe)
+        # Porteur reçoit: montant_brut * (1 - PLATFORM_FEE%). Ex: 100€ * (1-4%) = 96€
+        # La plateforme garde PLATFORM_FEE% dont une partie couvre les frais Stripe réels
+        fee_pct = ENV.fetch('PLATFORM_FEE', '5.0').to_f / 100
+        total_collected_gross  = contributions.sum(:value)
+        total_platform_fee     = (total_collected_gross * fee_pct).round(2)
+        total_to_transfer      = total_collected_gross - total_platform_fee
+        total_stripe_fees      = calculate_total_stripe_fees(contributions)  # Pour info seulement
+        platform_net_revenue   = total_platform_fee - total_stripe_fees       # Ce que la plateforme garde vraiment
         
         Rails.logger.info "CampaignSettlement: Projet #{project.name}"
         Rails.logger.info "  - Brut collecté: #{total_collected_gross}€"
-        Rails.logger.info "  - Frais Stripe: #{total_stripe_fees}€"
-        Rails.logger.info "  - Net après Stripe: #{total_net_amount}€"
-        Rails.logger.info "  - Commission Fiatope (#{(ENV.fetch('PLATFORM_FEE', '5.0').to_f)}% du net): #{platform_fee}€"
-        Rails.logger.info "  - Total à transférer: #{total_to_transfer}€"
+        Rails.logger.info "  - Commission totale annoncée (#{(fee_pct * 100)}%): #{total_platform_fee}€"
+        Rails.logger.info "  - dont frais Stripe estimés: #{total_stripe_fees}€"
+        Rails.logger.info "  - dont revenu net plateforme: #{platform_net_revenue}€"
+        Rails.logger.info "  - Total à transférer au porteur: #{total_to_transfer}€"
         Rails.logger.info "  - Nombre de contributions: #{contributions.count}"
         
         # Transférer chaque contribution individuellement avec source_transaction
@@ -114,12 +118,18 @@ module Neighborly
           end
         end
         
-        # Calculer le montant net pour cette contribution
+        # PLATFORM_FEE = pourcentage TOTAL annoncé au porteur (inclut frais Stripe)
+        # Porteur reçoit: montant * (1 - PLATFORM_FEE/100)
+        fee_percentage    = ENV.fetch('PLATFORM_FEE', '5.0').to_f / 100
+        platform_fee      = (contribution.value * fee_percentage).round(2)
+        amount_to_owner   = contribution.value - platform_fee
+        amount_to_transfer = (amount_to_owner * 100).to_i # en centimes
+        
+        # Pour les logs: calculer ce que Stripe prend réellement
         stripe_fee = calculate_stripe_fee_for_contribution(contribution)
-        net_amount = contribution.value - stripe_fee
-        fee_percentage = ENV.fetch('PLATFORM_FEE', '5.0').to_f / 100
-        platform_fee = (net_amount * fee_percentage).round(2) # Commission Fiatope configurable
-        amount_to_transfer = ((net_amount - platform_fee) * 100).to_i # en centimes
+        platform_net_revenue = platform_fee - stripe_fee
+        
+        Rails.logger.info "  Contribution #{contribution.id}: brut=#{contribution.value}€, commission=#{platform_fee}€ (#{(fee_percentage*100)}%), stripe=#{stripe_fee}€, net_plateforme=#{platform_net_revenue}€, porteur=#{amount_to_owner}€"
         
         return { success: false, error: "Montant trop faible" } if amount_to_transfer <= 0
         
@@ -128,14 +138,17 @@ module Neighborly
             amount: amount_to_transfer,
             currency: project.currency&.downcase || 'eur',
             destination: project.stripe_account_id,
-            transfer_group: "project_#{project.id}",
+            transfer_group: "project_#{project.id}",  # Groupe toutes les transactions de la campagne
+            description: "Virement campagne #{project.name} - contribution ##{contribution.id}",
             metadata: {
               contribution_id: contribution.id,
               project_id: project.id,
               gross_amount: contribution.value,
-              stripe_fee: stripe_fee,
-              platform_fee: platform_fee,
-              net_to_owner: amount_to_transfer / 100.0
+              platform_fee_pct: (fee_percentage * 100).to_s + '%',
+              platform_fee_amount: platform_fee,
+              stripe_fee_estimated: stripe_fee,
+              platform_net_revenue: platform_net_revenue,
+              net_to_owner: amount_to_owner
             }
           }
           
@@ -254,23 +267,23 @@ module Neighborly
             end
           end
           
-          # Calculer le montant NET à rembourser au contributeur:
-          # Montant brut - Frais Stripe (2.9% + 0.25€) - Commission plateforme (X%)
-          gross_amount = contribution.value
-          stripe_fee = calculate_stripe_fee_for_contribution(contribution)
-          platform_fee_pct = ENV.fetch('PLATFORM_FEE', '5.0').to_f / 100
-          platform_fee = (gross_amount * platform_fee_pct).round(2)
+          # Remboursement: on rembourse le montant brut MOINS les frais Stripe non récupérables
+          # La commission plateforme est aussi retenue (comme annoncé dans les CGU)
+          gross_amount      = contribution.value
+          stripe_fee        = calculate_stripe_fee_for_contribution(contribution)
+          fee_pct           = ENV.fetch('PLATFORM_FEE', '5.0').to_f / 100
+          platform_fee      = (gross_amount * fee_pct).round(2)
           
-          # Montant net à rembourser
+          # Remboursé = brut - frais Stripe réels (non-remboursables) - commission plateforme
           net_refund_amount = gross_amount - stripe_fee - platform_fee
           net_refund_amount = 0 if net_refund_amount < 0
           refund_amount_cents = (net_refund_amount * 100).to_i
           
           Rails.logger.info "CampaignSettlement: Remboursement contribution #{contribution.id}"
           Rails.logger.info "  - Montant brut: #{gross_amount}€"
-          Rails.logger.info "  - Frais Stripe: #{stripe_fee}€"
-          Rails.logger.info "  - Commission plateforme (#{ENV.fetch('PLATFORM_FEE', '5.0')}%): #{platform_fee}€"
-          Rails.logger.info "  - Montant remboursé: #{net_refund_amount}€"
+          Rails.logger.info "  - Frais Stripe (non-remboursables): #{stripe_fee}€"
+          Rails.logger.info "  - Commission plateforme (#{(fee_pct*100)}%): #{platform_fee}€"
+          Rails.logger.info "  - Montant remboursé au contributeur: #{net_refund_amount}€"
           
           # Créer le remboursement PARTIEL (montant net seulement)
           refund = ::Stripe::Refund.create({
@@ -416,10 +429,11 @@ module Neighborly
         project.contributions.where(payment_method: 'Stripe')
       end
       
-      def calculate_platform_fee(net_amount)
-        # Commission Fiatope: 5% du montant NET (après frais Stripe)
+      def calculate_platform_fee(gross_amount)
+        # PLATFORM_FEE est le % TOTAL annoncé au porteur (inclut frais Stripe)
+        # Ex: 4% → porteur reçoit 96% du brut, plateforme garde 4% (dont ~2.5% pour Stripe)
         fee_percentage = ENV.fetch('PLATFORM_FEE', '5.0').to_f / 100
-        (net_amount * fee_percentage).round(2)
+        (gross_amount * fee_percentage).round(2)
       end
       
       # Calcule les frais Stripe totaux pour toutes les contributions
@@ -458,11 +472,9 @@ module Neighborly
       
       def notify_owner_transfer_complete(transfer, amount)
         begin
-          project.notify_owner(:stripe_transfer_complete, {
-            transfer_id: transfer&.id,
-            amount: amount,
-            currency: project.currency || 'EUR'
-          })
+          # Uniquement le project_id comme filtre d'unicité (valid column)
+          # Le template calcule les montants depuis project.contributions directement
+          project.notify_owner(:stripe_transfer_complete)
         rescue => e
           Rails.logger.warn "CampaignSettlement: Erreur notification transfert - #{e.message}"
         end
@@ -470,13 +482,9 @@ module Neighborly
       
       def notify_contributor_refund(contribution, net_amount = nil, stripe_fee = nil, platform_fee = nil)
         begin
-          contribution.notify_owner(:stripe_refund_complete, {
-            project: project,
-            gross_amount: contribution.value,
-            net_amount: net_amount || contribution.value,
-            stripe_fee: stripe_fee || 0,
-            platform_fee: platform_fee || 0
-          })
+          # Passer la contribution comme filtre d'unicité (contribution_id est une colonne valide)
+          # Le template accède aux données via @notification.contribution
+          contribution.notify_owner(:stripe_refund_complete)
         rescue => e
           Rails.logger.warn "CampaignSettlement: Erreur notification remboursement - #{e.message}"
         end

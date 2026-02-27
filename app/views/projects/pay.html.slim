@@ -1,37 +1,136 @@
-- content_for :title, @project.name
-= render partial: 'layouts/disqus_count'
+- content_for :title, "Retrait des fonds - #{@project.name}"
 = render 'projects/meta_tags'
 
 .project-page
   = render 'projects/shortheader'
-  = render 'projects/status_bar'
 
-  .row.page-main-content
-    section.large-9.medium-8.columns.main
-      = render 'projects/draft_warning' if @project.draft?
-      = render 'projects/rejected_warning' if @project.rejected?
+  .row.padding-20
+    .col-md-8.col-md-offset-2
 
-    .large-8.medium-4.columns
-     h5
-       |Pour pouvoir continuer, veuillez renseigner vos informations Bancaires (IBAN et BIC)
-       = link_to t('.iban'), payments_user_path(current_user)
-       /= MangoPay désactivé - Stripe Connect utilisé à la place
-       / | et télécharger votre pièce d'identité
-       / = link_to t('.cni'), mangopay_authentications_user_path(current_user)
-              
-    aside.large-3.medium-4.columns.sidebar
-      .call-to-action
-        - if @project.online? && !@project.expired?
-          = render 'projects/noscript'
+      h2.text-center
+        i.fa.fa-money
+        |  Retrait de vos fonds
 
-          /- if current_user && (current_user.organization? || current_user.channel? || current_user.admin?)
-          /  = link_to t('.create_match'), new_project_match_url(@project), class: "button with-icon create-match hide-for-small"
+      /= Affichage explicite des messages flash
+      - if flash[:success].present?
+        .alert-box.success[style="margin-bottom:15px;padding:15px;border-radius:5px;"]
+          i.fa.fa-check-circle
+          |  #{flash[:success]}
+      - if flash[:alert].present?
+        .alert-box.alert[style="margin-bottom:15px;padding:15px;border-radius:5px;"]
+          i.fa.fa-exclamation-triangle
+          |  #{flash[:alert]}
+      - if flash[:notice].present?
+        .alert-box.info[style="margin-bottom:15px;padding:15px;border-radius:5px;"]
+          i.fa.fa-info-circle
+          |  #{flash[:notice]}
+
+      hr
+
+      /= @stripe_onboarding_complete est pré-calculé dans ProjectsController#pay (pas d'appel API ici)
+      - stripe_ready = @stripe_onboarding_complete
+      - already_paid  = @project.stripe_settlement_type == 'transferred' || @project.state == 'paid'
+      - payout_pending = @project.state == 'request_funds' && !already_paid
+      - total_collected = @project.contributions.where(payment_method: 'Stripe', state: 'confirmed').sum(:value)
+      - fee_pct = ENV.fetch('PLATFORM_FEE', '5.0').to_f
+      - platform_fee_amount = (total_collected * fee_pct / 100).round(2)
+      - net_to_receive = (total_collected - platform_fee_amount).round(2)
+
+      / --- Résumé financier ---
+      .panel.callout.radius.margin-20
+        h4
+          i.fa.fa-bar-chart
+          |  Résumé de votre campagne
+        .row
+          .col-md-6
+            p
+              strong | Montant brut collecté :
+              |  #{number_to_currency(total_collected, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')}
+          .col-md-6
+            p
+              strong | Commission Fiatope (#{fee_pct.to_i}%) :
+              |  - #{number_to_currency(platform_fee_amount, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')}
+        .row
+          .col-md-12
+            p.lead
+              strong | Vous recevrez :&nbsp;
+              span[style="color:#27ae60;font-size:1.4em;"]
+                strong = number_to_currency(net_to_receive, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')
+        p.small[style="color:#7f8c8d;"]
+          i.fa.fa-info-circle
+          |  La commission de #{fee_pct.to_i}% couvre les frais de traitement bancaire et les frais de service Fiatope. Les fonds seront versés directement sur votre compte bancaire.
+
+      / --- Statut Stripe Connect ---
+      - if already_paid
+        /= Projet payé : fonds virés et arrivés sur le compte bancaire
+        .alert-box.success.radius
+          i.fa.fa-check-circle
+          strong |  Fonds virés avec succès !
+          p | Vos fonds ont été transférés et sont en route vers votre compte bancaire (2-7 jours ouvrés).
+          - if @project.stripe_settled_at.present?
+            p.small | Date du virement : #{l(@project.stripe_settled_at, format: :long)}
+          p.small
+            i.fa.fa-info-circle
+            |  Vous recevrez un email de confirmation lorsque les fonds arriveront sur votre compte bancaire.
+
+      - elsif payout_pending
+        /= Demande de virement en cours de traitement par l'admin
+        .alert-box[style="background:#f39c12;color:#fff;border-radius:5px;padding:15px;"]
+          i.fa.fa-clock-o
+          strong |  Demande de virement en cours de traitement
+          p | Votre demande de virement de #{number_to_currency(net_to_receive, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')} a été reçue par notre équipe.
+          p | Notre équipe va vérifier et effectuer le virement directement sur votre compte bancaire. Vous recevrez un email de confirmation.
+          p.small
+            i.fa.fa-shield
+            |  Le virement arrivera sur votre compte bancaire sous 2-7 jours ouvrés après validation.
+
+      - elsif !stripe_ready
+        / --- Configuration espace de virement requise ---
+        .alert-box.warning.radius
+          i.fa.fa-exclamation-triangle
+          strong |  Configuration requise
+          p | Pour recevoir vos fonds directement sur votre compte bancaire, vous devez d'abord configurer votre espace de virement sécurisé. C'est gratuit et prend environ 5 minutes.
+
+        .panel.radius.margin-20
+          h4
+            i.fa.fa-info-circle
+            |  Comment ça fonctionne ?
+          ol
+            li | Cliquez sur "Configurer mon espace de virement" ci-dessous
+            li | Renseignez vos informations personnelles et bancaires (IBAN, pièce d'identité)
+            li | Revenez sur cette page et cliquez "Demander mon virement"
+            li | Notre équipe traite votre demande et vire les fonds directement sur votre compte bancaire
+
+        .text-center
+          = form_tag neighborly_stripe.connect_create_path, method: :post do
+            = hidden_field_tag :return_to, pay_project_path(@project)
+            button.btn.btn-lg.btn-warning[type="submit"]
+              i.fa.fa-lock
+              |  Configurer mon espace de virement
+
+      - else
+        / --- Espace de virement configuré, prêt à demander le virement ---
+        .alert-box.success.radius
+          i.fa.fa-check-circle
+          strong |  Espace de virement configuré ✓
+          p | Votre espace de virement est vérifié. Cliquez ci-dessous pour demander votre virement. Notre équipe le traitera et l'argent arrivera directement sur votre compte bancaire.
+
+        - if total_collected <= 0
+          .alert-box.secondary.radius
+            i.fa.fa-info-circle
+            |  Aucune contribution confirmée pour le moment. Les fonds apparaîtront ici dès que vos contributeurs auront payé.
         - else
-          .alert-box.secondary.status-description
-            = display_status(@project)
+          .text-center.margin-20
+            = form_tag request_payout_project_path(@project), method: :post do
+              button.btn.btn-lg.btn-success[type="submit" data-confirm="Confirmer la demande de virement de #{number_to_currency(net_to_receive, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')} vers votre compte bancaire ?"]
+                i.fa.fa-paper-plane
+                |  Demander mon virement de #{number_to_currency(net_to_receive, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')}
 
+            p.small.text-center.margin-20
+              i.fa.fa-shield
+              |  Votre demande sera traitée par notre équipe. Les fonds arriveront sur votre compte bancaire sous 2-7 jours ouvrés.
 
-        = render 'messages/form_fund', :@message => Message.new(:name => current_user.name, :email => current_user.email, :subject => "retirer les fonds", :message => @project.name)
+      hr
 
-
-/      = render 'projects/author' if browser.device.mobile?
+      .text-center
+        = link_to "Retour au projet", project_path(@project), class: "btn btn-default"

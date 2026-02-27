@@ -205,15 +205,24 @@ module Neighborly::Admin
         
         if settlement.process!
           total = contributions.sum(:value)
-          # Afficher avertissement si certains transferts ont échoué
+          fee_pct = ENV.fetch('PLATFORM_FEE', '5.0').to_f / 100
+          net = (total * (1 - fee_pct)).round(2)
+          
+          # FLUX CROWDFUNDING: après transfert réussi → projet passe en 'paid'
+          # request_funds → paid (porteur a demandé, admin a transféré)
+          if @project.can_push_to_paid?
+            @project.push_to_paid!
+            Rails.logger.info "[Admin] Projet #{@project.id} passé en état 'paid' après transfert Stripe"
+          end
+          
           if settlement.errors.any?
-            flash[:success] = "✅ Transfert effectué avec avertissements: #{settlement.errors.join(', ')}"
+            flash[:success] = "✅ Transfert de #{net}€ effectué avec avertissements: #{settlement.errors.join(', ')}"
           else
-            flash[:success] = "✅ Transfert de #{total}€ effectué! Les fonds ont été envoyés au porteur #{@project.user.name}."
+            flash[:success] = "✅ Transfert de #{net}€ effectué ! Les fonds arrivent sur le compte bancaire de #{@project.user.name} sous 2-7 jours. Projet marqué comme Payé."
           end
         else
           error_msg = settlement.errors.any? ? settlement.errors.join(', ') : "Une erreur inconnue s'est produite"
-          flash[:alert] = "Erreur: #{error_msg}"
+          flash[:alert] = "Erreur transfert: #{error_msg}"
         end
       rescue => e
         flash[:alert] = "Erreur technique: #{e.message}"

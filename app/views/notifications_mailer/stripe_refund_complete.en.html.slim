@@ -1,0 +1,49 @@
+- contribution = @notification.contribution
+- project = contribution&.project
+- fee_pct = ENV.fetch('PLATFORM_FEE', '5.0').to_f / 100.0
+- gross = contribution&.value.to_f
+- stripe_fee = (gross * 0.014 + 0.25).round(2)  # EU cards estimate
+- platform_fee = (gross * fee_pct).round(2)
+- net = [gross - stripe_fee - platform_fee, 0].max.round(2)
+
+|Dear #{contribution&.user&.display_name || @notification.user.display_name},
+br
+br
+strong | 💰 Refund processed for your contribution
+br
+br
+- if project.present?
+  |Your contribution to project #{project.is_a?(Project) ? link_to(project.name, project_url(project)) : project.to_s} has been refunded.
+- else
+  |Your contribution has been refunded.
+br
+br
+table[style="border-collapse: collapse; width: 100%; max-width: 500px;"]
+  tr[style="background: #fef3c7;"]
+    td[style="padding: 10px; border: 1px solid #fde68a; font-weight: bold;"] Amount originally paid
+    td[style="padding: 10px; border: 1px solid #fde68a;"] #{number_to_currency(gross, unit: 'EUR', format: '%n %u')}
+  - if stripe_fee > 0
+    tr
+      td[style="padding: 10px; border: 1px solid #e2e8f0; color: #dc2626;"] Payment processing fees retained
+      td[style="padding: 10px; border: 1px solid #e2e8f0; color: #dc2626;"] − #{number_to_currency(stripe_fee, unit: 'EUR', format: '%n %u')}
+  - if platform_fee > 0
+    tr
+      td[style="padding: 10px; border: 1px solid #e2e8f0; color: #d97706;"] Service commission retained
+      td[style="padding: 10px; border: 1px solid #e2e8f0; color: #d97706;"] − #{number_to_currency(platform_fee, unit: 'EUR', format: '%n %u')}
+  tr[style="background: #f0fdf4;"]
+    td[style="padding: 10px; border: 1px solid #bbf7d0; font-weight: bold;"] Amount refunded
+    td[style="padding: 10px; border: 1px solid #bbf7d0; color: #16a34a; font-weight: bold;"] #{number_to_currency(net, unit: 'EUR', format: '%n %u')}
+br
+br
+|The refund will appear on your bank statement within 5 to 10 business days depending on your bank.
+br
+br
+|Note: Payment processing fees are retained by the card networks and cannot be recovered.
+br
+br
+|For any questions, contact us at #{mail_to Configuration[:email_contact]}.
+br
+br
+|Kind regards,
+br
+|The #{Configuration[:company_name]} team

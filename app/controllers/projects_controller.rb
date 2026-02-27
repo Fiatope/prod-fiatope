@@ -3,7 +3,8 @@ class ProjectsController < ApplicationController
   after_action :verify_authorized, except: [:index, :video, :video_embed, :embed,
                                             :embed_panel, :comments, :budget, :english,
                                             :reward_contact, :send_reward_email,
-                                            :start, :coaching, :crowdfunding, :consulting, :change_recommended]
+                                            :start, :coaching, :crowdfunding, :consulting, :change_recommended,
+                                            :request_payout]
 
   before_action :has_prerequisites, only: [:new, :create]
 
@@ -96,12 +97,13 @@ class ProjectsController < ApplicationController
     set_facebook_url_admin(resource.user)
     render :about if request.xhr?
 
-    puts "****************************************************"
-    puts "avant : #{@project.inspect}"
-    puts "****************************************************"
-
     @project = resource
-    
+
+    # Précalculer le statut Stripe du porteur pour éviter les appels API dans la vue
+    # Ne vérifier que si l'utilisateur connecté est le porteur du projet
+    @stripe_onboarding_complete = user_signed_in? && current_user == @project.user &&
+                                   current_user.stripe_onboarding_complete?
+
     if @project.id == 1053
       @bg_sm = "bg-small"
     end
@@ -119,6 +121,81 @@ class ProjectsController < ApplicationController
 
   def pay
     authorize resource
+    @project = resource
+    @stripe_onboarding_complete = current_user.stripe_onboarding_complete?
+  end
+
+  def request_payout
+    @project = resource
+
+    unless user_signed_in? && current_user == @project.user
+      flash[:alert] = "Accès non autorisé."
+      return redirect_to project_path(@project)
+    end
+
+    unless @project.use_stripe?
+      flash[:alert] = "Stripe n'est pas activé pour ce projet."
+      return redirect_to pay_project_path(@project)
+    end
+
+    # Le porteur DOIT avoir configuré Stripe avant de demander le virement
+    # (l'admin en aura besoin pour effectuer le transfert)
+    unless current_user.stripe_onboarding_complete?
+      flash[:alert] = I18n.t('stripe.payout.onboarding_required',
+        default: 'Vous devez d\'abord configurer votre compte Stripe Connect pour recevoir vos fonds.')
+      return redirect_to pay_project_path(@project)
+    end
+
+    # Virement déjà effectué
+    if @project.stripe_settlement_type == 'transferred' || @project.stripe_transfer_id.present?
+      flash[:notice] = "Vos fonds ont déjà été virés sur votre compte bancaire."
+      return redirect_to pay_project_path(@project)
+    end
+
+    # Demande déjà en cours de traitement
+    if @project.state == 'request_funds'
+      flash[:notice] = "Votre demande de virement est déjà en cours de traitement par notre équipe."
+      return redirect_to pay_project_path(@project)
+    end
+
+    # Vérifier qu'il y a des contributions à virer
+    contributions = @project.contributions
+                            .where(payment_method: 'Stripe', state: 'confirmed')
+                            .where(stripe_refunded: [false, nil], stripe_transferred: [false, nil])
+    if contributions.empty?
+      flash[:alert] = "Aucune contribution Stripe confirmée à virer pour ce projet."
+      return redirect_to pay_project_path(@project)
+    end
+
+    begin
+      # FLUX CROWDFUNDING CORRECT:
+      # 1. Porteur initie → projet passe en request_funds + admin notifié
+      # 2. Admin décide de payer → process_stripe_transfer (panel admin)
+      # 3. CampaignSettlement effectue le Stripe Transfer → auto-payout vers banque porteur
+      if @project.can_push_to_request_funds?
+        @project.push_to_request_funds!
+
+        total = contributions.sum(:value)
+        fee_pct = ENV.fetch('PLATFORM_FEE', '5.0').to_f / 100
+        net = (total * (1 - fee_pct)).round(2)
+
+        # Notifier l'admin par email
+        begin
+          @project.notify_observers(:from_online_to_request_funds)
+        rescue => notify_err
+          Rails.logger.warn "request_payout: notification admin échouée - #{notify_err.message}"
+        end
+
+        flash[:success] = "✅ Demande de virement de #{net}€ envoyée ! Notre équipe va vérifier et virer les fonds directement sur votre compte bancaire Stripe. Vous recevrez une confirmation par email."
+      else
+        flash[:alert] = "Impossible de soumettre la demande depuis l'état actuel du projet (#{@project.state})."
+      end
+    rescue => e
+      Rails.logger.error "ProjectsController#request_payout: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
+      flash[:alert] = "Erreur technique : #{e.message}"
+    end
+
+    redirect_to pay_project_path(@project)
   end
 
   def reports

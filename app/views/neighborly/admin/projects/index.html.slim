@@ -170,6 +170,10 @@
                       span.label.label-canceled= project.state
                     - elsif project.tobefollowed?
                       span.label.label-tobefollowed= project.state
+                    - elsif project.state == 'request_funds'
+                      span.label style="background:#e67e22;color:white;" title="Le porteur a demandé son virement - en attente de traitement admin" 💸 Retrait demandé
+                    - elsif project.state == 'paid'
+                      span.label style="background:#27ae60;color:white;" title="Fonds transférés sur le compte bancaire du porteur" ✅ Payé
                     - else 
                       span.label= project.state
                   td
@@ -248,15 +252,17 @@
                         /    = link_to cancel_project_path(project), method: :put  do
                         /      = t('.cancel')
 
-                        /- if project.can_push_to_request_funds?
-                        /  li
-                        /    = link_to push_to_request_funds_project_path(project), method: :put do
-                        /      = t('.request_funds')
+                        /= CROWDFUNDING: Admin peut forcer le passage en request_funds
+                        - if project.can_push_to_request_funds?
+                          li
+                            = link_to push_to_request_funds_project_path(project), method: :put, data: {confirm: "Mettre ce projet en 'Retrait demandé' ?"} do
+                              | 💸 Marquer 'Retrait demandé'
 
-                        /- if project.can_push_to_paid?
-                        /  li
-                        /    = link_to push_to_paid_project_path(project), method: :put do
-                        /      = t('.paid') 
+                        /= CROWDFUNDING: Admin marque comme payé après transfert Stripe
+                        - if project.can_push_to_paid?
+                          li
+                            = link_to push_to_paid_project_path(project), method: :put, data: {confirm: "Marquer ce projet comme Payé ? (après avoir transféré les fonds Stripe)"} do
+                              | ✅ Marquer comme Payé
 
                         - if project.can_push_to_trash?
                           li
@@ -293,13 +299,14 @@
                             - stripe_contribs_pending = project.contributions.where(payment_method: 'Stripe', state: 'confirmed').where(stripe_refunded: [false, nil]).where(stripe_transferred: [false, nil])
                             - has_pending_contributions = stripe_contribs_pending.any?
                             - total_brut = stripe_contribs_pending.sum(:value)
-                            /= Commission plateforme configurable via ENV ou 5% par défaut
-                            - platform_fee_pct = ENV.fetch('PLATFORM_FEE', '5').to_f
-                            /= Estimation du montant NET (après frais Stripe ~2.9% + 0.25€ par transaction, et commission Fiatope)
-                            - stripe_fees_estimate = stripe_contribs_pending.count * 0.25 + total_brut * 0.029
-                            - net_after_stripe = total_brut - stripe_fees_estimate
+                            /= PLATFORM_FEE = total annoncé au porteur (inclut frais Stripe)
+                            /= Porteur reçoit = brut * (1 - PLATFORM_FEE%). Ex: 4% → porteur reçoit 96% du brut
+                            - platform_fee_pct = ENV.fetch('PLATFORM_FEE', '5.0').to_f
                             - fiatope_commission = total_brut * (platform_fee_pct / 100.0)
-                            - net_to_owner = net_after_stripe - fiatope_commission
+                            - net_to_owner = total_brut - fiatope_commission
+                            /= Frais Stripe estimés (pour info seulement, inclus dans la commission)
+                            - stripe_fees_estimate = stripe_contribs_pending.sum(:value) * 0.014 + stripe_contribs_pending.count * 0.25
+                            - platform_net_revenue = fiatope_commission - stripe_fees_estimate
                             
                             /= TRANSFERT: si contributions EN ATTENTE + onboarding complété
                             /= Note: On vérifie les contributions individuelles, pas l'état global du projet
@@ -308,7 +315,9 @@
                               li
                                 - transfer_url = main_app.process_stripe_transfer_project_path(project)
                                 - stripe_acct = project.stripe_account_id.presence || project.user.stripe_connect_account_id
-                                = link_to "javascript:openTransferModal('#{j(project.name)}', '#{j(project.user.name)}', '#{stripe_acct}', '#{sprintf('%.2f', total_brut)}', '#{sprintf('%.2f', stripe_fees_estimate)}', '#{sprintf('%.2f', fiatope_commission)}', '#{platform_fee_pct}', '#{sprintf('%.2f', net_to_owner)}', '#{transfer_url}')" do
+                                - transfer_contributors_list = stripe_contribs_pending.map { |c| { id: c.id, name: c.user&.name || 'Anonyme', email: c.user&.email || '', amount: c.value.to_f, payment_id: c.payment_id.to_s, created_at: c.created_at&.iso8601 } }
+                                - transfer_contributors_json = transfer_contributors_list.to_json.gsub("'", "\\\\'")
+                                = link_to "javascript:openTransferModal('#{j(project.name)}', '#{j(project.user.name)}', '#{stripe_acct}', '#{sprintf('%.2f', total_brut)}', '#{sprintf('%.2f', stripe_fees_estimate)}', '#{sprintf('%.2f', fiatope_commission)}', '#{platform_fee_pct}', '#{sprintf('%.2f', net_to_owner)}', '#{transfer_url}', #{transfer_contributors_json})" do
                                   i.icon-et-money
                                   = " 💰 Transférer (~#{number_to_currency(net_to_owner, unit: '€', format: '%n %u')} net)"
                             

@@ -4,6 +4,7 @@ module Project::StateMachineHandler
   included do
      state_machine :campaign_type, initial: :all_or_none do
       state :all_or_none
+      state :flexible
     end
 
     state_machine :state, initial: :draft do
@@ -42,11 +43,11 @@ module Project::StateMachineHandler
       end
 
       event :push_to_request_funds do
-        transition [:online, :draft, :succesful, :waiting_funds, :failed] => :request_funds #NOTE: when use 'all' we can't use new hash style ;(
+        transition [:online, :draft, :successful, :waiting_funds, :failed] => :request_funds #NOTE: when use 'all' we can't use new hash style ;(
       end
 
       event :push_to_fraud_suspiscion do
-        transition [:online, :draft, :succesful, :waiting_funds, :failed] => :fraud_suspiscion #NOTE: when use 'all' we can't use new hash style ;(
+        transition [:online, :draft, :successful, :waiting_funds, :failed] => :fraud_suspiscion #NOTE: when use 'all' we can't use new hash style ;(
       end
 
       event :push_to_paid do

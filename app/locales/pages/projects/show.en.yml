@@ -35,6 +35,8 @@ en:
           successful: "This project was successful and was funded on %{date}"
           waiting_funds: "Awaiting confirmation from payments to know if this project will be funded."
           draft: "This project is in draft mode and is not open to contributors yet."
+          request_funds: "Payout request in progress — our team is processing the transfer of funds."
+          paid: "Funds successfully transferred to the project owner's bank account."
         flexible:
           reached_goal: "This project will be successful and funded on %{date}"
           not_reached_goal: "This project will be funded on %{date}"
@@ -42,6 +44,8 @@ en:
           successful: "This project was successful and was funded on %{date}"
           waiting_funds: "This project recently closed and will be funded."
           draft: "This project is in draft mode and is not open to contributors yet."
+          request_funds: "Payout request in progress — our team is processing the transfer of funds."
+          paid: "Funds successfully transferred to the project owner's bank account."
       contribute: 'Contribute'
       precommander: 'Précommander'
       edit: 'Edit campaign'

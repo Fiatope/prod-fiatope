@@ -226,6 +226,7 @@ Neighborly::Application.routes.draw do
       get 'english'
       get 'success'
       get 'pay'
+      post 'request_payout'
       post 'change_recommended'
     end
 
