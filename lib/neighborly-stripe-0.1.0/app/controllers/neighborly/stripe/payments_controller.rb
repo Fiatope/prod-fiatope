@@ -91,12 +91,10 @@ module Neighborly
             }
           }
           
-          # CROWDFUNDING STRIPE - Pattern officiel: Separate Charges and Transfers
-          # 1. Paiement collecté sur compte plateforme (ici)
-          # 2. Admin décide du transfert vers porteur (CampaignSettlement)
-          # transfer_group groupe TOUTES les charges d'une campagne = essentiel pour le crowdfunding
+          # CROWDFUNDING: PAS de transfert automatique!
+          # L'argent reste sur le compte plateforme jusqu'à validation admin
+          # L'admin utilise CampaignSettlement pour transférer manuellement
           session_params[:payment_intent_data] = {
-            transfer_group: "project_#{@project.id}",
             metadata: {
               project_id: @project.id.to_s,
               project_name: @project.name.to_s[0..99],
@@ -111,7 +109,7 @@ module Neighborly
               contribution_id: @contribution&.id.to_s,
               currency: @project.currency.presence || 'EUR',
               amount: @amount.to_s,
-              campaign_type: @project.try(:campaign_type) || 'flexible',
+              # Stocker l'ID du compte Connect pour transfert futur par admin
               destination_account: connect_ready ? @project.stripe_account_id : nil
             }
           }
@@ -224,10 +222,10 @@ module Neighborly
             }
           }
           
-          # CROWDFUNDING STRIPE - Pattern officiel: Separate Charges and Transfers
-          # transfer_group groupe TOUTES les charges d'une campagne = essentiel pour le crowdfunding
+          # CROWDFUNDING: PAS de transfert automatique!
+          # L'argent reste sur le compte plateforme jusqu'à validation admin
+          # L'admin utilise CampaignSettlement pour transférer manuellement
           create_session_params[:payment_intent_data] = {
-            transfer_group: "project_#{@project.id}",
             metadata: {
               project_id: @project.id.to_s,
               project_name: @project.name.to_s[0..99],
@@ -242,7 +240,7 @@ module Neighborly
               contribution_id: @contribution&.id.to_s,
               currency: @project.currency.presence || 'EUR',
               amount: @amount.to_s,
-              campaign_type: @project.try(:campaign_type) || 'flexible',
+              # Stocker l'ID du compte Connect pour transfert futur par admin
               destination_account: connect_ready_create ? @project.stripe_account_id : nil
             }
           }

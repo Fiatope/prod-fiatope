@@ -6,6 +6,7 @@ Neighborly::Stripe::Engine.routes.draw do
   get 'connect/return', to: 'connect#return_url', as: :connect_return
   get 'connect/dashboard', to: 'connect#dashboard', as: :connect_dashboard
   post 'connect/sync', to: 'connect#sync_account', as: :sync_account
+  post 'connect/unlink', to: 'connect#unlink_account', as: :connect_unlink
   
   scope '/projects/:project_id' do
     get 'payments/new', to: 'payments#new', as: :payment_new

@@ -28,10 +28,8 @@ module StripeProject
   end
 
   def platform_fee_percentage
-    # Unifié avec PLATFORM_FEE (CampaignSettlement, admin views, pay.html.slim)
-    # PLATFORM_FEE = % total annoncé au porteur (inclut les frais Stripe)
-    fee = ENV.fetch('PLATFORM_FEE', '5.0').to_f / 100.0
-    fee > 0 ? fee : 0.05
+    fee = ENV['PLATFORM_FEE_PERCENTAGE']&.to_f
+    fee.present? && fee > 0 ? fee : 0.039
   end
 
   def platform_fee_amount(amount_cents)

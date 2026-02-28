@@ -2,14 +2,14 @@ module Neighborly
   module Stripe
     class ConnectController < ApplicationController
       before_action :authenticate_user!
+      before_action :clear_stale_flash
+      
+      rescue_from ActionDispatch::Cookies::CookieOverflow, with: :handle_cookie_overflow
       
       def create_account
         if current_user.stripe_connect_account_id.blank?
           current_user.create_stripe_connect_account!
         end
-        
-        # Mémoriser la page de retour après onboarding (ex: page pay d'un projet)
-        session[:stripe_onboarding_return_to] = params[:return_to] || request.referer
         
         redirect_url = current_user.stripe_account_onboarding_url(
           refresh_url: "#{request.base_url}/stripe/connect/refresh",
@@ -30,28 +30,14 @@ module Neighborly
       
       def return_url
         if current_user.stripe_onboarding_complete?
+          # CRITIQUE: Synchroniser tous les projets du porteur
           sync_user_projects_on_return
           
-          flash[:notice] = I18n.t('stripe.onboarding.success',
-            default: 'Votre compte Stripe est configuré avec succès ! Vous pouvez maintenant retirer vos fonds.')
-          
-          # Rediriger vers la page de retrait du projet si elle a été mémorisée
-          return_to = session.delete(:stripe_onboarding_return_to)
-          if return_to.present?
-            redirect_to return_to
-          else
-            # Par défaut: aller vers le premier projet actif du porteur s'il en a un
-            first_project = current_user.projects.where(use_stripe: true).first
-            if first_project
-              redirect_to "/projects/#{first_project.permalink}/pay"
-            else
-              redirect_to "/users/#{current_user.id}/edit#settings"
-            end
-          end
+          flash[:notice] = I18n.t('stripe.onboarding.success', default: 'Votre compte Stripe est configuré avec succès ! Vos projets ont été mis à jour.')
+          redirect_to user_settings_path
         else
-          flash[:alert] = I18n.t('stripe.onboarding.incomplete',
-            default: 'Veuillez compléter votre profil Stripe pour pouvoir recevoir vos fonds.')
-          redirect_to "/users/#{current_user.id}/edit#settings"
+          flash[:alert] = I18n.t('stripe.onboarding.incomplete', default: 'Veuillez compléter votre profil Stripe')
+          redirect_to user_settings_path
         end
       end
       
@@ -67,18 +53,17 @@ module Neighborly
       end
       
       # POST /stripe/connect/link_existing
-      # Lie un compte Stripe Connect existant (créé sur une autre plateforme)
       def link_existing_account
         if current_user.stripe_connect_account_id.present?
-          flash[:notice] = "Vous avez déjà un compte Stripe Connect lié"
-          redirect_to "/users/#{current_user.id}/edit#settings" and return
+          flash[:notice] = "Vous avez d\u00e9j\u00e0 un compte de paiement li\u00e9."
+          redirect_to user_settings_path and return
         end
         
         account_id = params[:stripe_account_id].to_s.strip
         
         unless account_id.start_with?('acct_')
           flash[:alert] = "Format d'ID invalide. L'ID doit commencer par 'acct_'"
-          redirect_to "/users/#{current_user.id}/edit#settings" and return
+          redirect_to user_settings_path and return
         end
         
         begin
@@ -104,10 +89,10 @@ module Neighborly
           current_user.update!(update_attrs)
           sync_user_projects_on_return
           
-          Rails.logger.info "Stripe Connect: Compte existant #{account.id} lié pour #{current_user.email}"
+          Rails.logger.info "[Connect] Compte existant #{account.id} li\u00e9 pour #{current_user.email}"
           
           if account.charges_enabled && account.payouts_enabled
-            flash[:notice] = "✅ Compte Stripe Connect lié avec succès ! Vous pouvez recevoir des paiements."
+            flash[:notice] = "Compte de paiement li\u00e9 avec succ\u00e8s !"
           else
             flash[:notice] = "Compte lié. Complétez l'onboarding pour activer les paiements."
             redirect_url = current_user.stripe_account_onboarding_url(
@@ -126,7 +111,7 @@ module Neighborly
           flash[:alert] = "Erreur: #{e.message}"
         end
         
-        redirect_to "/users/#{current_user.id}/edit#settings"
+        redirect_to user_settings_path
       end
       
       # GET /stripe/connect/find_existing - Vérifie un compte par ID
@@ -154,33 +139,92 @@ module Neighborly
         end
       end
       
-      # Synchronisation COMPLÈTE depuis l'API Stripe
+      # POST /stripe/connect/sync
       def sync_account
         unless current_user.stripe_connect_account_id.present?
-          flash[:alert] = "Vous n'avez pas encore de compte Stripe Connect."
-          return redirect_back(fallback_location: "/users/#{current_user.id}/edit")
+          flash[:alert] = "Aucun compte de paiement \u00e0 synchroniser."
+          return redirect_to user_settings_path
         end
         
         begin
           service = SyncService.new(current_user)
           
           if service.sync_all!
-            results = service.results
-            flash[:success] = "✅ Synchronisation complète! " \
-              "#{results[:projects].count} projet(s), " \
-              "#{results[:contributions].count} contribution(s) vérifiée(s)."
+            n_proj = service.results[:projects].count
+            n_cont = service.results[:contributions].count
+            flash[:notice] = "Synchronisation OK: #{n_proj} projet(s), #{n_cont} contribution(s)."
           else
-            flash[:alert] = "Erreur: #{service.errors.join(', ')}"
+            err = service.errors.first.to_s.truncate(100)
+            flash[:alert] = "Erreur sync: #{err}"
+            Rails.logger.error "[Sync] #{service.errors.join(' | ')}"
           end
         rescue => e
-          flash[:alert] = "Erreur: #{e.message}"
-          Rails.logger.error "[SyncAccount] Error: #{e.message}"
+          flash[:alert] = "Erreur: #{e.message.truncate(80)}"
+          Rails.logger.error "[Sync] #{e.class}: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
         end
         
-        redirect_back(fallback_location: "/users/#{current_user.id}/edit")
+        redirect_to user_settings_path
+      end
+      
+      # POST /stripe/connect/unlink
+      def unlink_account
+        unless current_user.stripe_connect_account_id.present?
+          flash[:alert] = "Aucun compte de paiement \u00e0 d\u00e9lier."
+          return redirect_to user_settings_path
+        end
+        
+        account_id = current_user.stripe_connect_account_id
+        
+        # Vérifier qu'il n'y a pas de transferts en cours
+        pending_transfers = current_user.projects
+          .where(use_stripe: true)
+          .joins(:contributions)
+          .where(contributions: { payment_method: 'Stripe', state: 'confirmed', stripe_transferred: [false, nil] })
+          .where.not(contributions: { stripe_charge_id: nil })
+          .distinct
+          .count
+        
+        if pending_transfers > 0
+          flash[:alert] = "Impossible: #{pending_transfers} projet(s) ont des paiements non transf\u00e9r\u00e9s."
+          return redirect_to user_settings_path
+        end
+        
+        # Délier le compte de tous les projets
+        current_user.projects.where(stripe_account_id: account_id).find_each do |project|
+          project.update_columns(
+            stripe_account_id: nil,
+            use_stripe: false
+          )
+        end
+        
+        # Délier le compte de l'utilisateur
+        current_user.update_columns(
+          stripe_connect_account_id: nil,
+          stripe_onboarding_complete: false
+        )
+        
+        Rails.logger.info "[Unlink] Compte #{account_id} d\u00e9li\u00e9 pour #{current_user.email}"
+        flash[:notice] = "Compte de paiement d\u00e9li\u00e9. Vos projets ne recevront plus de paiements."
+        redirect_to user_settings_path
       end
       
       private
+      
+      def user_settings_path
+        "/neighbors/#{current_user.id}/settings"
+      end
+      
+      # Vider les anciens flash pour \u00e9viter accumulation → CookieOverflow
+      def clear_stale_flash
+        flash.clear
+      end
+      
+      # Rescue CookieOverflow: rediriger proprement sans flash
+      def handle_cookie_overflow
+        Rails.logger.warn "[CookieOverflow] Session trop large pour #{current_user&.email}, nettoyage"
+        reset_session
+        redirect_to user_settings_path
+      end
       
       # Synchronise tous les projets du porteur quand il revient de l'onboarding
       def sync_user_projects_on_return

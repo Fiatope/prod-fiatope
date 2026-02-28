@@ -1,16 +1,16 @@
 - content_for :page_content do
   #user-settings-content.row
-    /= === SECTION STRIPE CONNECT ===
+    /= === SECTION PAIEMENT ===
     - if @user.projects.any?
       .large-8.columns
-        / Header Stripe Connect
+        / Header Paiement
         .panel style="background: linear-gradient(135deg, #635bff 0%, #7a73ff 100%); border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem;"
           .row
             .large-2.columns.text-center style="padding-top: 0.5rem;"
               i.icon-et-credit-card style="font-size: 2.5rem; color: white;"
             .large-10.columns
               h3 style="color: white; margin-bottom: 0.5rem; font-weight: 600;"
-                | Espace de virement
+                | Paiement sécurisé
               p style="color: rgba(255,255,255,0.9); margin-bottom: 0; font-size: 0.95rem;"
                 | Recevez les contributions de vos projets directement sur votre compte bancaire
         
@@ -25,21 +25,39 @@
                   h5 style="color: #166534; margin-bottom: 0.25rem; font-weight: 600;"
                     | Compte actif
                   p style="color: #15803d; margin-bottom: 0; font-size: 0.9rem;"
-                    | Votre espace de virement est configuré et prêt à recevoir des paiements.
+                    | Votre compte de paiement est configuré et prêt à recevoir des paiements.
                   p style="color: #6b7280; margin-bottom: 0; font-size: 0.8rem; margin-top: 0.5rem;"
-                    | Identifiant de compte vérifié ✓
+                    code style="background: #e5e7eb; padding: 2px 6px; border-radius: 4px;"
+                      = @user.stripe_connect_account_id
               
               hr style="margin: 1rem 0; border-color: #d1fae5;"
               
               .row
-                .large-6.columns
+                .large-4.columns style="margin-bottom: 0.5rem;"
                   = link_to neighborly_stripe.connect_dashboard_path, class: 'button small radius', style: 'background: #635bff; width: 100%;', target: '_blank' do
                     i.icon-et-external-link
-                    = " Mon espace"
-                .large-6.columns
-                  = link_to neighborly_stripe.sync_account_path, method: :post, class: 'button small secondary radius', style: 'width: 100%;', data: { disable_with: 'Sync...' } do
+                    = " Dashboard Stripe"
+                .large-4.columns style="margin-bottom: 0.5rem;"
+                  = button_to neighborly_stripe.sync_account_path, method: :post, class: 'button small secondary radius', style: 'width: 100%;', data: { disable_with: 'Sync...' } do
                     i.icon-et-refresh
                     = " Synchroniser"
+                .large-4.columns style="margin-bottom: 0.5rem;"
+                  a.button.small.radius href="#" data-click-toggle="unlink-stripe-section" style="background: #ef4444; width: 100%;"
+                    i.icon-et-close
+                    = " Délier le compte"
+              
+              #unlink-stripe-section style="display: none; margin-top: 1rem; padding: 1rem; background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px;"
+                p style="color: #991b1b; font-size: 0.9rem; margin-bottom: 0.75rem; font-weight: 600;"
+                  | Attention: Délier votre compte désactivera les paiements sur tous vos projets.
+                p style="color: #7f1d1d; font-size: 0.85rem; margin-bottom: 1rem;"
+                  | Vous pourrez ensuite lier un autre compte si nécessaire.
+                .row
+                  .large-6.columns
+                    = button_to neighborly_stripe.connect_unlink_path, method: :post, class: 'button small radius', style: 'background: #dc2626; width: 100%;', data: { confirm: 'Êtes-vous sûr de vouloir délier votre compte de paiement ? Les paiements seront désactivés sur tous vos projets.', disable_with: 'Déconnexion...' } do
+                      | Confirmer la déconnexion
+                  .large-6.columns
+                    a.button.small.secondary.radius href="#" data-click-toggle="unlink-stripe-section" style="width: 100%;"
+                      | Annuler
           - else
             / Onboarding incomplet
             .panel style="background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px; padding: 1.25rem;"
@@ -50,11 +68,17 @@
                   h5 style="color: #92400e; margin-bottom: 0.25rem; font-weight: 600;"
                     | Configuration incomplète
                   p style="color: #a16207; margin-bottom: 1rem; font-size: 0.9rem;"
-                    | Veuillez compléter votre profil de virement pour activer les paiements.
+                    | Veuillez compléter votre profil pour activer les paiements.
                   
-                  = link_to neighborly_stripe.connect_create_path, method: :post, class: 'button radius', style: 'background: #f59e0b;' do
-                    i.icon-et-arrow-right
-                    = " Compléter mon profil"
+                  .row
+                    .large-8.columns style="margin-bottom: 0.5rem;"
+                      = link_to neighborly_stripe.connect_create_path, method: :post, class: 'button radius', style: 'background: #f59e0b; width: 100%;' do
+                        i.icon-et-arrow-right
+                        = " Compléter mon profil"
+                    .large-4.columns style="margin-bottom: 0.5rem;"
+                      = button_to neighborly_stripe.connect_unlink_path, method: :post, class: 'button small radius', style: 'background: #ef4444; width: 100%;', data: { confirm: 'Délier ce compte incomplet ? Vous pourrez ensuite en cr\u00e9er ou lier un autre.' } do
+                        i.icon-et-close
+                        = " Délier"
         - else
           / Pas de compte
           .panel style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.25rem;"
@@ -65,7 +89,7 @@
                 h5 style="color: #1e40af; margin-bottom: 0.25rem; font-weight: 600;"
                   | Connectez votre compte
                 p style="color: #475569; margin-bottom: 0; font-size: 0.9rem;"
-                  | Pour recevoir les contributions, configurez votre espace de virement.
+                  | Pour recevoir les contributions, configurez votre compte de paiement.
             
             hr style="margin: 1.25rem 0; border-color: #e2e8f0;"
             
@@ -73,42 +97,46 @@
               .large-6.columns style="margin-bottom: 0.5rem;"
                 = link_to neighborly_stripe.connect_create_path, method: :post, class: 'button radius', style: 'background: #22c55e; width: 100%; margin-bottom: 0;' do
                   i.icon-et-plus
-                  = " Créer mon espace de virement"
+                  = " Nouveau compte"
               .large-6.columns
-                a.button.secondary.radius href="#" data-toggle="link-existing-form" style="width: 100%; margin-bottom: 0;"
+                a.button.secondary.radius href="#" data-click-toggle="link-existing-form" style="width: 100%; margin-bottom: 0;"
                   i.icon-et-link
-                  = " Lier un compte existant (code)"
+                  = " Lier un compte existant"
             
             #link-existing-form style="display: none; margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid #e2e8f0;"
               h6 style="color: #334155; font-weight: 600; margin-bottom: 0.75rem;"
                 i.icon-et-link style="margin-right: 0.5rem;"
-                | Lier un compte de virement existant
+                | Lier un compte existant
               
               p style="color: #64748b; font-size: 0.85rem; margin-bottom: 1rem;"
-                | Entrez l'identifiant de compte fourni par notre équipe ou disponible dans votre espace.
+                | Entrez l'identifiant de votre compte de paiement existant.
               
               = form_tag neighborly_stripe.connect_link_existing_path, method: :post do
                 .row
                   .large-9.columns
-                    = text_field_tag :stripe_account_id, nil, placeholder: 'Identifiant de compte', style: 'margin-bottom: 0; font-family: monospace;'
+                    = text_field_tag :stripe_account_id, nil, placeholder: 'acct_xxxxxxxxxx', style: 'margin-bottom: 0; font-family: monospace;'
                   .large-3.columns
                     = submit_tag 'Lier', class: 'button small radius', style: 'width: 100%; margin-bottom: 0; background: #635bff;'
               
               p style="color: #94a3b8; font-size: 0.8rem; margin-top: 0.75rem; margin-bottom: 0;"
                 i.icon-et-help style="margin-right: 0.25rem;"
-                | Cet identifiant vous a été communiqué lors de la création de votre espace de virement.
-          
-          javascript:
-            document.addEventListener('DOMContentLoaded', function() {
-              var toggleBtn = document.querySelector('[data-toggle="link-existing-form"]');
-              var form = document.getElementById('link-existing-form');
-              if (toggleBtn && form) {
-                toggleBtn.addEventListener('click', function(e) {
-                  e.preventDefault();
-                  form.style.display = form.style.display === 'none' ? 'block' : 'none';
-                });
-              }
+                | Trouvez cet ID dans votre dashboard Stripe ou sur l'autre plateforme.
+        
+        javascript:
+          document.addEventListener('DOMContentLoaded', function() {
+            // Toggle générique par data-click-toggle (hors conditions pour être TOUJOURS chargé)
+            document.querySelectorAll('[data-click-toggle]').forEach(function(btn) {
+              btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var targetId = btn.getAttribute('data-click-toggle');
+                var target = document.getElementById(targetId);
+                if (target) {
+                  target.style.display = target.style.display === 'none' ? 'block' : 'none';
+                }
+              });
             });
+          });
         
         / Tableau des projets
         - if @user.projects.count > 0
@@ -122,7 +150,7 @@
                 th style="text-align: left; padding: 0.75rem; border-bottom: 2px solid #e2e8f0; color: #475569; font-weight: 600;"
                   | Projet
                 th style="text-align: center; padding: 0.75rem; border-bottom: 2px solid #e2e8f0; color: #475569; font-weight: 600;"
-                  | Virement
+                  | Stripe
                 th style="text-align: center; padding: 0.75rem; border-bottom: 2px solid #e2e8f0; color: #475569; font-weight: 600;"
                   | Statut
             tbody
