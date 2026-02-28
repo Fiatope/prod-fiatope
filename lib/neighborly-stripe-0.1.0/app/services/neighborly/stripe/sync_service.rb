@@ -130,40 +130,43 @@ module Neighborly
           # Récupérer le PaymentIntent depuis Stripe
           payment_intent = ::Stripe::PaymentIntent.retrieve(payment_intent_id)
           
-          # Vérifier les charges associées
-          if payment_intent.latest_charge.present?
-            charge = ::Stripe::Charge.retrieve(payment_intent.latest_charge)
+          # Récupérer la charge (compatible toutes versions API)
+          charge_ref = payment_intent.try(:latest_charge)
+          charge_ref ||= payment_intent.charges&.data&.first&.id rescue nil
+          
+          if charge_ref.present?
+            charge_id = charge_ref.is_a?(String) ? charge_ref : (charge_ref.try(:id) || charge_ref.to_s)
+            charge = ::Stripe::Charge.retrieve(charge_id)
             
-            # Vérifier si remboursé
-            if charge.refunded
-              unless contribution.stripe_refunded
-                updates[:stripe_refunded] = true
-                updates[:stripe_refunded_at] = Time.current
-              end
+            # Sync charge_id si manquant
+            if contribution.stripe_charge_id.blank? && charge.id.present?
+              updates[:stripe_charge_id] = charge.id
             end
             
-            # Vérifier les transferts
-            if charge.transfer.present?
-              unless contribution.stripe_transferred
-                updates[:stripe_transferred] = true
-                updates[:stripe_transferred_at] = Time.current
-              end
+            # Vérifier si remboursé
+            if charge.refunded && !contribution.stripe_refunded
+              updates[:stripe_refunded] = true
+            end
+            
+            # Vérifier les transferts (hash access pour compatibilité)
+            transfer_id = charge['transfer']
+            if transfer_id.present? && !contribution.stripe_transferred
+              updates[:stripe_transferred] = true
+              updates[:stripe_transfer_id] = transfer_id if contribution.stripe_transfer_id.blank?
             end
           end
           
-          if updates.any?
-            contribution.update_columns(updates)
-          end
+          contribution.update_columns(updates) if updates.any?
           
           @results[:contributions] << {
             id: contribution.id,
             payment_id: payment_intent_id,
-            updated: updates.any?,
-            changes: updates
+            updated: updates.any?
           }
         rescue ::Stripe::InvalidRequestError => e
-          # PaymentIntent non trouvé - ignorer
-          @errors << "Contribution #{contribution.id}: #{e.message}"
+          @errors << "Contribution #{contribution.id}: #{e.message.truncate(80)}"
+        rescue => e
+          @errors << "Contribution #{contribution.id}: #{e.message.truncate(80)}"
         end
       end
       
