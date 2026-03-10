@@ -204,19 +204,24 @@ module Neighborly::Admin
         settlement = Neighborly::Stripe::CampaignSettlement.new(@project)
         
         if settlement.process!
+          # Auto-transition vers 'paid' si possible
+          if @project.reload.can_push_to_paid?
+            @project.push_to_paid!
+            Rails.logger.info "[Admin] Projet #{@project.id} passé en état 'paid' après transfert"
+          end
           total = contributions.sum(:value)
           # Afficher avertissement si certains transferts ont échoué
           if settlement.errors.any?
-            flash[:success] = "✅ Transfert effectué avec avertissements: #{settlement.errors.join(', ')}"
+            flash[:success] = "✅ Transfert effectué avec avertissements: #{settlement.errors.join(', ').truncate(200)}"
           else
             flash[:success] = "✅ Transfert de #{total}€ effectué! Les fonds ont été envoyés au porteur #{@project.user.name}."
           end
         else
-          error_msg = settlement.errors.any? ? settlement.errors.join(', ') : "Une erreur inconnue s'est produite"
+          error_msg = settlement.errors.any? ? settlement.errors.join(', ').truncate(200) : "Une erreur inconnue s'est produite"
           flash[:alert] = "Erreur: #{error_msg}"
         end
       rescue => e
-        flash[:alert] = "Erreur technique: #{e.message}"
+        flash[:alert] = "Erreur technique: #{e.message.truncate(200)}"
         Rails.logger.error "Stripe Transfer Error: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
       end
       
@@ -258,16 +263,16 @@ module Neighborly::Admin
         if settlement.process_refunds!(contribution_ids)
           # Afficher avertissement si certains remboursements ont échoué
           if settlement.errors.any?
-            flash[:success] = "✅ Remboursements effectués avec avertissements: #{settlement.errors.join(', ')}"
+            flash[:success] = "✅ Remboursements effectués avec avertissements: #{settlement.errors.join(', ').truncate(200)}"
           else
             flash[:success] = "✅ #{contributions.count} contribution(s) remboursée(s)! Les contributeurs recevront leur argent (moins frais) sous 5-10 jours."
           end
         else
-          error_msg = settlement.errors.any? ? settlement.errors.join(', ') : "Une erreur inconnue s'est produite"
+          error_msg = settlement.errors.any? ? settlement.errors.join(', ').truncate(200) : "Une erreur inconnue s'est produite"
           flash[:alert] = "Erreur: #{error_msg}"
         end
       rescue => e
-        flash[:alert] = "Erreur technique: #{e.message}"
+        flash[:alert] = "Erreur technique: #{e.message.truncate(200)}"
         Rails.logger.error "Stripe Refund Error: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
       end
       

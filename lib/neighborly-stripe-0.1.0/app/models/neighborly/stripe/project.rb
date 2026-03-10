@@ -94,7 +94,7 @@ module Neighborly::Stripe::Project
   end
   
   def platform_fee_amount(contribution_amount)
-    fee_percentage = ENV.fetch('PLATFORM_FEE', '5.0').to_f / 100
+    fee_percentage = ENV.fetch('PLATFORM_FEE', '5.0').tr(',', '.').to_f / 100
     (contribution_amount * fee_percentage).round
   end
 end

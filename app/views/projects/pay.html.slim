@@ -5,11 +5,7 @@
   = render 'projects/shortheader'
 
   .row.padding-20
-    .col-md-8.col-md-offset-2
-
-      h2.text-center
-        i.fa.fa-money
-        |  Retrait de vos fonds
+    .col-md-10.col-md-offset-1
 
       /= Affichage explicite des messages flash
       - if flash[:success].present?
@@ -25,112 +21,190 @@
           i.fa.fa-info-circle
           |  #{flash[:notice]}
 
-      hr
-
-      /= @stripe_onboarding_complete est pré-calculé dans ProjectsController#pay (pas d'appel API ici)
+      /= Données pré-calculées
       - stripe_ready = @stripe_onboarding_complete
       - already_paid  = @project.stripe_settlement_type == 'transferred' || @project.state == 'paid'
       - payout_pending = @project.state == 'request_funds' && !already_paid
-      - total_collected = @project.contributions.where(payment_method: 'Stripe', state: 'confirmed').sum(:value)
-      - fee_pct = ENV.fetch('PLATFORM_FEE', '5.0').to_f
+      - stripe_contribs = @project.contributions.where(payment_method: 'Stripe', state: 'confirmed')
+      - total_collected = stripe_contribs.sum(:value)
+      - contribs_count = stripe_contribs.count
+      - fee_pct = ENV.fetch('PLATFORM_FEE', '5.0').tr(',', '.').to_f
       - platform_fee_amount = (total_collected * fee_pct / 100).round(2)
       - net_to_receive = (total_collected - platform_fee_amount).round(2)
+      /= Frais Stripe (info interne - inclus dans la commission, PAS soustrait en plus)
+      - stripe_fees_estimate = (contribs_count * 0.25 + total_collected * 0.029).round(2)
+      - current_step = already_paid ? 4 : (payout_pending ? 3 : (stripe_ready ? 2 : 1))
 
-      / --- Résumé financier ---
-      .panel.callout.radius.margin-20
-        h4
+      / ===== TRACKER D'ÉTAPES VISUEL =====
+      .panel.radius[style="background:#f8f9fa;border:1px solid #e9ecef;margin-bottom:25px;padding:20px 15px 10px;"]
+        .row.text-center
+          - steps = [{ icon: 'fa-cog', label: 'Configurer', desc: 'Compte de réception' }, { icon: 'fa-paper-plane', label: 'Demander', desc: 'Virement des fonds' }, { icon: 'fa-clock-o', label: 'Traitement', desc: 'Vérification équipe' }, { icon: 'fa-check-circle', label: 'Viré !', desc: 'Fonds reçus' }]
+          - steps.each_with_index do |step, i|
+            - step_num = i + 1
+            - is_done = step_num < current_step
+            - is_current = step_num == current_step
+            - color = is_done ? '#27ae60' : (is_current ? '#2980b9' : '#bdc3c7')
+            .col-md-3.col-xs-6[style="margin-bottom:10px;"]
+              .text-center
+                span[style="display:inline-block;width:40px;height:40px;line-height:40px;border-radius:50%;background:#{color};color:#fff;font-size:18px;"]
+                  - if is_done
+                    i.fa.fa-check
+                  - else
+                    i.fa[class=step[:icon]]
+                p[style="margin:5px 0 0;font-weight:#{is_current ? 'bold' : 'normal'};color:#{color};"]
+                  = step[:label]
+                p.small[style="color:#95a5a6;margin:0;"] = step[:desc]
+
+      / ===== RÉSUMÉ FINANCIER DÉTAILLÉ =====
+      .panel.callout.radius[style="margin-bottom:25px;border-left:4px solid #2980b9;"]
+        h4[style="margin-bottom:15px;"]
           i.fa.fa-bar-chart
-          |  Résumé de votre campagne
-        .row
-          .col-md-6
-            p
-              strong | Montant brut collecté :
-              |  #{number_to_currency(total_collected, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')}
-          .col-md-6
-            p
-              strong | Commission Fiatope (#{fee_pct.to_i}%) :
-              |  - #{number_to_currency(platform_fee_amount, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')}
-        .row
-          .col-md-12
-            p.lead
-              strong | Vous recevrez :&nbsp;
-              span[style="color:#27ae60;font-size:1.4em;"]
-                strong = number_to_currency(net_to_receive, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')
-        p.small[style="color:#7f8c8d;"]
-          i.fa.fa-info-circle
-          |  La commission de #{fee_pct.to_i}% couvre les frais de traitement bancaire et les frais de service Fiatope. Les fonds seront versés directement sur votre compte bancaire.
-
-      / --- Statut Stripe Connect ---
-      - if already_paid
-        /= Projet payé : fonds virés et arrivés sur le compte bancaire
-        .alert-box.success.radius
-          i.fa.fa-check-circle
-          strong |  Fonds virés avec succès !
-          p | Vos fonds ont été transférés et sont en route vers votre compte bancaire (2-7 jours ouvrés).
-          - if @project.stripe_settled_at.present?
-            p.small | Date du virement : #{l(@project.stripe_settled_at, format: :long)}
-          p.small
+          |  Résumé financier de votre campagne
+        - if total_collected > 0
+          table[style="width:100%;border-collapse:collapse;"]
+            tr[style="border-bottom:1px solid #ecf0f1;"]
+              td[style="padding:8px 0;"] Montant brut collecté (#{contribs_count} contribution#{'s' if contribs_count > 1})
+              td.text-right[style="padding:8px 0;font-weight:bold;"] #{number_to_currency(total_collected, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')}
+            tr[style="border-bottom:1px solid #ecf0f1;color:#e67e22;"]
+              td[style="padding:8px 0;"]
+                | Commission Fiatope
+                small[style="color:#95a5a6;"]  (#{fee_pct}% - inclut frais bancaires)
+              td.text-right[style="padding:8px 0;"] - #{number_to_currency(platform_fee_amount, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')}
+            tr[style="border-top:2px solid #2ecc71;"]
+              td[style="padding:12px 0;font-weight:bold;font-size:1.1em;"] Montant NET que vous recevrez
+              td.text-right[style="padding:12px 0;font-weight:bold;font-size:1.3em;color:#27ae60;"] #{number_to_currency(net_to_receive, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')}
+          p.small[style="color:#95a5a6;margin-top:10px;"]
             i.fa.fa-info-circle
-            |  Vous recevrez un email de confirmation lorsque les fonds arriveront sur votre compte bancaire.
+            |  La commission de #{fee_pct}% couvre l'ensemble des frais : traitement bancaire sécurisé des paiements par carte et frais de service Fiatope.
+        - else
+          p.text-center[style="color:#95a5a6;padding:20px;"]
+            i.fa.fa-inbox[style="font-size:2em;display:block;margin-bottom:10px;"]
+            | Aucune contribution confirmée pour le moment.
+
+      / ===== ZONE D'ACTION (selon l'étape) =====
+      - if already_paid
+        .panel.radius[style="background:#d5f5e3;border:2px solid #27ae60;padding:20px;margin-bottom:25px;"]
+          h4[style="color:#27ae60;"]
+            i.fa.fa-check-circle
+            |  Fonds virés avec succès !
+          p | Vos fonds ont été transférés et sont en route vers votre compte bancaire.
+          - if @project.stripe_settled_at.present?
+            p
+              i.fa.fa-calendar
+              strong |  Date du virement : 
+              = l(@project.stripe_settled_at, format: :long)
+          p.small
+            i.fa.fa-clock-o
+            |  Délai bancaire habituel : 2-7 jours ouvrés. Vous recevrez un email de confirmation.
 
       - elsif payout_pending
-        /= Demande de virement en cours de traitement par l'admin
-        .alert-box[style="background:#f39c12;color:#fff;border-radius:5px;padding:15px;"]
-          i.fa.fa-clock-o
-          strong |  Demande de virement en cours de traitement
-          p | Votre demande de virement de #{number_to_currency(net_to_receive, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')} a été reçue par notre équipe.
-          p | Notre équipe va vérifier et effectuer le virement directement sur votre compte bancaire. Vous recevrez un email de confirmation.
+        .panel.radius[style="background:#fef9e7;border:2px solid #f39c12;padding:20px;margin-bottom:25px;"]
+          h4[style="color:#f39c12;"]
+            i.fa.fa-clock-o
+            |  Demande en cours de traitement
+          p
+            | Votre demande de virement de 
+            strong #{number_to_currency(net_to_receive, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')}
+            |  est entre les mains de notre équipe.
+          p | Nous vérifions votre dossier et procédons au virement. Vous recevrez un email de confirmation.
           p.small
             i.fa.fa-shield
-            |  Le virement arrivera sur votre compte bancaire sous 2-7 jours ouvrés après validation.
+            |  Sécurité : les fonds sont traités via un système certifié PCI DSS, conforme aux normes bancaires européennes.
 
       - elsif !stripe_ready
-        / --- Configuration espace de virement requise ---
-        .alert-box.warning.radius
-          i.fa.fa-exclamation-triangle
-          strong |  Configuration requise
-          p | Pour recevoir vos fonds directement sur votre compte bancaire, vous devez d'abord configurer votre espace de virement sécurisé. C'est gratuit et prend environ 5 minutes.
-
-        .panel.radius.margin-20
-          h4
-            i.fa.fa-info-circle
-            |  Comment ça fonctionne ?
-          ol
-            li | Cliquez sur "Configurer mon espace de virement" ci-dessous
-            li | Renseignez vos informations personnelles et bancaires (IBAN, pièce d'identité)
-            li | Revenez sur cette page et cliquez "Demander mon virement"
-            li | Notre équipe traite votre demande et vire les fonds directement sur votre compte bancaire
-
-        .text-center
-          = form_tag neighborly_stripe.connect_create_path, method: :post do
-            = hidden_field_tag :return_to, pay_project_path(@project)
-            button.btn.btn-lg.btn-warning[type="submit"]
-              i.fa.fa-lock
-              |  Configurer mon espace de virement
+        .panel.radius[style="background:#fdf2e9;border:2px solid #e67e22;padding:20px;margin-bottom:25px;"]
+          h4[style="color:#e67e22;"]
+            i.fa.fa-exclamation-triangle
+            |  Configurez votre espace de virement
+          p | Pour recevoir vos fonds sur votre compte bancaire, configurez d'abord votre espace sécurisé. C'est gratuit et prend environ 5 minutes.
+          .panel.radius[style="background:#fff;margin-top:15px;padding:15px;"]
+            h5
+              i.fa.fa-list-ol
+              |  Étapes simples :
+            ol[style="margin-bottom:0;"]
+              li | Cliquez sur le bouton ci-dessous
+              li | Renseignez vos informations (identité + IBAN)
+              li | Revenez ici pour demander votre virement
+              li | Recevez vos fonds sous 2-7 jours ouvrés
+          .text-center[style="margin-top:20px;"]
+            = form_tag neighborly_stripe.connect_create_path, method: :post do
+              = hidden_field_tag :return_to, pay_project_path(@project)
+              button.btn.btn-lg.btn-warning[type="submit" style="padding:12px 40px;font-size:1.1em;"]
+                i.fa.fa-lock
+                |  Configurer mon espace de virement
 
       - else
-        / --- Espace de virement configuré, prêt à demander le virement ---
-        .alert-box.success.radius
-          i.fa.fa-check-circle
-          strong |  Espace de virement configuré ✓
-          p | Votre espace de virement est vérifié. Cliquez ci-dessous pour demander votre virement. Notre équipe le traitera et l'argent arrivera directement sur votre compte bancaire.
-
         - if total_collected <= 0
-          .alert-box.secondary.radius
-            i.fa.fa-info-circle
-            |  Aucune contribution confirmée pour le moment. Les fonds apparaîtront ici dès que vos contributeurs auront payé.
+          .panel.radius[style="background:#eaf2f8;border:2px solid #3498db;padding:20px;margin-bottom:25px;"]
+            p.text-center[style="color:#7f8c8d;"]
+              i.fa.fa-inbox[style="font-size:2em;display:block;margin-bottom:10px;"]
+              | Votre espace est configuré ! Les fonds apparaîtront ici dès que vos contributeurs auront payé.
         - else
-          .text-center.margin-20
-            = form_tag request_payout_project_path(@project), method: :post do
-              button.btn.btn-lg.btn-success[type="submit" data-confirm="Confirmer la demande de virement de #{number_to_currency(net_to_receive, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')} vers votre compte bancaire ?"]
-                i.fa.fa-paper-plane
-                |  Demander mon virement de #{number_to_currency(net_to_receive, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')}
+          .panel.radius[style="background:#eaf2f8;border:2px solid #27ae60;padding:20px;margin-bottom:25px;"]
+            .text-center
+              p[style="color:#27ae60;font-size:1.1em;"]
+                i.fa.fa-check-circle
+                strong |  Tout est prêt !
+                |  Votre espace est vérifié et vos contributions sont confirmées.
+              = form_tag request_payout_project_path(@project), method: :post, style: 'margin-top:15px;' do
+                button.btn.btn-lg.btn-success[type="submit" style="padding:14px 50px;font-size:1.2em;" data-confirm="Confirmer la demande de virement de #{number_to_currency(net_to_receive, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')} ?"]
+                  i.fa.fa-paper-plane
+                  |  Demander mon virement de #{number_to_currency(net_to_receive, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')}
+              p.small[style="color:#95a5a6;margin-top:12px;"]
+                i.fa.fa-shield
+                |  Paiement sécurisé. Fonds versés sous 2-7 jours ouvrés.
 
-            p.small.text-center.margin-20
-              i.fa.fa-shield
-              |  Votre demande sera traitée par notre équipe. Les fonds arriveront sur votre compte bancaire sous 2-7 jours ouvrés.
+      / ===== DÉTAIL DES CONTRIBUTIONS =====
+      - if contribs_count > 0
+        .panel.radius[style="margin-bottom:25px;"]
+          h4[style="margin-bottom:15px;"]
+            i.fa.fa-users
+            |  Vos #{contribs_count} contributeur#{'s' if contribs_count > 1}
+          table.table.table-striped[style="margin-bottom:0;"]
+            thead
+              tr[style="background:#f8f9fa;"]
+                th #
+                th Contributeur
+                th.text-right Montant
+                th.text-right Commission
+                th.text-right[style="color:#27ae60;"] Net
+                th Date
+            tbody
+              - stripe_contribs.includes(:user).order(confirmed_at: :desc).each_with_index do |c, i|
+                - c_fee = (c.value * fee_pct / 100).round(2)
+                - c_net = (c.value - c_fee).round(2)
+                tr
+                  td = i + 1
+                  td
+                    = c.user&.name || 'Anonyme'
+                  td.text-right = number_to_currency(c.value, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')
+                  td.text-right[style="color:#e67e22;"] - #{number_to_currency(c_fee, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')}
+                  td.text-right[style="color:#27ae60;font-weight:bold;"] #{number_to_currency(c_net, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')}
+                  td
+                    small = (c.confirmed_at || c.created_at)&.strftime('%d/%m/%Y %H:%M')
 
-      hr
+      / ===== SECTION FAQ =====
+      .panel.radius[style="background:#f8f9fa;border:1px solid #e9ecef;margin-bottom:25px;padding:20px;"]
+        h4
+          i.fa.fa-question-circle
+          |  Questions fréquentes
+        .row
+          .col-md-6
+            p
+              strong | Quand vais-je recevoir mes fonds ?
+            p.small | Après votre demande, notre équipe traite le virement sous 24-48h. Les fonds arrivent sur votre compte bancaire en 2-7 jours ouvrés supplémentaires.
+            p
+              strong | Que couvrent les frais ?
+            p.small | La commission de #{fee_pct}% couvre le traitement sécurisé des cartes bancaires et les frais de service Fiatope (support, hébergement, maintenance).
+          .col-md-6
+            p
+              strong | Mes fonds sont-ils en sécurité ?
+            p.small | Oui. Les paiements sont sécurisés par un prestataire certifié PCI DSS niveau 1 (le plus haut niveau de sécurité bancaire). Vos fonds transitent via des comptes sécurisés.
+            p
+              strong | Puis-je rembourser un contributeur ?
+            p.small | Si nécessaire, contactez notre équipe. Les remboursements sont possibles avant le transfert des fonds.
 
       .text-center
-        = link_to "Retour au projet", project_path(@project), class: "btn btn-default"
+        = link_to project_path(@project), class: "btn btn-default" do
+          i.fa.fa-arrow-left
+          |  Retour au projet

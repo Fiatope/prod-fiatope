@@ -1,6 +1,6 @@
 - contribution = @notification.contribution
 - project = contribution&.project
-- fee_pct = ENV.fetch('PLATFORM_FEE', '5.0').to_f / 100.0
+- fee_pct = ENV.fetch('PLATFORM_FEE', '5.0').tr(',', '.').to_f / 100.0
 - gross = contribution&.value.to_f
 - stripe_fee = (gross * 0.014 + 0.25).round(2)  # EU cards estimate
 - platform_fee = (gross * fee_pct).round(2)

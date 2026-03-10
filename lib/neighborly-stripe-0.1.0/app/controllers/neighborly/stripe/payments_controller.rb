@@ -16,7 +16,7 @@ module Neighborly
         @amount = @contribution&.value || params[:amount].to_f
         
         unless @project.use_stripe?
-          flash[:alert] = I18n.t('stripe.project_not_ready', default: 'Ce projet ne peut pas encore accepter les paiements Stripe')
+          flash[:alert] = I18n.t('stripe.project_not_ready', default: 'Ce projet ne peut pas encore accepter les paiements en ligne')
           redirect_to "/projects/#{@project.permalink}" and return
         end
         
@@ -147,7 +147,7 @@ module Neighborly
         end
         
         unless @project.use_stripe?
-          flash[:alert] = I18n.t('stripe.project_not_ready', default: 'Ce projet ne peut pas encore accepter les paiements Stripe')
+          flash[:alert] = I18n.t('stripe.project_not_ready', default: 'Ce projet ne peut pas encore accepter les paiements en ligne')
           redirect_to "/projects/#{@project.permalink}" and return
         end
         
@@ -305,7 +305,10 @@ module Neighborly
                     payment_id: session.payment_intent,
                     payment_service_fee: calculate_stripe_fee(amount),
                     stripe_charge_id: charge_id,
-                    confirmed_at: Time.current
+                    confirmed_at: Time.current,
+                    # CROWDFUNDING: Pas de transfert automatique
+                    stripe_transfer_id: nil,
+                    stripe_transferred: false
                   )
                 else
                   # Créer une nouvelle contribution
@@ -317,7 +320,10 @@ module Neighborly
                     payment_id: session.payment_intent,
                     payment_service_fee: calculate_stripe_fee(amount),
                     stripe_charge_id: charge_id,
-                    confirmed_at: Time.current
+                    confirmed_at: Time.current,
+                    # CROWDFUNDING: Pas de transfert automatique
+                    stripe_transfer_id: nil,
+                    stripe_transferred: false
                   )
                   @contribution.save!
                 end

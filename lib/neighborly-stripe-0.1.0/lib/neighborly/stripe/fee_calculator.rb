@@ -5,7 +5,7 @@ module Neighborly
 
       STRIPE_PERCENTAGE = 0.014  # 1.4%
       STRIPE_FIXED = 0.25        # 0.25€
-      PLATFORM_PERCENTAGE = ENV.fetch('PLATFORM_FEE', '5.0').to_f / 100
+      PLATFORM_PERCENTAGE = ENV.fetch('PLATFORM_FEE', '5.0').tr(',', '.').to_f / 100
 
       def initialize(value)
         @value = value.to_f

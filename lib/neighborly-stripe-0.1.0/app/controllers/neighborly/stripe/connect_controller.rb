@@ -7,6 +7,9 @@ module Neighborly
       rescue_from ActionDispatch::Cookies::CookieOverflow, with: :handle_cookie_overflow
       
       def create_account
+        # Mémoriser l'URL de retour (page /pay du projet) AVANT redirection Stripe
+        session[:stripe_return_to] = params[:return_to].presence
+        
         if current_user.stripe_connect_account_id.blank?
           current_user.create_stripe_connect_account!
         end
@@ -29,14 +32,28 @@ module Neighborly
       end
       
       def return_url
-        if current_user.stripe_onboarding_complete?
-          # CRITIQUE: Synchroniser tous les projets du porteur
-          sync_user_projects_on_return
-          
-          flash[:notice] = I18n.t('stripe.onboarding.success', default: 'Votre compte Stripe est configuré avec succès ! Vos projets ont été mis à jour.')
-          redirect_to user_settings_path
+        # Re-vérifier le statut auprès de Stripe (le flag DB peut être en retard)
+        if current_user.stripe_connect_account_id.present?
+          begin
+            account = ::Stripe::Account.retrieve(current_user.stripe_connect_account_id)
+            if account.charges_enabled && account.payouts_enabled
+              current_user.update(stripe_onboarding_complete: true)
+              sync_user_projects_on_return
+              flash[:notice] = I18n.t('stripe.onboarding.success', default: 'Votre compte de paiement est configuré avec succès ! Vos projets ont été mis à jour.')
+            else
+              flash[:notice] = I18n.t('stripe.onboarding.incomplete', default: 'Informations enregistrées. Veuillez compléter votre profil pour activer les paiements.')
+            end
+          rescue ::Stripe::StripeError => e
+            Rails.logger.error "[Connect] return error: #{e.message}"
+            flash[:alert] = "Erreur lors de la vérification de votre compte."
+          end
+        end
+        
+        # Rediriger vers la page d'origine (ex: /pay du projet) si mémorisée
+        return_to = session.delete(:stripe_return_to)
+        if return_to.present? && return_to.start_with?('/')
+          redirect_to return_to
         else
-          flash[:alert] = I18n.t('stripe.onboarding.incomplete', default: 'Veuillez compléter votre profil Stripe')
           redirect_to user_settings_path
         end
       end
@@ -47,7 +64,7 @@ module Neighborly
         if dashboard_url
           redirect_to dashboard_url, allow_other_host: true
         else
-          flash[:alert] = I18n.t('stripe.dashboard.unavailable', default: 'Dashboard Stripe non disponible')
+          flash[:alert] = I18n.t('stripe.dashboard.unavailable', default: 'Espace de paiement temporairement indisponible.')
           redirect_to request.referer || "/"
         end
       end
@@ -94,7 +111,7 @@ module Neighborly
           if account.charges_enabled && account.payouts_enabled
             flash[:notice] = "Compte de paiement li\u00e9 avec succ\u00e8s !"
           else
-            flash[:notice] = "Compte lié. Complétez l'onboarding pour activer les paiements."
+            flash[:notice] = "Compte lié. Veuillez compléter la configuration pour activer les paiements."
             redirect_url = current_user.stripe_account_onboarding_url(
               refresh_url: "#{request.base_url}/stripe/connect/refresh",
               return_url: "#{request.base_url}/stripe/connect/return"
@@ -103,9 +120,9 @@ module Neighborly
           end
           
         rescue ::Stripe::InvalidRequestError => e
-          flash[:alert] = "Compte Stripe non trouvé. Vérifiez l'ID."
+          flash[:alert] = "Compte non trouvé. Vérifiez l'identifiant."
         rescue ::Stripe::StripeError => e
-          flash[:alert] = "Erreur Stripe: #{e.message}"
+          flash[:alert] = "Erreur de connexion: #{e.message}"
         rescue => e
           Rails.logger.error "Link existing error: #{e.message}"
           flash[:alert] = "Erreur: #{e.message}"

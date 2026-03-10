@@ -122,7 +122,8 @@ class ProjectsController < ApplicationController
   def pay
     authorize resource
     @project = resource
-    @stripe_onboarding_complete = current_user.stripe_onboarding_complete?
+    @stripe_onboarding_complete = current_user.respond_to?(:stripe_onboarding_complete?) &&
+                                   current_user.stripe_onboarding_complete?
   end
 
   def request_payout
@@ -134,7 +135,7 @@ class ProjectsController < ApplicationController
     end
 
     unless @project.use_stripe?
-      flash[:alert] = "Stripe n'est pas activé pour ce projet."
+      flash[:alert] = "Les paiements en ligne ne sont pas encore activés pour ce projet."
       return redirect_to pay_project_path(@project)
     end
 
@@ -142,7 +143,7 @@ class ProjectsController < ApplicationController
     # (l'admin en aura besoin pour effectuer le transfert)
     unless current_user.stripe_onboarding_complete?
       flash[:alert] = I18n.t('stripe.payout.onboarding_required',
-        default: 'Vous devez d\'abord configurer votre compte Stripe Connect pour recevoir vos fonds.')
+        default: 'Vous devez d\'abord configurer votre espace de virement pour recevoir vos fonds.')
       return redirect_to pay_project_path(@project)
     end
 
@@ -163,7 +164,7 @@ class ProjectsController < ApplicationController
                             .where(payment_method: 'Stripe', state: 'confirmed')
                             .where(stripe_refunded: [false, nil], stripe_transferred: [false, nil])
     if contributions.empty?
-      flash[:alert] = "Aucune contribution Stripe confirmée à virer pour ce projet."
+      flash[:alert] = "Aucune contribution confirmée à virer pour ce projet."
       return redirect_to pay_project_path(@project)
     end
 
@@ -176,7 +177,7 @@ class ProjectsController < ApplicationController
         @project.push_to_request_funds!
 
         total = contributions.sum(:value)
-        fee_pct = ENV.fetch('PLATFORM_FEE', '5.0').to_f / 100
+        fee_pct = ENV.fetch('PLATFORM_FEE', '5.0').tr(',', '.').to_f / 100
         net = (total * (1 - fee_pct)).round(2)
 
         # Notifier l'admin par email
@@ -186,7 +187,7 @@ class ProjectsController < ApplicationController
           Rails.logger.warn "request_payout: notification admin échouée - #{notify_err.message}"
         end
 
-        flash[:success] = "✅ Demande de virement de #{net}€ envoyée ! Notre équipe va vérifier et virer les fonds directement sur votre compte bancaire Stripe. Vous recevrez une confirmation par email."
+        flash[:success] = "✅ Demande de virement de #{net}€ envoyée ! Notre équipe va vérifier et virer les fonds directement sur votre compte bancaire. Vous recevrez une confirmation par email."
       else
         flash[:alert] = "Impossible de soumettre la demande depuis l'état actuel du projet (#{@project.state})."
       end

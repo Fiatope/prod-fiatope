@@ -105,6 +105,7 @@ module Neighborly
       def transfer_single_contribution(contribution)
         # Récupérer le charge_id (nécessaire pour source_transaction)
         charge_id = contribution.stripe_charge_id
+        charge_object = nil
         
         # Si pas de charge_id stocké, le récupérer depuis le PaymentIntent
         if charge_id.blank? && contribution.payment_id.present?
@@ -118,37 +119,88 @@ module Neighborly
           end
         end
         
+        # Récupérer la devise RÉELLE du charge depuis Stripe
+        # IMPORTANT: Quand on utilise source_transaction, la devise du transfert
+        # DOIT correspondre à la devise du balance_transaction du charge.
+        # Si le compte plateforme règle en RON, le balance_transaction est en RON
+        # même si le charge a été créé en EUR.
+        transfer_currency = project.currency&.downcase || 'eur'
+        balance_txn = nil
+        if charge_id.present?
+          begin
+            charge_object = ::Stripe::Charge.retrieve(charge_id)
+            if charge_object.balance_transaction.present?
+              balance_txn = ::Stripe::BalanceTransaction.retrieve(charge_object.balance_transaction)
+              transfer_currency = balance_txn.currency
+              Rails.logger.info "  Contribution #{contribution.id}: devise balance_transaction = #{transfer_currency} (charge devise = #{charge_object.currency})"
+            end
+          rescue ::Stripe::StripeError => e
+            Rails.logger.warn "  Contribution #{contribution.id}: impossible de récupérer la devise du charge, utilisation de #{transfer_currency}: #{e.message}"
+          end
+        end
+        
         # PLATFORM_FEE = pourcentage TOTAL annoncé au porteur (inclut frais Stripe)
         # Porteur reçoit: montant * (1 - PLATFORM_FEE/100)
-        fee_percentage    = ENV.fetch('PLATFORM_FEE', '5.0').to_f / 100
-        platform_fee      = (contribution.value * fee_percentage).round(2)
-        amount_to_owner   = contribution.value - platform_fee
-        amount_to_transfer = (amount_to_owner * 100).to_i # en centimes
+        fee_percentage = ENV.fetch('PLATFORM_FEE', '5.0').tr(',', '.').to_f / 100
         
-        # Pour les logs: calculer ce que Stripe prend réellement
-        stripe_fee = calculate_stripe_fee_for_contribution(contribution)
-        platform_net_revenue = platform_fee - stripe_fee
-        
-        Rails.logger.info "  Contribution #{contribution.id}: brut=#{contribution.value}€, commission=#{platform_fee}€ (#{(fee_percentage*100)}%), stripe=#{stripe_fee}€, net_plateforme=#{platform_net_revenue}€, porteur=#{amount_to_owner}€"
+        # Calcul du montant à transférer selon la devise
+        # CRITIQUE: Si la balance_transaction est dans une devise différente (ex: RON),
+        # le montant du transfert DOIT être en centimes de CETTE devise, pas en EUR.
+        if balance_txn && balance_txn.currency != (charge_object&.currency || project.currency&.downcase || 'eur')
+          # ===== CAS MULTI-DEVISE (ex: charge EUR → balance RON) =====
+          bt_gross_cents = balance_txn.amount       # montant brut en centimes devise plateforme (RON)
+          bt_fee_cents   = balance_txn.fee          # frais Stripe en centimes devise plateforme
+          bt_net_cents   = balance_txn.net           # net après frais Stripe
+          exchange_rate  = balance_txn.exchange_rate # taux EUR → RON
+          
+          # Commission plateforme en centimes devise plateforme
+          platform_fee_cents = (bt_gross_cents * fee_percentage).round
+          amount_to_transfer = bt_gross_cents - platform_fee_cents
+          
+          # Sécurité: ne pas dépasser le net disponible (brut - frais Stripe)
+          if amount_to_transfer > bt_net_cents
+            Rails.logger.warn "  Contribution #{contribution.id}: montant transfert (#{amount_to_transfer}) > net dispo (#{bt_net_cents}), cap à net"
+            amount_to_transfer = bt_net_cents
+          end
+          
+          # Logs en EUR pour lisibilité
+          platform_fee_eur = exchange_rate && exchange_rate > 0 ? (platform_fee_cents / 100.0 / exchange_rate).round(2) : (contribution.value * fee_percentage).round(2)
+          amount_to_owner_eur = exchange_rate && exchange_rate > 0 ? (amount_to_transfer / 100.0 / exchange_rate).round(2) : (contribution.value - platform_fee_eur).round(2)
+          stripe_fee_eur = exchange_rate && exchange_rate > 0 ? (bt_fee_cents / 100.0 / exchange_rate).round(2) : estimate_stripe_fee(contribution.value)
+          platform_net_eur = platform_fee_eur - stripe_fee_eur
+          
+          Rails.logger.info "  Contribution #{contribution.id} [MULTI-DEVISE]: charge=#{charge_object&.currency}, balance=#{transfer_currency}, taux=#{exchange_rate}"
+          Rails.logger.info "    BT: brut=#{bt_gross_cents}c, frais=#{bt_fee_cents}c, net=#{bt_net_cents}c (#{transfer_currency})"
+          Rails.logger.info "    Commission: #{platform_fee_cents}c #{transfer_currency} (~#{platform_fee_eur}€), transfert: #{amount_to_transfer}c #{transfer_currency} (~#{amount_to_owner_eur}€)"
+          Rails.logger.info "    Equiv EUR: brut=#{contribution.value}€, commission=#{platform_fee_eur}€ (#{(fee_percentage*100)}%), stripe=#{stripe_fee_eur}€, net_plateforme=#{platform_net_eur}€, porteur=#{amount_to_owner_eur}€"
+        else
+          # ===== CAS MÊME DEVISE (ex: charge EUR → balance EUR) =====
+          platform_fee      = (contribution.value * fee_percentage).round(2)
+          amount_to_owner   = contribution.value - platform_fee
+          amount_to_transfer = (amount_to_owner * 100).to_i # en centimes
+          
+          stripe_fee = balance_txn ? (balance_txn.fee / 100.0) : estimate_stripe_fee(contribution.value)
+          platform_net_revenue = platform_fee - stripe_fee
+          
+          Rails.logger.info "  Contribution #{contribution.id}: brut=#{contribution.value}€, commission=#{platform_fee}€ (#{(fee_percentage*100)}%), stripe=#{stripe_fee}€, net_plateforme=#{platform_net_revenue}€, porteur=#{amount_to_owner}€, devise=#{transfer_currency}"
+        end
         
         return { success: false, error: "Montant trop faible" } if amount_to_transfer <= 0
         
         begin
           transfer_params = {
             amount: amount_to_transfer,
-            currency: project.currency&.downcase || 'eur',
+            currency: transfer_currency,
             destination: project.stripe_account_id,
-            transfer_group: "project_#{project.id}",  # Groupe toutes les transactions de la campagne
+            transfer_group: "project_#{project.id}",
             description: "Virement campagne #{project.name} - contribution ##{contribution.id}",
             metadata: {
               contribution_id: contribution.id,
               project_id: project.id,
               gross_amount: contribution.value,
               platform_fee_pct: (fee_percentage * 100).to_s + '%',
-              platform_fee_amount: platform_fee,
-              stripe_fee_estimated: stripe_fee,
-              platform_net_revenue: platform_net_revenue,
-              net_to_owner: amount_to_owner
+              net_to_owner: amount_to_transfer / 100.0,
+              transfer_currency: transfer_currency
             }
           }
           
@@ -365,18 +417,20 @@ module Neighborly
           return add_error("Le porteur n'a pas complété son profil Stripe")
         end
         
-        # Vérifier si déjà transféré (plusieurs façons de le détecter pour éviter les doubles transferts)
-        if project.stripe_settlement_type == 'transferred'
-          return add_error("Le projet a déjà été réglé (transfert effectué)")
-        end
-        
-        if project.stripe_transfer_id.present?
-          return add_error("Un transfert a déjà été effectué (ID: #{project.stripe_transfer_id})")
-        end
-        
+        # Vérifier s'il reste des contributions NON transférées
+        # IMPORTANT: On ne bloque PAS sur stripe_settlement_type == 'transferred'
+        # car de nouvelles contributions peuvent arriver après un premier transfert
         contributions = stripe_contributions.where(state: 'confirmed').where(stripe_refunded: [false, nil]).where(stripe_transferred: [false, nil])
         if contributions.empty?
-          return add_error("Aucune contribution Stripe confirmée à transférer (toutes déjà traitées)")
+          already_transferred = stripe_contributions.where(stripe_transferred: true).count
+          already_refunded = stripe_contributions.where(stripe_refunded: true).count
+          if already_transferred > 0
+            return add_error("Toutes les contributions (#{already_transferred}) ont déjà été transférées au porteur")
+          elsif already_refunded > 0
+            return add_error("Toutes les contributions (#{already_refunded}) ont déjà été remboursées")
+          else
+            return add_error("Aucune contribution Stripe confirmée à transférer")
+          end
         end
         
         true

@@ -1,5 +1,5 @@
 - project = @notification.project
-- fee_pct = ENV.fetch('PLATFORM_FEE', '5.0').to_f / 100.0
+- fee_pct = ENV.fetch('PLATFORM_FEE', '5.0').tr(',', '.').to_f / 100.0
 - gross = project.contributions.where(payment_method: 'Stripe', stripe_transferred: true).sum(:value).to_f
 - net = (gross * (1.0 - fee_pct)).round(2)
 - currency_sym = project.currency || 'EUR'

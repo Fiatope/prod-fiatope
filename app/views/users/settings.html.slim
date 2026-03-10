@@ -26,9 +26,6 @@
                     | Compte actif
                   p style="color: #15803d; margin-bottom: 0; font-size: 0.9rem;"
                     | Votre compte de paiement est configuré et prêt à recevoir des paiements.
-                  p style="color: #6b7280; margin-bottom: 0; font-size: 0.8rem; margin-top: 0.5rem;"
-                    code style="background: #e5e7eb; padding: 2px 6px; border-radius: 4px;"
-                      = @user.stripe_connect_account_id
               
               hr style="margin: 1rem 0; border-color: #d1fae5;"
               
@@ -36,7 +33,7 @@
                 .large-4.columns style="margin-bottom: 0.5rem;"
                   = link_to neighborly_stripe.connect_dashboard_path, class: 'button small radius', style: 'background: #635bff; width: 100%;', target: '_blank' do
                     i.icon-et-external-link
-                    = " Dashboard Stripe"
+                    = " Mon espace de paiement"
                 .large-4.columns style="margin-bottom: 0.5rem;"
                   = button_to neighborly_stripe.sync_account_path, method: :post, class: 'button small secondary radius', style: 'width: 100%;', data: { disable_with: 'Sync...' } do
                     i.icon-et-refresh
@@ -120,7 +117,7 @@
               
               p style="color: #94a3b8; font-size: 0.8rem; margin-top: 0.75rem; margin-bottom: 0;"
                 i.icon-et-help style="margin-right: 0.25rem;"
-                | Trouvez cet ID dans votre dashboard Stripe ou sur l'autre plateforme.
+                | Trouvez cet identifiant dans votre espace de paiement ou auprès de notre support.
         
         javascript:
           document.addEventListener('DOMContentLoaded', function() {
@@ -150,7 +147,7 @@
                 th style="text-align: left; padding: 0.75rem; border-bottom: 2px solid #e2e8f0; color: #475569; font-weight: 600;"
                   | Projet
                 th style="text-align: center; padding: 0.75rem; border-bottom: 2px solid #e2e8f0; color: #475569; font-weight: 600;"
-                  | Stripe
+                  | Paiement
                 th style="text-align: center; padding: 0.75rem; border-bottom: 2px solid #e2e8f0; color: #475569; font-weight: 600;"
                   | Statut
             tbody
