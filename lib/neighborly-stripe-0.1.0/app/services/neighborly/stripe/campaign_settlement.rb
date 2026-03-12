@@ -43,7 +43,7 @@ module Neighborly
         # PLATFORM_FEE est le % TOTAL annoncé au porteur (il inclut les frais Stripe)
         # Porteur reçoit: montant_brut * (1 - PLATFORM_FEE%). Ex: 100€ * (1-4%) = 96€
         # La plateforme garde PLATFORM_FEE% dont une partie couvre les frais Stripe réels
-        fee_pct = ENV.fetch('PLATFORM_FEE', '5.0').to_f / 100
+        fee_pct = ENV.fetch('PLATFORM_FEE', '5.0').tr(',', '.').to_f / 100
         total_collected_gross  = contributions.sum(:value)
         total_platform_fee     = (total_collected_gross * fee_pct).round(2)
         total_to_transfer      = total_collected_gross - total_platform_fee
@@ -323,7 +323,7 @@ module Neighborly
           # La commission plateforme est aussi retenue (comme annoncé dans les CGU)
           gross_amount      = contribution.value
           stripe_fee        = calculate_stripe_fee_for_contribution(contribution)
-          fee_pct           = ENV.fetch('PLATFORM_FEE', '5.0').to_f / 100
+          fee_pct           = ENV.fetch('PLATFORM_FEE', '5.0').tr(',', '.').to_f / 100
           platform_fee      = (gross_amount * fee_pct).round(2)
           
           # Remboursé = brut - frais Stripe réels (non-remboursables) - commission plateforme
@@ -486,7 +486,7 @@ module Neighborly
       def calculate_platform_fee(gross_amount)
         # PLATFORM_FEE est le % TOTAL annoncé au porteur (inclut frais Stripe)
         # Ex: 4% → porteur reçoit 96% du brut, plateforme garde 4% (dont ~2.5% pour Stripe)
-        fee_percentage = ENV.fetch('PLATFORM_FEE', '5.0').to_f / 100
+        fee_percentage = ENV.fetch('PLATFORM_FEE', '5.0').tr(',', '.').to_f / 100
         (gross_amount * fee_percentage).round(2)
       end
       

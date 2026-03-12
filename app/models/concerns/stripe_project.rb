@@ -28,8 +28,10 @@ module StripeProject
   end
 
   def platform_fee_percentage
-    fee = ENV['PLATFORM_FEE_PERCENTAGE']&.to_f
-    fee.present? && fee > 0 ? fee : 0.039
+    # Unifié avec CampaignSettlement et admin views: ENV['PLATFORM_FEE'] = % affiché (ex: 5.0)
+    # tr(',','.') pour gérer le format décimal français dans .env
+    fee = ENV.fetch('PLATFORM_FEE', '5.0').tr(',', '.').to_f / 100.0
+    fee > 0 ? fee : 0.05
   end
 
   def platform_fee_amount(amount_cents)
