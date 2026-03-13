@@ -279,6 +279,58 @@ module Neighborly::Admin
       redirect_back(fallback_location: projects_path)
     end
 
+    # Vérification wallet: réconciliation DB vs Stripe API charge par charge
+    def verify_stripe_wallet
+      @project = Project.find_by_permalink params[:id]
+      
+      unless @project.use_stripe?
+        flash[:alert] = "Stripe n'est pas activé pour ce projet."
+        return redirect_back(fallback_location: projects_path)
+      end
+      
+      stripe_count = @project.stripe_contributions.where(state: 'confirmed').count
+      if stripe_count.zero?
+        flash[:notice] = "Aucune contribution Stripe à vérifier pour ce projet."
+        return redirect_back(fallback_location: projects_path)
+      end
+      
+      begin
+        results = @project.verify_stripe_wallet
+        totals = results[:totals]
+        
+        if totals[:match] && results[:errors].empty?
+          flash[:success] = "✅ Wallet vérifié: #{totals[:verified_count]} contribution(s), " \
+            "total DB #{totals[:db_total]}€ = Stripe #{totals[:stripe_total]}€. Tout est cohérent."
+        else
+          parts = []
+          parts << "✅ #{totals[:verified_count]} OK" if totals[:verified_count] > 0
+          parts << "⚠️ #{totals[:mismatch_count]} écarts" if totals[:mismatch_count] > 0
+          parts << "❌ #{totals[:error_count]} erreurs" if totals[:error_count] > 0
+          parts << "DB: #{totals[:db_total]}€ vs Stripe: #{totals[:stripe_total]}€"
+          parts << "Diff: #{totals[:difference]}€" unless totals[:match]
+          
+          flash_key = totals[:mismatch_count] > 0 || totals[:error_count] > 0 ? :alert : :success
+          flash[flash_key] = "Vérification wallet: #{parts.join(' | ')}"
+        end
+        
+        # Stocker les détails pour le modal (limiter la taille pour le cookie)
+        detail_parts = []
+        results[:mismatches].each do |m|
+          detail_parts << "Contrib ##{m[:contribution_id]}: DB=#{m[:db_amount]}€ Stripe=#{m[:stripe_amount]}€ (#{m[:difference] > 0 ? '+' : ''}#{m[:difference]}€)"
+        end
+        results[:errors].each do |e|
+          detail_parts << "Contrib ##{e[:contribution_id]}: #{e[:error].to_s.truncate(80)}"
+        end
+        flash[:wallet_details] = detail_parts.join("\n") if detail_parts.any?
+        
+      rescue => e
+        flash[:alert] = "Erreur technique: #{e.message.truncate(200)}"
+        Rails.logger.error "Verify Wallet Error: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
+      end
+      
+      redirect_back(fallback_location: projects_path)
+    end
+
     protected
     def collection
       @projects = apply_scopes(end_of_association_chain).order('projects.created_at desc').without_state('deleted').page(params[:page])

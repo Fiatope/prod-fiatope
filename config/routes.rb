@@ -214,6 +214,7 @@ Neighborly::Application.routes.draw do
       get :stripe_onboarding_link, to: 'neighborly/admin/projects#stripe_onboarding_link'
       put :process_stripe_transfer, to: 'neighborly/admin/projects#process_stripe_transfer'
       put :process_stripe_refund, to: 'neighborly/admin/projects#process_stripe_refund'
+      get :verify_stripe_wallet, to: 'neighborly/admin/projects#verify_stripe_wallet'
     end
 
     member do
@@ -320,6 +321,7 @@ Neighborly::Application.routes.draw do
         get 'stripe_onboarding_link', to: "neighborly/admin/projects#stripe_onboarding_link"
         put 'process_stripe_transfer', to: "neighborly/admin/projects#process_stripe_transfer"
         put 'process_stripe_refund', to: "neighborly/admin/projects#process_stripe_refund"
+        get 'verify_stripe_wallet', to: "neighborly/admin/projects#verify_stripe_wallet"
       end
     end
 

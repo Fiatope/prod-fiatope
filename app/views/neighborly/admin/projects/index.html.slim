@@ -26,6 +26,14 @@
           = flash[:notice]
           a.close href="#" onclick="this.parentElement.style.display='none'; return false;" &times;
       
+      - if flash[:wallet_details].present?
+        .alert-box.secondary.flash-message style="margin: 15px 0; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 12px; white-space: pre-line;"
+          i.fa.fa-list style="margin-right: 8px;"
+          strong Détails vérification wallet:
+          br
+          = flash[:wallet_details]
+          a.close href="#" onclick="this.parentElement.style.display='none'; return false;" &times;
+      
       /= Affichage du lien onboarding Stripe si généré
       - if flash[:stripe_onboarding_url].present?
         .alert-box.success.stripe-onboarding-link
@@ -173,7 +181,33 @@
                     - else 
                       span.label= project.state
                   td
-                    = project.mangopay_wallet_handler.try(:wallet_key)
+                    - if project.respond_to?(:stripe_wallet_balance) && project.use_stripe?
+                      - w_balance = project.stripe_wallet_balance
+                      - w_pending = project.stripe_wallet_pending
+                      - w_status = project.stripe_wallet_status
+                      - if w_balance > 0
+                        - case w_status
+                        - when :collecting
+                          span.label.label-primary title="Brut: #{number_to_currency(w_balance, unit: '€', format: '%n %u')} | En attente: #{number_to_currency(w_pending, unit: '€', format: '%n %u')}"
+                            = "💰 #{number_to_currency(w_pending, unit: '€', format: '%n %u')}"
+                        - when :transferred
+                          span.label.label-success title="Brut collecté: #{number_to_currency(w_balance, unit: '€', format: '%n %u')} — Tout transféré"
+                            = "✅ #{number_to_currency(w_balance, unit: '€', format: '%n %u')}"
+                        - when :refunded
+                          span.label.label-warning title="Brut collecté: #{number_to_currency(w_balance, unit: '€', format: '%n %u')} — Tout remboursé"
+                            = "↩️ #{number_to_currency(w_balance, unit: '€', format: '%n %u')}"
+                        - when :partial
+                          - w_transferred = project.stripe_wallet_transferred
+                          - w_refunded = project.stripe_wallet_refunded
+                          span.label.label-info title="Brut: #{number_to_currency(w_balance, unit: '€', format: '%n %u')} | Transféré: #{number_to_currency(w_transferred, unit: '€', format: '%n %u')} | Remboursé: #{number_to_currency(w_refunded, unit: '€', format: '%n %u')}"
+                            = "📊 #{number_to_currency(w_balance, unit: '€', format: '%n %u')}"
+                        - when :mixed
+                          span.label.label-warning title="Brut: #{number_to_currency(w_balance, unit: '€', format: '%n %u')} | En attente: #{number_to_currency(w_pending, unit: '€', format: '%n %u')}"
+                            = "⚡ #{number_to_currency(w_pending, unit: '€', format: '%n %u')}"
+                      - else
+                        span.label.label-default title="Aucune contribution Stripe" —
+                    - else
+                      = project.mangopay_wallet_handler.try(:wallet_key)
                   td
                     - if project.respond_to?(:use_stripe?)
                       - if project.use_stripe?
@@ -329,6 +363,13 @@
                                 = link_to "javascript:openRefundModal('#{j(project.name)}', '#{j(project.user.name)}', #{contributors_count}, '#{sprintf('%.2f', total_brut)}', '#{sprintf('%.2f', stripe_fees_estimate)}', '#{sprintf('%.2f', fiatope_commission)}', '#{platform_fee_pct}', #{contributors_json}, '#{refund_url}')" do
                                   i.icon-et-undo
                                   = " ↩️ Rembourser (#{contributors_count} contrib.)"
+                            
+                            /= VÉRIFICATION WALLET: réconciliation DB vs Stripe
+                            - if project.stripe_wallet_balance > 0
+                              li
+                                = link_to main_app.verify_stripe_wallet_project_path(project), method: :get, data: { confirm: "Vérifier le wallet de #{project.name} via Stripe API ? (peut prendre quelques secondes)" } do
+                                  i.icon-et-search
+                                  = " 🔍 Vérifier Wallet"
                               
         = paginate @projects
 

@@ -95,6 +95,7 @@ module Neighborly
           # L'argent reste sur le compte plateforme jusqu'à validation admin
           # L'admin utilise CampaignSettlement pour transférer manuellement
           session_params[:payment_intent_data] = {
+            transfer_group: "project_#{@project.id}",
             metadata: {
               project_id: @project.id.to_s,
               project_name: @project.name.to_s[0..99],
@@ -226,6 +227,7 @@ module Neighborly
           # L'argent reste sur le compte plateforme jusqu'à validation admin
           # L'admin utilise CampaignSettlement pour transférer manuellement
           create_session_params[:payment_intent_data] = {
+            transfer_group: "project_#{@project.id}",
             metadata: {
               project_id: @project.id.to_s,
               project_name: @project.name.to_s[0..99],
