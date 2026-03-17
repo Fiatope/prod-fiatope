@@ -20,17 +20,16 @@ class ImageUploader < CarrierWave::Uploader::Base
   end
 
   # Ajouter un timestamp au nom de fichier pour invalider le cache S3/CDN
-  # lors d'un re-upload. Sans cela, le navigateur sert l'ancienne image
-  # depuis son cache (Cache-Control: max-age=315576000).
-  # Mémoisation obligatoire: filename est appelé plusieurs fois par upload
-  # (une fois par version), le timestamp doit rester identique.
+  # lors d'un re-upload (CarrierWave 3.x compatible).
+  # - Nouvel upload : original_filename est défini → filename avec timestamp
+  # - Lecture fichier existant : original_filename est nil → super retourne
+  #   le filename stocké en DB (cf. github.com/carrierwaveuploader/carrierwave/issues/2708)
   def filename
-    if original_filename.present?
-      @cached_filename ||= begin
-        ext = File.extname(original_filename)
-        base = File.basename(original_filename, ext).parameterize
-        "#{base}_#{Time.now.to_i}#{ext}"
-      end
+    return super unless original_filename
+    @cached_filename ||= begin
+      ext = File.extname(original_filename)
+      base = File.basename(original_filename, ext).parameterize
+      "#{base}_#{Time.now.to_i}#{ext}"
     end
   end
 
