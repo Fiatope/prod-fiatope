@@ -4,7 +4,13 @@ module Shared
 
     included do
       geocoded_by :location
-      after_validation :geocode
+      after_validation :safe_geocode
+    end
+
+    def safe_geocode
+      geocode
+    rescue StandardError => e
+      Rails.logger.warn "[Geocoding] Failed for #{self.class.name}##{id}: #{e.message}"
     end
 
     def location=(location)

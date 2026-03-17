@@ -79,7 +79,11 @@ class ProjectsController < ApplicationController
 
   def update
     authorize resource
-    respond_with(Project.update(resource.id, permitted_params[:project].merge!(address_state: resource.address_state.capitalize)), location: project_path(@project))
+    updated_project = Project.update(resource.id, permitted_params[:project].merge!(address_state: resource.address_state.capitalize))
+    if updated_project.errors.any?
+      Rails.logger.warn "[ProjectUpdate] FAILED for project ##{resource.id} (#{resource.permalink}): #{updated_project.errors.full_messages.join(', ')}"
+    end
+    respond_with(updated_project, location: project_path(@project))
   end
 
   def change_recommended
