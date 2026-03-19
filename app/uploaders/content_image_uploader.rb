@@ -9,9 +9,13 @@ class ContentImageUploader < ImageUploader
   # To remove transparency from PNG (MiniMagick — replaces old RMagick code)
   def flatten
     manipulate! do |img|
-      img.combine_options do |c|
-        c.background "white"
-        c.alpha "remove"
+      begin
+        img.combine_options do |c|
+          c.background "white"
+          c.alpha "remove"
+        end
+      rescue => e
+        Rails.logger.warn "[ContentImageUploader] flatten failed: #{e.message}"
       end
       img
     end
