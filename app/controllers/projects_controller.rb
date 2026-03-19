@@ -79,9 +79,15 @@ class ProjectsController < ApplicationController
 
   def update
     authorize resource
+    old_hero = resource.read_attribute(:hero_image)
+    old_uploaded = resource.read_attribute(:uploaded_image)
     updated_project = Project.update(resource.id, permitted_params[:project].merge!(address_state: resource.address_state.capitalize))
     if updated_project.errors.any?
       Rails.logger.warn "[ProjectUpdate] FAILED for project ##{resource.id} (#{resource.permalink}): #{updated_project.errors.full_messages.join(', ')}"
+    else
+      new_hero = updated_project.read_attribute(:hero_image)
+      new_uploaded = updated_project.read_attribute(:uploaded_image)
+      Rails.logger.info "[ProjectUpdate] OK ##{resource.id} hero_image: '#{old_hero}' → '#{new_hero}' | uploaded_image: '#{old_uploaded}' → '#{new_uploaded}'"
     end
     respond_with(updated_project, location: project_path(@project))
   end
