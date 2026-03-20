@@ -33,5 +33,26 @@ class ImageUploader < CarrierWave::Uploader::Base
     end
   end
 
+  # Flatten transparency to white before any convert: :jpg (which defaults to
+  # black background).  Only applied to PNG/GIF/TIFF; JPEG is left untouched
+  # to avoid corruption on some ImageMagick versions.
+  process :flatten_alpha
+
+  def flatten_alpha
+    manipulate! do |img|
+      begin
+        if img.path.to_s =~ /\.(png|gif|tiff?)$/i
+          img.combine_options do |c|
+            c.background "white"
+            c.alpha "remove"
+          end
+        end
+      rescue => e
+        Rails.logger.warn "[ImageUploader] flatten_alpha failed: #{e.message}"
+      end
+      img
+    end
+  end
+
   process quality: 60
 end

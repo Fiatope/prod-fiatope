@@ -58,7 +58,8 @@
         = "#{@project.currency.upcase}"
       div.payments
         = render 'shared/payments/stripe', resource: @contribution
-      = render 'shared/payments/form', resource: @contribution
+      / MANGOPAY DÉSACTIVÉ - Utiliser Stripe uniquement
+      / = render 'shared/payments/form', resource: @contribution
 
     aside.large-4.medium-4.columns
       .project-image

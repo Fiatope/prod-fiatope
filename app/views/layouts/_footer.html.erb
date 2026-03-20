@@ -11,8 +11,8 @@
 						</p>
 					</div>
 					<!-- pay-icon -->
-					<div class="" style="display: flex; justify-content: space-between;">
-						<%= image_tag 'mangopay.png', size: "300" %>
+					<div class="" style="display: flex; justify-content: space-between; align-items: center;">
+						<%= image_tag 'payments/stripe-logo.png', size: "200", alt: "Stripe" %>
 					</div>
 					<!-- <div class="pay-icon-small">
 						<%#= image_tag 'arkea.png' %>
@@ -121,7 +121,8 @@
 					<ul>
 						<li><%=  link_to t('.legal'), main_app.privacy_path%></li>
 						<li><%=  link_to t('.CGU'), image_path('CGUFiatope-revues.pdf') %>   </li> 
-						<li><%=  link_to t('.CGU MANGOPAY'), image_path('PSP_MANGOPAY_FR.pdf') %>   </li>   
+						<!-- Mangopay CGU supprimé - migration vers Stripe -->
+
 						<li><%=  link_to t('.how_does_it_cost'), main_app.price_path %></li>
 						<!-- <li><%#=  link_to t('.sitemap'), main_app.sitemap_path %></li> -->
 					</ul>

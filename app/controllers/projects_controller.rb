@@ -81,7 +81,7 @@ class ProjectsController < ApplicationController
     authorize resource
     old_hero = resource.read_attribute(:hero_image)
     old_uploaded = resource.read_attribute(:uploaded_image)
-    updated_project = Project.update(resource.id, permitted_params[:project].merge!(address_state: resource.address_state.capitalize))
+    updated_project = Project.update(resource.id, permitted_params[:project].merge!(address_state: resource.address_state.to_s.capitalize))
     if updated_project.errors.any?
       Rails.logger.warn "[ProjectUpdate] FAILED for project ##{resource.id} (#{resource.permalink}): #{updated_project.errors.full_messages.join(', ')}"
     else
