@@ -13,7 +13,7 @@ class OrangeMoneyService < ApplicationService
 
   def env_for(env_name)
     case @contribution.project.address_state
-    when /cameroon/i
+    when /cameroon|cameroun/i
       @currency = 'XAF'
       ENV["#{env_name}_CAMEROON"] 
     when /mali/i
@@ -22,8 +22,12 @@ class OrangeMoneyService < ApplicationService
     when /niger/i
       @currency = 'XOF'
       ENV["#{env_name}_NIGER"]
+    when /senegal|sénégal/i
+      @currency = 'XOF'
+      ENV["#{env_name}_MALI"]
     else
-      ENV["#{env_name}_DEFAULT"]
+      @currency = 'XOF'
+      ENV["#{env_name}_MALI"] || ENV["#{env_name}_DEFAULT"]
     end
   end
 
@@ -39,7 +43,7 @@ class OrangeMoneyService < ApplicationService
     uri = URI.parse(orange_money_webpay_url)
 
     provider = case @contribution.project.address_state
-    when /cameroon/i
+    when /cameroon|cameroun/i
       @currency = 'XAF'
       "orange_money_cameroon"
     when /mali/i
@@ -48,7 +52,11 @@ class OrangeMoneyService < ApplicationService
     when /niger/i
       @currency = 'XOF'
       "orange_money_niger"
+    when /senegal|sénégal/i
+      @currency = 'XOF'
+      "orange_money_default"
     else
+      @currency = 'XOF'
       "orange_money_default"
     end
 
