@@ -81,6 +81,8 @@ class OrangeMoneyService < ApplicationService
 
     end
 
+    Rails.logger.warn "[OrangeMoney] address_state=#{@contribution.project.address_state.inspect} provider=#{provider} currency=#{@currency} webpay_url=#{uri} merchant_key_present=#{orange_money_merchant_key.present?}"
+
     body_json = {
       merchant_key: orange_money_merchant_key,
       currency: @currency,
@@ -90,15 +92,14 @@ class OrangeMoneyService < ApplicationService
       cancel_url: cancel_url,
       notif_url: notif_url,
       lang: (I18n.locale.to_s || "en"),
-      reference: "ref KWENDOO #{rand(1..100000)}"
+      reference: "ref FIATOPE #{rand(1..100000)}"
     }.to_json
-    Rails.logger.debug('***' + uri.inspect)
-    Rails.logger.debug('***' + body_json.inspect)
+    Rails.logger.warn("[OrangeMoney] REQUEST uri=#{uri} body=#{body_json}")
     request.body = body_json
 
     response = http.request(request)
     response_json = JSON.parse(response.body)
-    Rails.logger.debug('###' + response_json.inspect)
+    Rails.logger.warn("[OrangeMoney] RESPONSE status=#{response.code} body=#{response_json.inspect}")
 
     contribution.orange_money_transactions.create!(
       order_id_string: "#{contribution.unique_identifier_for('orange_money')}",

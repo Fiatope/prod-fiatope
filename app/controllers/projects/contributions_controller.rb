@@ -174,8 +174,10 @@ class Projects::ContributionsController < ApplicationController
 
     transaction = OrangeMoneyService.initialize_payment_for(@contribution)
     if transaction.status_string == "OK"
+      Rails.logger.warn "[OrangeMoney] SUCCESS → redirecting to #{transaction.payment_url}"
       redirect_to transaction.payment_url
     else
+      Rails.logger.warn "[OrangeMoney] FAILED status_string=#{transaction.status_string.inspect} for contribution##{@contribution.id} project##{@contribution.project.id} address_state=#{@contribution.project.address_state.inspect}"
       redirect_to edit_project_contribution_path(@contribution.project, @contribution), alert: "Orange Money is temporarily unavailable. Please pick another payment method (#{transaction.status_string})"
     end
   end
