@@ -31,7 +31,7 @@ module Neighborly::Admin
         start_at: period_filter[:start_at],
         end_at: period_filter[:end_at],
         contributions_count: filtered_scope.count,
-        total_collected: filtered_scope.where(state: "confirmed").sum(:value)
+        total_collected: filtered_scope.sum(:value)
       }
 
       @contributions = filtered_scope.order("contributions.created_at DESC").page(params[:page]) || []
@@ -44,7 +44,10 @@ module Neighborly::Admin
     private
 
     def scoped_contributions
-      scope = apply_scopes(end_of_association_chain).without_state("deleted")
+      scope = apply_scopes(end_of_association_chain)
+              .without_state("deleted")
+              .where(state: "confirmed")
+              .where("COALESCE(contributions.value, 0) > 0")
 
       period_start = period_filter[:start_at]
       period_end = period_filter[:end_at]
