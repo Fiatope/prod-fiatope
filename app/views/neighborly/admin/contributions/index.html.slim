@@ -33,8 +33,34 @@
             .large-6.columns.text-left
               = check_box_tag :credits, :true, params[:credits]
               = label_tag :credits, t('.credits')
+            .large-3.columns
+              = label_tag :period, t('.period_filter')
+              = select_tag :period, options_for_select([[t('.period_custom'), 'custom'], [t('.period_day'), 'day'], [t('.period_week'), 'week'], [t('.period_month'), 'month'], [t('.period_year'), 'year']], (params[:period].presence || 'custom'))
+            .large-3.columns
+              = label_tag :period_reference, t('.period_reference')
+              = date_field_tag :period_reference, params[:period_reference], class: 'input-small'
             .large-6.columns.text-right
               = submit_tag t('.submit'), class: 'button'
+
+      - if @period_summary.present?
+        .panel.callout.radius[style='margin-bottom: 15px;']
+          h5 = t('.period_summary_title')
+          p
+            strong = t('.period_summary_count')
+            | :
+            |  #{@period_summary[:contributions_count]}
+          p
+            strong = t('.period_summary_total_collected')
+            | :
+            |  #{number_to_currency(@period_summary[:total_collected])}
+          - if @period_summary[:start_at].present? || @period_summary[:end_at].present?
+            p
+              strong = t('.period_summary_range')
+              | :
+              |  #{l(@period_summary[:start_at], format: :short) if @period_summary[:start_at].present?}
+              |  -
+              |  #{l(@period_summary[:end_at], format: :short) if @period_summary[:end_at].present?}
+          p.small = t('.period_table_hint')
 
       .row
         .large-6.columns.text-left
@@ -48,6 +74,7 @@
       - if @contributions.empty?
         = t('.no_contributions')
       - else
+        h5 = t('.filtered_contributions_title')
         table
           thead
             tr

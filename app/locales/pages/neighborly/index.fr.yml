@@ -247,6 +247,19 @@ fr:
           requested_refund: "Requested refund?"
           reward: Récompense
           no_reward: Pas de récompense
+          period_filter: Période
+          period_custom: Plage personnalisée
+          period_day: Jour
+          period_week: Semaine
+          period_month: Mois
+          period_year: Année
+          period_reference: Date de référence
+          period_summary_title: Résumé de la période
+          period_summary_count: Nombre de contributions
+          period_summary_total_collected: Somme totale collectée (confirmée)
+          period_summary_range: Période appliquée
+          period_table_hint: Le tableau ci-dessous affiche les contributions correspondant aux filtres sélectionnés.
+          filtered_contributions_title: Contributions correspondant aux filtres
           submit: Rechercher
           total_contributed: contribué
           total_contributors: contributeurs
