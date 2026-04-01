@@ -35,7 +35,7 @@
               = label_tag :credits, t('.credits')
             .large-3.columns
               = label_tag :period, t('.period_filter')
-              = select_tag :period, options_for_select([[t('.period_custom'), 'custom'], [t('.period_day'), 'day'], [t('.period_week'), 'week'], [t('.period_month'), 'month'], [t('.period_year'), 'year']], (params[:period].presence || 'custom'))
+              = select_tag :period, options_for_select([[t('.period_all'), ''], [t('.period_custom'), 'custom'], [t('.period_day'), 'day'], [t('.period_week'), 'week'], [t('.period_month'), 'month'], [t('.period_year'), 'year']], params[:period])
             .large-3.columns
               = label_tag :period_reference, t('.period_reference')
               = date_field_tag :period_reference, params[:period_reference], class: 'input-small'

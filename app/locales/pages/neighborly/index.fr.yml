@@ -248,6 +248,7 @@ fr:
           reward: Récompense
           no_reward: Pas de récompense
           period_filter: Période
+          period_all: Toutes les périodes
           period_custom: Plage personnalisée
           period_day: Jour
           period_week: Semaine

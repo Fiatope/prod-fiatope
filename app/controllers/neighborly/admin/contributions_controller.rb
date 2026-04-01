@@ -26,13 +26,15 @@ module Neighborly::Admin
     def collection
       filtered_scope = scoped_contributions
 
-      @period_summary = {
-        period: period_filter[:period],
-        start_at: period_filter[:start_at],
-        end_at: period_filter[:end_at],
-        contributions_count: filtered_scope.count,
-        total_collected: filtered_scope.sum(:value)
-      }
+      @period_summary = if period_filter_active?
+                          {
+                            period: period_filter[:period],
+                            start_at: period_filter[:start_at],
+                            end_at: period_filter[:end_at],
+                            contributions_count: filtered_scope.count,
+                            total_collected: filtered_scope.sum(:value)
+                          }
+                        end
 
       @contributions = filtered_scope.order("contributions.created_at DESC").page(params[:page]) || []
     end
@@ -45,9 +47,12 @@ module Neighborly::Admin
 
     def scoped_contributions
       scope = apply_scopes(end_of_association_chain)
-              .without_state("deleted")
-              .where(state: "confirmed")
-              .where("COALESCE(contributions.value, 0) > 0")
+            .without_state("deleted")
+
+          return scope unless period_filter_active?
+
+          scope = scope.where(state: "confirmed")
+           .where("COALESCE(contributions.value, 0) > 0")
 
       period_start = period_filter[:start_at]
       period_end = period_filter[:end_at]
@@ -61,9 +66,11 @@ module Neighborly::Admin
 
     def period_filter
       @period_filter ||= begin
-        period = params[:period].presence || "custom"
+        period = params[:period].presence
 
-        if period == "custom"
+        if period.blank?
+          { period: nil, start_at: nil, end_at: nil }
+        elsif period == "custom"
           custom_start = parse_date(params.dig(:between_values, :start_at))
           custom_end = parse_date(params.dig(:between_values, :ends_at))
 
@@ -95,6 +102,14 @@ module Neighborly::Admin
           }
         end
       end
+    end
+
+    def period_filter_active?
+      return false if period_filter[:period].blank?
+
+      return true if %w[day week month year].include?(period_filter[:period])
+
+      period_filter[:start_at].present? || period_filter[:end_at].present?
     end
 
     def parse_date(value)
