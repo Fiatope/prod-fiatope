@@ -319,7 +319,7 @@ class Projects::ContributionsController < ApplicationController
     
           redirect_to project_contribution_path(project_id: @contribution.project, id: @contribution.id)
         else
-          response_message = t('controllers.projects.contributions.paypal_payment_confirmation.error', status: paypal_params[:payment_status])
+          response_message = t('controllers.projects.contributions.paypal_payment_confirmation.error', status: @response['status'])
     
           @contribution.response_code = @response['status']
           @contribution.payment_id = @response['idFromClient']
