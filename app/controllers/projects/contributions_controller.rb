@@ -325,7 +325,7 @@ class Projects::ContributionsController < ApplicationController
           @contribution.payment_id = @response['idFromClient']
           @contribution.response_message = response_message
           @contribution.payment_method = "Touch"
-          @contribution.state_event = :cancel
+          @contribution.state_event = :cancel unless @contribution.canceled?
           @contribution.save!
     
           flash.alert = response_message
