@@ -306,7 +306,7 @@ class Projects::ContributionsController < ApplicationController
         render 'projects/contributions/touch_payment_initialization'
       else
         if @response['status'] == 'SUCCESSFUL'
-          response_message = t('controllers.projects.contributions.paypal_payment_confirmation.success')
+          response_message = t('controllers.projects.contributions.create.success')
     
           @contribution.response_code = @response['status']
           @contribution.payment_id = @response['idFromClient']
@@ -319,7 +319,7 @@ class Projects::ContributionsController < ApplicationController
     
           redirect_to project_contribution_path(project_id: @contribution.project, id: @contribution.id)
         else
-          response_message = t('controllers.projects.contributions.paypal_payment_confirmation.error', status: @response['status'])
+          response_message = t('controllers.projects.contributions.create.error', status: @response['status'])
     
           @contribution.response_code = @response['status']
           @contribution.payment_id = @response['idFromClient']
