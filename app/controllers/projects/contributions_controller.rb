@@ -3,7 +3,7 @@ class Projects::ContributionsController < ApplicationController
   skip_before_action :set_persistent_warning
   # Renommé: vérification des pré-requis utilisateur (indépendant de MangoPay)
   before_action :has_user_prerequisites, only: [:new, :create]
-  skip_before_action :verify_authenticity_token, only: :orange_money_payment_confirmation
+  skip_before_action :verify_authenticity_token, only: [:orange_money_payment_confirmation, :touch_payment_status]
   skip_after_action :verify_authorized, only: [:cancel, :orange_money_payment_confirmation, :pay_plus_africa_payment_confirmation, :touch_payment_initialization]
 
   has_scope :available_to_count, type: :boolean
