@@ -255,6 +255,11 @@ class Projects::ContributionsController < ApplicationController
     phone = touch_params[:phone]
     @new_payment = false
 
+    if country.blank? || operator.blank?
+      redirect_to touch_payment_new_project_contribution_path(@contribution.project, @contribution), notice: "Veuillez sélectionner un opérateur"
+      return
+    end
+
     payment = TouchService.new country, operator, phone, @contribution
     @response = payment.initiate_paiement
 
@@ -264,7 +269,7 @@ class Projects::ContributionsController < ApplicationController
 
     puts "======================== response #{@response} ========================"
 
-    if @response['status'] == 'INITIATED'
+    if @response['status'] == 'INITIATED' && @response['idFromClient'].present?
       flash.now[:notice] = 'Valider le paiement sur votre téléphone'
       render 'projects/contributions/touch_payment_initialization'
     else
@@ -288,6 +293,11 @@ class Projects::ContributionsController < ApplicationController
     id_client = touch_params[:id_client]
     commit = touch_params[:commit]
     @new_payment = false
+
+    if country.blank? || operator.blank?
+      redirect_to touch_payment_new_project_contribution_path(@contribution.project, @contribution), notice: "Veuillez sélectionner un opérateur"
+      return
+    end
 
     if commit == 'Terminer le paiement'
       @new_payment = true
