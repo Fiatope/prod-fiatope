@@ -168,7 +168,7 @@ class TouchService < ApplicationService
 
         Rails.logger.info("[TouchService] checking status country=#{@country} operator=#{@operator} id_client=#{id_client}")
 
-        response = request("/v1/#{@touch_path_id}/check_status", data, true)
+        response = request("/v1/#{@touch_path_id}/check_status", data)
         JSON.parse(response.body)
     rescue StandardError => e
         Rails.logger.error("[TouchService] check_status failed: #{e.message}")

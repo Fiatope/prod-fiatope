@@ -3,7 +3,7 @@ class Projects::ContributionsController < ApplicationController
   skip_before_action :set_persistent_warning
   # Renommé: vérification des pré-requis utilisateur (indépendant de MangoPay)
   before_action :has_user_prerequisites, only: [:new, :create]
-  skip_before_action :verify_authenticity_token, only: [:orange_money_payment_confirmation, :touch_payment_initialization, :touch_payment_status]
+  skip_before_action :verify_authenticity_token, only: [:orange_money_payment_confirmation, :touch_payment_initialization, :touch_payment_status, :touch_payment_return]
   skip_after_action :verify_authorized, only: [:cancel, :orange_money_payment_confirmation, :pay_plus_africa_payment_confirmation, :touch_payment_initialization]
 
   has_scope :available_to_count, type: :boolean
@@ -350,9 +350,42 @@ class Projects::ContributionsController < ApplicationController
 
 
   def touch_payment_return
-    @contribution = Contribution.find_by!(id: touch_params[:id])
-
+    @contribution = Contribution.find_by!(id: params[:id] || touch_params[:id])
     @project = @contribution.project
+
+    # Handle Touch API callback notification
+    payment_status = params[:status]
+    partner_transaction_id = params[:partner_transaction_id]
+
+    if payment_status.present? && partner_transaction_id.present?
+      @contribution.response_code = payment_status
+      @contribution.payment_id = partner_transaction_id
+
+      if payment_status == 'SUCCESSFUL'
+        @contribution.response_message = t('controllers.projects.contributions.create.success')
+        @contribution.payment_method = 'Touch'
+        @contribution.state_event = :confirm unless @contribution.confirmed?
+        @contribution.save!
+        Rails.logger.info("[TouchService] Payment confirmed via callback: #{partner_transaction_id}")
+      else
+        @contribution.response_message = "Payment #{payment_status.downcase}"
+        @contribution.payment_method = 'Touch'
+        @contribution.state_event = :cancel unless @contribution.canceled? || @contribution.confirmed?
+        @contribution.save!
+        Rails.logger.info("[TouchService] Payment #{payment_status.downcase} via callback: #{partner_transaction_id}")
+      end
+
+      # Return HTTP 200 for API acknowledgment (no HTML response needed)
+      head :ok and return
+    end
+
+    # For user browser redirect (if accessed directly)
+    if @contribution.confirmed?
+      flash.notice = t('controllers.projects.contributions.create.success')
+      redirect_to project_contribution_path(project_id: @project, id: @contribution)
+    else
+      redirect_to edit_project_contribution_path(project_id: @project, id: @contribution)
+    end
   end
 
 

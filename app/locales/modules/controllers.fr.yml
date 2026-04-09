@@ -12,6 +12,7 @@ fr:
         new:
           no_reward: "Je contribue juste."
         create:
+          success: 'Votre contribution a été effectuée avec succès. Merci !'
           error: 'Nous avons rencontré un problème lors du traitement de votre contribution. Veuillez ré-essayer.'
         credits_checkout:
           no_credits: "Vous n'avez pas assez de crédits pour contribuer à ce projet."
