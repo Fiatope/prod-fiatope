@@ -4,7 +4,7 @@ class Projects::ContributionsController < ApplicationController
   # Renommé: vérification des pré-requis utilisateur (indépendant de MangoPay)
   before_action :has_user_prerequisites, only: [:new, :create]
   skip_before_action :verify_authenticity_token, only: [:orange_money_payment_confirmation, :touch_payment_initialization, :touch_payment_status, :touch_payment_return]
-  skip_after_action :verify_authorized, only: [:cancel, :orange_money_payment_confirmation, :pay_plus_africa_payment_confirmation, :touch_payment_initialization]
+  skip_after_action :verify_authorized, only: [:cancel, :orange_money_payment_confirmation, :pay_plus_africa_payment_confirmation, :touch_payment_initialization, :touch_payment_status, :touch_payment_return]
 
   has_scope :available_to_count, type: :boolean
   has_scope :with_state
@@ -314,34 +314,29 @@ class Projects::ContributionsController < ApplicationController
       if @response['status'] == 'PENDING'
         flash.now[:notice] = 'Valider le paiement sur votre téléphone'
         render 'projects/contributions/touch_payment_initialization'
-      else
-        if @response['status'] == 'SUCCESSFUL'
-          response_message = t('controllers.projects.contributions.create.success')
-    
+      elsif @response['status'] == 'SUCCESSFUL'
+        # Check_status confirmed success
+        unless @contribution.confirmed?
           @contribution.response_code = @response['status']
           @contribution.payment_id = @response['idFromClient']
-          @contribution.response_message = response_message
-          @contribution.payment_method = "Touch"
+          @contribution.response_message = t('controllers.projects.contributions.create.success')
+          @contribution.payment_method = 'Touch'
           @contribution.state_event = :confirm
           @contribution.save!
-    
-          flash.notice = response_message
-    
-          redirect_to project_contribution_path(project_id: @contribution.project, id: @contribution.id)
-        else
-          response_message = t('controllers.projects.contributions.create.error', status: @response['status'])
-    
-          @contribution.response_code = @response['status']
-          @contribution.payment_id = @response['idFromClient']
-          @contribution.response_message = response_message
-          @contribution.payment_method = "Touch"
-          @contribution.state_event = :cancel unless @contribution.canceled?
-          @contribution.save!
-    
-          flash.alert = response_message
-    
-          redirect_to edit_project_contribution_path(project_id: @contribution.project, id: @contribution.id)
         end
+        flash.notice = t('controllers.projects.contributions.create.success')
+        redirect_to project_contribution_path(project_id: @contribution.project, id: @contribution.id)
+      elsif @contribution.confirmed?
+        # Already confirmed by callback — check_status may have returned an error but payment succeeded
+        flash.notice = t('controllers.projects.contributions.create.success')
+        redirect_to project_contribution_path(project_id: @contribution.project, id: @contribution.id)
+      else
+        # check_status returned an error code (401, CONFIG_ERROR, etc.)
+        # Do NOT cancel — payment may still be processing or confirmed via callback
+        # Redirect to pending/edit page so user can wait for callback
+        Rails.logger.warn("[TouchService] check_status returned #{@response['status']} for #{id_client} — not canceling, waiting for callback")
+        flash.alert = t('controllers.projects.contributions.touch_payment_status.pending_verification')
+        redirect_to edit_project_contribution_path(project_id: @contribution.project, id: @contribution.id)
       end
     else
       redirect_to touch_payment_new_project_contribution_path(@contribution.project, @contribution)

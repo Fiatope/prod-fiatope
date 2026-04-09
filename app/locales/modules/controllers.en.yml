@@ -29,6 +29,8 @@ en:
         pay_plus_africa_payment_confirmation:
           success: "Pay Plus Africa Payment confirmed. Your contribution has been processed successfully."
           error: "The transaction has been refused and you will not be charged. (%{status})"
+        touch_payment_status:
+          pending_verification: "Your payment is being verified. You will be notified once it is confirmed."
 
     users:
       completeness_progress: 'Please <a href="%{link}">complete your profile</a> so we can talk you up, and give you full credit for being awesome!'

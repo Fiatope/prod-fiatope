@@ -52,7 +52,7 @@ class TouchService < ApplicationService
         @password = @touch_password
     end
 
-    def request path=nil, data=nil, digest=false
+    def request path=nil, data=nil, digest=false, no_http_auth=false
         req = nil
         http = nil
 
@@ -116,7 +116,7 @@ class TouchService < ApplicationService
             req['Accept'] = 'application/json'
             req['Content-Type'] = 'application/json'
 
-            req.basic_auth(@username, @password)
+            req.basic_auth(@username, @password) unless no_http_auth
         end
 
         http.request(req)
@@ -168,7 +168,8 @@ class TouchService < ApplicationService
 
         Rails.logger.info("[TouchService] checking status country=#{@country} operator=#{@operator} id_client=#{id_client}")
 
-        response = request("/v1/#{@touch_path_id}/check_status", data)
+        # Credentials are passed in the request body — no HTTP Basic auth header needed
+        response = request("/v1/#{@touch_path_id}/check_status", data, false, true)
         JSON.parse(response.body)
     rescue StandardError => e
         Rails.logger.error("[TouchService] check_status failed: #{e.message}")
