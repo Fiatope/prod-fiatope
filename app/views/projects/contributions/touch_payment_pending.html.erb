@@ -1,0 +1,96 @@
+<% content_for :title, t('.title') %>
+
+<div class="contribution-page">
+  <%= hero_header_tag @project do %>
+    <div class="large-10 columns large-centered text-center">
+      <h3><%= t('.title') %></h3>
+    </div>
+  <% end %>
+
+  <div class="row page-main-content">
+    <div class="col-md-6 col-md-offset-3 text-center" style="padding: 40px 20px;">
+
+      <div style="margin-bottom: 30px;">
+        <i class="fa fa-mobile" style="font-size: 64px; color: #f69219;"></i>
+      </div>
+
+      <h4><%= t('.waiting_title') %></h4>
+      <p><%= t('.waiting_message') %></p>
+
+      <div style="margin: 30px 0;">
+        <div class="progress" style="height: 8px; border-radius: 4px; background: #eee;">
+          <div class="progress-bar progress-bar-striped active" id="progress-bar"
+               style="width: 100%; background: #f69219; border-radius: 4px;
+                      animation: progress-pulse 1.5s ease-in-out infinite;">
+          </div>
+        </div>
+        <small style="color: #999; display: block; margin-top: 8px;">
+          <span id="check-counter">0</span> <%= t('.checks_done') %>
+        </small>
+      </div>
+
+      <p style="color: #666; font-size: 13px;"><%= t('.mobile_instruction') %></p>
+
+      <div style="margin-top: 20px;">
+        <%= link_to t('.back_to_project'), project_path(@project), class: 'btn btn-default btn-sm' %>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes progress-pulse {
+  0%   { opacity: 1; }
+  50%  { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+</style>
+
+<script>
+(function() {
+  var checkUrl    = '<%= touch_payment_check_status_project_contribution_path(@project, @contribution) %>';
+  var successUrl  = '<%= project_contribution_path(project_id: @project, id: @contribution) %>';
+  var projectUrl  = '<%= project_path(@project) %>';
+  var maxChecks   = 20;
+  var interval    = 5000; // 5 seconds
+  var checks      = 0;
+  var counter     = document.getElementById('check-counter');
+
+  function checkStatus() {
+    checks++;
+    if (counter) counter.textContent = checks;
+
+    fetch(checkUrl, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (data.confirmed) {
+        window.location.href = successUrl;
+      } else if (data.canceled) {
+        window.location.href = '<%= edit_project_contribution_path(project_id: @project, id: @contribution) %>';
+      } else if (data.state === 'unauthorized') {
+        // Session expired - redirect to project page
+        window.location.href = projectUrl;
+      } else if (checks >= maxChecks) {
+        // After 20 checks (100s), redirect to project page
+        window.location.href = projectUrl;
+      } else {
+        setTimeout(checkStatus, interval);
+      }
+    })
+    .catch(function() {
+      if (checks < maxChecks) {
+        setTimeout(checkStatus, interval);
+      } else {
+        window.location.href = projectUrl;
+      }
+    });
+  }
+
+  // Start checking after 3 seconds
+  setTimeout(checkStatus, 3000);
+})();
+</script>

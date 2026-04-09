@@ -32,8 +32,8 @@ class TouchService < ApplicationService
     }
 
     def initialize country=nil, operator=nil, phone=nil, contribution=nil
-        @country = country
-        @operator = operator
+        @country = country.to_s
+        @operator = operator.to_s
         @phone = phone
         @contribution = contribution
         @url_callback = touch_payment_return_project_contribution_url(contribution.project, contribution) if contribution.present?
@@ -47,7 +47,7 @@ class TouchService < ApplicationService
         @touch_password = env_value('TOUCH_' + @country + '_' + @operator + '_PASSWORD')
         @touch_servicecode = env_value('TOUCH_' + @country + '_' + @operator + '_SERVICECODE')
 
-        @uri = URI.parse(@touch_host)
+        @uri = URI.parse(@touch_host) if @touch_host.present?
         @username = @touch_username
         @password = @touch_password
     end
@@ -181,7 +181,8 @@ class TouchService < ApplicationService
     end
 
     def conversion_rate
-        ENV['CFA_CONVERSION_RATE'].to_f || 656
+        rate = ENV['CFA_CONVERSION_RATE'].to_f
+        rate > 0 ? rate : 656.0
     end
 
     private

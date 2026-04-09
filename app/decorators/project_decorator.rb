@@ -85,11 +85,11 @@ class ProjectDecorator < Draper::Decorator
   end
 
   def display_pledged
-    number_to_currency object.pledged, unit: object.currency_sym ,precision: 0
+    number_to_currency object.pledged, unit: object.currency_sym, precision: 2
   end
 
   def display_goal
-    number_to_currency object.goal, unit: object.currency_sym, precision: 0
+    number_to_currency object.goal, unit: object.currency_sym, precision: 2
   end
 
   def display_pledged_presale

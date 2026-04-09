@@ -44,6 +44,14 @@ class ContributionPolicy < ApplicationPolicy
     true
   end
 
+  def touch_payment_pending?
+    update?
+  end
+
+  def touch_payment_check_status?
+    update?
+  end
+
   def pay_plus_africa_payment_initialization?
     update?
   end

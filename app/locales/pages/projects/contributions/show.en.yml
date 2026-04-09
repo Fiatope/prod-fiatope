@@ -11,6 +11,7 @@ en:
         mycontrib: 'My contribution : %{amount}'
         facebook: 'Share'
         twitter: 'Tweet'
+        canceled_notice: 'This contribution has been canceled. Please create a new one.'
         bankaccount:
           title: 'You contributed using a new bank account. Please verify your account to complete your contribution.'
           steps:

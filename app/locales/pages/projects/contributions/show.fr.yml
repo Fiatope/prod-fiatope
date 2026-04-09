@@ -13,6 +13,7 @@ fr:
         twitter-text: 'Je viens de contribuer pour %{value} à %{name} sur @Fiatop: %{project_url}'
         facebook: 'Partager'
         twitter: 'Tweeter'
+        canceled_notice: 'Cette contribution a été annulée. Veuillez en créer une nouvelle.'
         bankaccount:
           title: 'Vous avez conribué par le biais de votre compte bancaire. Veuillez vérifier votre compte pour terminer votre contribution.'
           steps:

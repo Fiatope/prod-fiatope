@@ -30,7 +30,7 @@ fr:
           success: "Paiement Pay Plus Africa effectué avec succès. Votre contribution a été validée."
           error: "La transaction a été refusée et vous n'avez pas été débité. (%{status})"
         touch_payment_status:
-          pending_verification: "Votre paiement est en cours de vérification. Vous serez notifié(e) dès sa confirmation."
+          pending_verification: "Votre paiement mobile a été initialisé. Vous recevrez une confirmation dès qu'il sera validé."
 
     users:
       completeness_progress: 'Pensez à <a href="%{link}">compléter votre profil </a>'

@@ -4,7 +4,7 @@ class Projects::ContributionsController < ApplicationController
   # Renommé: vérification des pré-requis utilisateur (indépendant de MangoPay)
   before_action :has_user_prerequisites, only: [:new, :create]
   skip_before_action :verify_authenticity_token, only: [:orange_money_payment_confirmation, :touch_payment_initialization, :touch_payment_status, :touch_payment_return]
-  skip_after_action :verify_authorized, only: [:cancel, :orange_money_payment_confirmation, :pay_plus_africa_payment_confirmation, :touch_payment_initialization, :touch_payment_status, :touch_payment_return]
+  skip_after_action :verify_authorized, only: [:cancel, :orange_money_payment_confirmation, :pay_plus_africa_payment_confirmation, :touch_payment_initialization, :touch_payment_status, :touch_payment_return, :touch_payment_pending, :touch_payment_check_status]
 
   has_scope :available_to_count, type: :boolean
   has_scope :with_state
@@ -41,9 +41,9 @@ class Projects::ContributionsController < ApplicationController
     @contribution = resource
     authorize resource
     if @contribution.state == "confirmed"
-      flash.notice = "Your contribution has been confirmed!"
+      flash.notice = t('controllers.projects.contributions.create.success')
     elsif @contribution.state == "canceled"
-      flash.notice = "This contribution has been canceled. Please create a new one!"
+      flash.notice = t('controllers.projects.contributions.show.canceled_notice', default: 'This contribution has been canceled. Please create a new one!')
       redirect_to project_path(@project) and return
     end
   end
@@ -267,7 +267,7 @@ class Projects::ContributionsController < ApplicationController
       "country_operator" => touch_params[:country_operator]
     })
 
-    puts "======================== response #{@response} ========================"
+    Rails.logger.debug("[TouchService] initiate_paiement response: #{@response}")
 
     if @response['status'] == 'INITIATED' && @response['idFromClient'].present?
       flash.now[:notice] = 'Valider le paiement sur votre téléphone'
@@ -309,20 +309,26 @@ class Projects::ContributionsController < ApplicationController
         "idFromClient" => id_client
       })
 
-      puts "======================== response #{@response} ========================"
+      Rails.logger.debug("[TouchService] check_status response: #{@response}")
 
       if @response['status'] == 'PENDING'
         flash.now[:notice] = 'Valider le paiement sur votre téléphone'
         render 'projects/contributions/touch_payment_initialization'
       elsif @response['status'] == 'SUCCESSFUL'
         # Check_status confirmed success
-        unless @contribution.confirmed?
-          @contribution.response_code = @response['status']
-          @contribution.payment_id = @response['idFromClient']
-          @contribution.response_message = t('controllers.projects.contributions.create.success')
-          @contribution.payment_method = 'Touch'
-          @contribution.state_event = :confirm
-          @contribution.save!
+        begin
+          unless @contribution.confirmed?
+            @contribution.response_code = @response['status']
+            @contribution.payment_id = @response['idFromClient']
+            @contribution.response_message = t('controllers.projects.contributions.create.success')
+            @contribution.payment_method = 'Touch'
+            @contribution.state_event = :confirm
+            @contribution.save!
+          end
+        rescue => e
+          Rails.logger.error("[TouchService] touch_payment_status confirm error: #{e.class} #{e.message}")
+          # Contribution may have been confirmed by callback during this request
+          @contribution.reload
         end
         flash.notice = t('controllers.projects.contributions.create.success')
         redirect_to project_contribution_path(project_id: @contribution.project, id: @contribution.id)
@@ -335,14 +341,40 @@ class Projects::ContributionsController < ApplicationController
         # Do NOT cancel — payment may still be processing or confirmed via callback
         # Redirect to pending/edit page so user can wait for callback
         Rails.logger.warn("[TouchService] check_status returned #{@response['status']} for #{id_client} — not canceling, waiting for callback")
-        flash.alert = t('controllers.projects.contributions.touch_payment_status.pending_verification')
-        redirect_to edit_project_contribution_path(project_id: @contribution.project, id: @contribution.id)
+        redirect_to touch_payment_pending_project_contribution_path(@contribution.project, @contribution)
       end
     else
       redirect_to touch_payment_new_project_contribution_path(@contribution.project, @contribution)
     end
   end
 
+
+  def touch_payment_pending
+    @contribution = Contribution.find_by!(id: touch_params[:id])
+    authorize @contribution
+    @project = @contribution.project
+
+    # If already confirmed, redirect directly to success page
+    if @contribution.confirmed?
+      flash.notice = t('controllers.projects.contributions.create.success')
+      redirect_to project_contribution_path(project_id: @project, id: @contribution)
+    end
+  end
+
+  def touch_payment_check_status
+    @contribution = Contribution.find_by!(id: touch_params[:id])
+    authorize @contribution
+
+    render json: {
+      confirmed: @contribution.confirmed?,
+      canceled:  @contribution.canceled?,
+      state:     @contribution.state
+    }
+  rescue Pundit::NotAuthorizedError
+    render json: { confirmed: false, canceled: false, state: 'unauthorized' }, status: :ok
+  rescue ActiveRecord::RecordNotFound
+    render json: { confirmed: false, canceled: false, state: 'not_found' }, status: :ok
+  end
 
   def touch_payment_return
     @contribution = Contribution.find_by!(id: params[:id] || touch_params[:id])
@@ -353,21 +385,36 @@ class Projects::ContributionsController < ApplicationController
     partner_transaction_id = params[:partner_transaction_id]
 
     if payment_status.present? && partner_transaction_id.present?
-      @contribution.response_code = payment_status
-      @contribution.payment_id = partner_transaction_id
-
-      if payment_status == 'SUCCESSFUL'
-        @contribution.response_message = t('controllers.projects.contributions.create.success')
-        @contribution.payment_method = 'Touch'
-        @contribution.state_event = :confirm unless @contribution.confirmed?
-        @contribution.save!
-        Rails.logger.info("[TouchService] Payment confirmed via callback: #{partner_transaction_id}")
-      else
-        @contribution.response_message = "Payment #{payment_status.downcase}"
-        @contribution.payment_method = 'Touch'
-        @contribution.state_event = :cancel unless @contribution.canceled? || @contribution.confirmed?
-        @contribution.save!
-        Rails.logger.info("[TouchService] Payment #{payment_status.downcase} via callback: #{partner_transaction_id}")
+      begin
+        if payment_status == 'SUCCESSFUL'
+          unless @contribution.confirmed?
+            @contribution.response_code    = payment_status
+            @contribution.payment_id       = partner_transaction_id
+            @contribution.response_message = t('controllers.projects.contributions.create.success')
+            @contribution.payment_method   = 'Touch'
+            @contribution.state_event      = :confirm
+            @contribution.save!
+            Rails.logger.info("[TouchService] Payment confirmed via callback: #{partner_transaction_id}")
+          else
+            Rails.logger.info("[TouchService] Callback received but contribution #{@contribution.id} already confirmed — skipping")
+          end
+        else
+          unless @contribution.canceled? || @contribution.confirmed?
+            @contribution.response_code    = payment_status
+            @contribution.payment_id       = partner_transaction_id
+            @contribution.response_message = "Payment #{payment_status.downcase}"
+            @contribution.payment_method   = 'Touch'
+            @contribution.state_event      = :cancel
+            @contribution.save!
+            Rails.logger.info("[TouchService] Payment #{payment_status.downcase} via callback: #{partner_transaction_id}")
+          else
+            Rails.logger.info("[TouchService] Callback #{payment_status} received but contribution #{@contribution.id} already in terminal state — skipping")
+          end
+        end
+      rescue => e
+        Rails.logger.error("[TouchService] callback processing error for contribution #{@contribution.id}: #{e.class} #{e.message}")
+        # Still return 200 to prevent Touchpay from retrying indefinitely
+        head :ok and return
       end
 
       # Return HTTP 200 for API acknowledgment (no HTML response needed)

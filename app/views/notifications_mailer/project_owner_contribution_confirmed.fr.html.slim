@@ -2,7 +2,7 @@
 - project = @notification.project
 - confirmed_contributions_today = project.contributions.confirmed_today
 
-|Bonne nouvelle #{project.user.display_name}, #{confirmed_contributions_today.size} contributeur(s) a(ont) financé votre campagne aujourd'hui pour un total de: #{number_to_currency(confirmed_contributions_today.map(&:value).sum, precision: 0)}
+|Bonne nouvelle #{project.user.display_name}, #{confirmed_contributions_today.size} contributeur(s) a(ont) financé votre campagne aujourd'hui pour un total de: #{number_to_currency(confirmed_contributions_today.map(&:value).sum, precision: 2)}
 br
 br
 table width="500" border="1" cellpadding="10" cellspacing="0" style='font-size: 13px;'

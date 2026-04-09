@@ -248,6 +248,8 @@ Neighborly::Application.routes.draw do
         get 'touch_payment_new'
         post 'touch_payment_initialization'
         post 'touch_payment_status'
+        get 'touch_payment_pending'
+        get 'touch_payment_check_status'
         get 'touch_payment_return'
         post 'touch_payment_return'
       end

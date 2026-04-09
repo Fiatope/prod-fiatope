@@ -1,0 +1,14 @@
+fr:
+  projects:
+    contributions:
+      touch_payment_new:
+        title: "Payer par Mobile Money"
+      touch_payment_initialization:
+        title: "Confirmer votre paiement Mobile Money"
+      touch_payment_pending:
+        title: "Paiement en attente de confirmation"
+        waiting_title: "Validation en cours..."
+        waiting_message: "Votre paiement mobile a été initialisé. Nous attendons la confirmation de votre opérateur."
+        mobile_instruction: "Si vous n'avez pas encore validé le paiement sur votre téléphone, veuillez le faire maintenant."
+        checks_done: "vérification(s) effectuée(s)"
+        back_to_project: "Retour au projet"
