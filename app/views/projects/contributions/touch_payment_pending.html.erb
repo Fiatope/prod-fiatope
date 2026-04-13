@@ -58,12 +58,20 @@
   var checkUrl      = '<%= touch_payment_check_status_project_contribution_path(@project, @contribution) %>';
   var successUrl    = '<%= project_contribution_path(project_id: @project, id: @contribution) %>';
   var canceledUrl   = '<%= edit_project_contribution_path(project_id: @project, id: @contribution) %>';
+  var pendingUrl    = '<%= touch_payment_pending_project_contribution_path(@project, @contribution) %>';
   var projectUrl    = '<%= project_path(@project) %>';
   var storageKey    = 'touch_checks_<%= @contribution.id %>';
   var maxChecks     = 60;   // 5 minutes max (60 x 5s)
   var interval      = 5000; // 5 seconds
   var counter       = document.getElementById('check-counter');
   var statusMsg     = document.getElementById('status-message');
+
+  // If this page was loaded with touch_timeout=1, stop polling — we already timed out
+  var isTimeout = (window.location.search.indexOf('touch_timeout=1') !== -1);
+  if (isTimeout) {
+    if (counter) counter.closest && counter.closest('div') && (counter.closest('div').style.display = 'none');
+    return; // Do NOT start polling again
+  }
 
   // Persist counter across page refreshes via localStorage
   var checks = 0;
@@ -75,13 +83,8 @@
     }
   } catch(e) {}
 
-  function saveChecks() {
-    try { localStorage.setItem(storageKey, checks); } catch(e) {}
-  }
-
-  function clearChecks() {
-    try { localStorage.removeItem(storageKey); } catch(e) {}
-  }
+  function saveChecks() { try { localStorage.setItem(storageKey, checks); } catch(e) {} }
+  function clearChecks() { try { localStorage.removeItem(storageKey); } catch(e) {} }
 
   function checkStatus() {
     checks++;
@@ -105,8 +108,7 @@
         window.location.href = projectUrl;
       } else if (checks >= maxChecks) {
         clearChecks();
-        // Timeout: redirect to edit page so user can retry
-        window.location.href = canceledUrl + '?touch_timeout=1';
+        window.location.href = pendingUrl + '?touch_timeout=1';
       } else {
         if (statusMsg && checks > 10) {
           statusMsg.textContent = '<%= t(".mobile_instruction_retry") %>';
@@ -119,7 +121,7 @@
         setTimeout(checkStatus, interval);
       } else {
         clearChecks();
-        window.location.href = canceledUrl + '?touch_timeout=1';
+        window.location.href = pendingUrl + '?touch_timeout=1';
       }
     });
   }

@@ -249,14 +249,25 @@ class Projects::ContributionsController < ApplicationController
 
     @project = @contribution.project
 
-    country_operator = touch_params[:country_operator].split('_')
-    country = country_operator[0]
+    country_operator = (touch_params[:country_operator] || '').split('_')
+    country  = country_operator[0]
     operator = country_operator[1]
-    phone = touch_params[:phone]
+    phone    = clean_touch_phone(touch_params[:phone], country)
     @new_payment = false
 
     if country.blank? || operator.blank?
       redirect_to touch_payment_new_project_contribution_path(@contribution.project, @contribution), notice: "Veuillez sélectionner un opérateur"
+      return
+    end
+
+    if phone.blank?
+      redirect_to touch_payment_new_project_contribution_path(@contribution.project, @contribution), notice: "Veuillez entrer votre numéro de téléphone"
+      return
+    end
+
+    phone_error = validate_touch_phone(phone, country)
+    if phone_error
+      redirect_to touch_payment_new_project_contribution_path(@contribution.project, @contribution), notice: phone_error
       return
     end
 
@@ -287,8 +298,8 @@ class Projects::ContributionsController < ApplicationController
 
     @project = @contribution.project
 
-    country_operator = touch_params[:country_operator].split('_')
-    country = country_operator[0]
+    country_operator = (touch_params[:country_operator] || '').split('_')
+    country  = country_operator[0]
     operator = country_operator[1]
     id_client = touch_params[:id_client]
     commit = touch_params[:commit]
@@ -466,6 +477,29 @@ class Projects::ContributionsController < ApplicationController
 
 
   protected
+
+  TOUCH_COUNTRY_CODES = { 'SN' => '221', 'CM' => '237', 'CI' => '225', 'GN' => '224' }.freeze
+  TOUCH_PHONE_LENGTHS = { 'SN' => 9, 'CM' => 9, 'GN' => 9, 'CI' => 10 }.freeze
+
+  def clean_touch_phone(phone, country)
+    return '' if phone.blank?
+    digits = phone.to_s.gsub(/[^0-9]/, '')
+    cc = TOUCH_COUNTRY_CODES[country.to_s.upcase]
+    if cc.present?
+      digits = digits.sub(/\A00#{Regexp.escape(cc)}/, '')
+      digits = digits.sub(/\A#{Regexp.escape(cc)}/, '') if digits.length > (TOUCH_PHONE_LENGTHS[country.to_s.upcase] || 9)
+    end
+    digits
+  end
+
+  def validate_touch_phone(phone, country)
+    expected = TOUCH_PHONE_LENGTHS[country.to_s.upcase]
+    if expected && phone.length != expected
+      "Numéro de téléphone invalide (#{expected} chiffres requis, sans indicatif pays). Exemple pour le Sénégal: 771234567"
+    elsif phone.length < 7 || phone.length > 12
+      "Numéro de téléphone invalide (#{phone.length} chiffres). Entrez uniquement les chiffres sans indicatif pays."
+    end
+  end
 
   def touch_params
     params.permit(:id, :phone, :country_operator, :id_client, :commit)

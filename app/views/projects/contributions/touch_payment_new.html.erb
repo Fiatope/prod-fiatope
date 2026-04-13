@@ -12,16 +12,119 @@
   <div class="row page-main-content">
     <div class="col-md-6 col-md-offset-3">
 
-      <%= form_tag touch_payment_initialization_project_contribution_path(@contribution.project, @contribution) do %>
+      <%= form_tag touch_payment_initialization_project_contribution_path(@contribution.project, @contribution), id: 'touch-payment-form' do %>
         <div class="form-group">
-          <%= select_tag :country_operator, raw(@html_operators), prompt: 'Sélectionner votre opérateur', class: 'form-control' %>
+          <%= select_tag :country_operator, raw(@html_operators), prompt: 'Sélectionner votre opérateur', class: 'form-control', id: 'touch-country-operator' %>
         </div>
         <div class="form-group">
-          <%= text_field_tag :phone, nil, placeholder: 'Entrer votre numéro de téléphone', class: 'form-control' %>
+          <%= text_field_tag :phone, nil,
+                placeholder: 'Ex: 771234567',
+                class: 'form-control',
+                id: 'touch-phone',
+                inputmode: 'numeric',
+                autocomplete: 'tel' %>
+          <small id="phone-hint" style="color:#888; display:block; margin-top:4px;">
+            Entrez votre numéro sans indicatif pays (ex: 771234567 pour le Sénégal)
+          </small>
+          <small id="phone-feedback" style="display:none; margin-top:4px; font-weight:bold;"></small>
         </div>
-        <%= submit_tag 'Effectuer le paiement', class: 'btn btn-primary btn-medium-green' %>
+        <%= submit_tag 'Effectuer le paiement', class: 'btn btn-primary btn-medium-green', id: 'touch-submit-btn' %>
       <% end %>
 
     </div>
   </div>
 </div>
+
+<script>
+(function() {
+  var COUNTRY_CODES = { SN: '221', CM: '237', CI: '225', GN: '224' };
+  var phoneInput    = document.getElementById('touch-phone');
+  var feedback      = document.getElementById('phone-feedback');
+  var submitBtn     = document.getElementById('touch-submit-btn');
+  var operatorSel   = document.getElementById('touch-country-operator');
+
+  function getCountry() {
+    var val = operatorSel ? operatorSel.value : '';
+    return val ? val.split('_')[0] : '';
+  }
+
+  function cleanPhone(raw, country) {
+    var digits = raw.replace(/\D/g, '');
+    var cc = COUNTRY_CODES[country];
+    if (cc) {
+      if (digits.startsWith('00' + cc)) digits = digits.slice(2 + cc.length);
+      else if (digits.startsWith(cc) && digits.length > 9) digits = digits.slice(cc.length);
+    }
+    return digits;
+  }
+
+  function validatePhone(digits, country) {
+    if (!digits || digits.length === 0) return { ok: false, msg: 'Numéro requis' };
+    if (country === 'SN' && digits.length !== 9)
+      return { ok: false, msg: 'Numéro sénégalais invalide (9 chiffres requis, ex: 771234567)' };
+    if (country === 'CM' && digits.length !== 9)
+      return { ok: false, msg: 'Numéro camerounais invalide (9 chiffres requis, ex: 677123456)' };
+    if (digits.length < 7 || digits.length > 12)
+      return { ok: false, msg: 'Numéro invalide (' + digits.length + ' chiffres)' };
+    return { ok: true, msg: '' };
+  }
+
+  function updateFeedback() {
+    if (!phoneInput) return;
+    var raw     = phoneInput.value;
+    var country = getCountry();
+    var digits  = cleanPhone(raw, country);
+    var result  = validatePhone(digits, country);
+
+    if (feedback) {
+      if (raw.length === 0) {
+        feedback.style.display = 'none';
+      } else if (digits !== raw.replace(/\D/g, '') || !result.ok) {
+        feedback.style.display = 'block';
+        if (!result.ok) {
+          feedback.style.color = '#c0392b';
+          feedback.textContent = result.msg;
+        } else {
+          feedback.style.color = '#27ae60';
+          feedback.textContent = '✓ Numéro : ' + digits;
+        }
+      } else if (result.ok) {
+        feedback.style.display = 'block';
+        feedback.style.color = '#27ae60';
+        feedback.textContent = '✓ Numéro : ' + digits;
+      } else {
+        feedback.style.display = 'none';
+      }
+    }
+  }
+
+  if (phoneInput) {
+    phoneInput.addEventListener('input', updateFeedback);
+    if (operatorSel) operatorSel.addEventListener('change', updateFeedback);
+  }
+
+  var form = document.getElementById('touch-payment-form');
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      var raw     = phoneInput ? phoneInput.value : '';
+      var country = getCountry();
+      var digits  = cleanPhone(raw, country);
+      var result  = validatePhone(digits, country);
+
+      if (!result.ok) {
+        e.preventDefault();
+        if (feedback) {
+          feedback.style.display = 'block';
+          feedback.style.color = '#c0392b';
+          feedback.textContent = result.msg;
+        }
+        if (phoneInput) phoneInput.focus();
+        return false;
+      }
+
+      // Replace input value with cleaned digits before submit
+      if (phoneInput) phoneInput.value = digits;
+    });
+  }
+})();
+</script>
