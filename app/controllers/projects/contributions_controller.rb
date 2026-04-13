@@ -354,10 +354,12 @@ class Projects::ContributionsController < ApplicationController
     authorize @contribution
     @project = @contribution.project
 
-    # If already confirmed, redirect directly to success page
     if @contribution.confirmed?
       flash.notice = t('controllers.projects.contributions.create.success')
       redirect_to project_contribution_path(project_id: @project, id: @contribution)
+    elsif @contribution.canceled?
+      flash.alert = t('controllers.projects.contributions.touch_payment.canceled')
+      redirect_to edit_project_contribution_path(project_id: @project, id: @contribution)
     end
   end
 

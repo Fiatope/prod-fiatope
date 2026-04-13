@@ -31,6 +31,9 @@ fr:
           error: "La transaction a été refusée et vous n'avez pas été débité. (%{status})"
         touch_payment_status:
           pending_verification: "Votre paiement mobile a été initialisé. Vous recevrez une confirmation dès qu'il sera validé."
+        touch_payment:
+          canceled: "Votre paiement mobile a été annulé ou a expiré. Veuillez réessayer ou contacter le support."
+          timeout: "La confirmation de votre paiement prend trop de temps. Veuillez vérifier votre téléphone et réessayer."
 
     users:
       completeness_progress: 'Pensez à <a href="%{link}">compléter votre profil </a>'

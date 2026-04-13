@@ -10,5 +10,7 @@ en:
         waiting_title: "Validation in progress..."
         waiting_message: "Your mobile payment has been initiated. We are waiting for confirmation from your operator."
         mobile_instruction: "If you haven't validated the payment on your phone yet, please do so now."
+        mobile_instruction_retry: "Still waiting... If you validated on your phone, please hold on a few more moments."
+        timeout_message: "Payment confirmation is taking longer than expected. Check your phone or contact support if you were charged."
         checks_done: "check(s) done"
         back_to_project: "Back to project"

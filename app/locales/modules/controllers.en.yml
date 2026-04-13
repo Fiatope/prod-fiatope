@@ -31,6 +31,9 @@ en:
           error: "The transaction has been refused and you will not be charged. (%{status})"
         touch_payment_status:
           pending_verification: "Your mobile payment has been initiated. You will receive a confirmation once it is validated."
+        touch_payment:
+          canceled: "Your mobile payment was canceled or expired. Please try again or contact support."
+          timeout: "Payment confirmation is taking too long. Please check your phone and try again."
 
     users:
       completeness_progress: 'Please <a href="%{link}">complete your profile</a> so we can talk you up, and give you full credit for being awesome!'
