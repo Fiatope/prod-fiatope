@@ -1,26 +1,170 @@
 <% content_for :title, @project.name %>
 
-<%= flash_messages if flash.notice.present? %>
+<% qr_code   = @response['qrCode'].to_s %>
+<% om_link   = (@response['OM'] || @response['deepLink']).to_s %>
+<% maxit_link= @response['MAXIT'].to_s %>
+<% validity  = (@response['validity'] || '600').to_i %>
 
 <div class="contribution-page">
   <%= hero_header_tag @project do %>
-    <div class="large-10 columns large-centered">
+    <div class="large-10 columns large-centered text-center">
       <h3><%= t('.title') %></h3>
     </div>
   <% end %>
 
   <div class="row page-main-content">
-    <div class="col-md-6 col-md-offset-3">
+    <div class="col-md-6 col-md-offset-3 text-center" style="padding: 30px 20px;">
 
-      <%= form_tag touch_payment_status_project_contribution_path(@contribution.project, @contribution) do %>
-        <%= hidden_field_tag :country_operator, @response['country_operator'] %>
-        <%= hidden_field_tag :id_client, @response['idFromClient'] %>
-        <%= submit_tag 'Terminer le paiement', class: 'btn btn-primary btn-medium-green' %>
-        <% if @new_payment %>
-          <%= submit_tag 'Effectuer un nouveau paiement', class: 'btn btn-primary btn-medium-green' %>
-        <% end %>
+      <p style="color:#555; margin-bottom:20px;"><%= t('.scan_instruction') %></p>
+
+      <% if qr_code.present? %>
+        <div style="display:inline-block; padding:12px; background:#fff; border:2px solid #e0e0e0; border-radius:8px; margin-bottom:20px;">
+          <img src="data:image/png;base64,<%= qr_code %>"
+               alt="QR Code Orange Money"
+               style="width:220px; height:220px; display:block;" />
+        </div>
       <% end %>
+
+      <div id="qr-countdown" style="margin-bottom:20px;">
+        <span style="font-size:13px; color:#888;"><%= t('.expires_in') %></span>
+        <span id="countdown-timer" style="font-size:18px; font-weight:bold; color:#f69219; margin-left:6px;">10:00</span>
+      </div>
+
+      <% if om_link.present? %>
+        <div style="margin-bottom:10px;">
+          <a href="<%= om_link %>" class="btn btn-primary btn-medium-green" style="padding:10px 24px; font-size:15px;">
+            <i class="fa fa-mobile" style="margin-right:6px;"></i> <%= t('.open_om_app') %>
+          </a>
+        </div>
+      <% end %>
+
+      <% if maxit_link.present? %>
+        <div style="margin-bottom:20px;">
+          <a href="<%= maxit_link %>" class="btn btn-default" style="padding:8px 20px;">
+            <%= t('.open_maxit_app') %>
+          </a>
+        </div>
+      <% end %>
+
+      <div style="margin: 20px 0;">
+        <div class="progress" style="height:6px; border-radius:3px; background:#eee;">
+          <div class="progress-bar progress-bar-striped active" id="qr-progress-bar"
+               style="width:100%; background:#f69219; border-radius:3px;
+                      animation: progress-pulse 1.5s ease-in-out infinite;">
+          </div>
+        </div>
+        <small style="color:#999; display:block; margin-top:6px;">
+          <span id="check-counter">0</span> <%= t('.checks_done') %>
+        </small>
+      </div>
+
+      <p id="qr-status-msg" style="color:#666; font-size:13px;"><%= t('.waiting_confirmation') %></p>
+
+      <div style="margin-top:24px;">
+        <%= link_to t('.new_payment'), touch_payment_new_project_contribution_path(@contribution.project, @contribution), class: 'btn btn-default btn-sm' %>
+        &nbsp;
+        <%= link_to t('.back_to_project'), project_path(@project), class: 'btn btn-default btn-sm' %>
+      </div>
 
     </div>
   </div>
 </div>
+
+<style>
+@keyframes progress-pulse {
+  0%   { opacity: 1; }
+  50%  { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+</style>
+
+<script>
+(function() {
+  var checkUrl   = '<%= touch_payment_check_status_project_contribution_path(@contribution.project, @contribution) %>';
+  var successUrl = '<%= project_contribution_path(project_id: @project, id: @contribution) %>';
+  var canceledUrl= '<%= edit_project_contribution_path(project_id: @project, id: @contribution) %>';
+  var pendingUrl = '<%= touch_payment_pending_project_contribution_path(@contribution.project, @contribution) %>';
+  var projectUrl = '<%= project_path(@project) %>';
+  var storageKey = 'touch_checks_<%= @contribution.id %>';
+  var validity   = <%= validity %>;  // seconds (600 = 10 min)
+  var maxChecks  = Math.ceil(validity / 5);  // one check every 5s
+  var interval   = 5000;
+
+  var counter    = document.getElementById('check-counter');
+  var statusMsg  = document.getElementById('qr-status-msg');
+  var timerEl    = document.getElementById('countdown-timer');
+  var progressBar= document.getElementById('qr-progress-bar');
+
+  // Countdown timer
+  var remaining = validity;
+  function updateCountdown() {
+    if (remaining <= 0) {
+      if (timerEl) timerEl.textContent = '0:00';
+      return;
+    }
+    var m = Math.floor(remaining / 60);
+    var s = remaining % 60;
+    if (timerEl) timerEl.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+    if (progressBar) progressBar.style.width = Math.round((remaining / validity) * 100) + '%';
+    remaining--;
+    setTimeout(updateCountdown, 1000);
+  }
+  updateCountdown();
+
+  // Persist check counter across page refreshes
+  var checks = 0;
+  try {
+    var stored = parseInt(localStorage.getItem(storageKey) || '0', 10);
+    if (!isNaN(stored) && stored > 0 && stored < maxChecks) {
+      checks = stored;
+      if (counter) counter.textContent = checks;
+    }
+  } catch(e) {}
+
+  function saveChecks()  { try { localStorage.setItem(storageKey, checks); } catch(e) {} }
+  function clearChecks() { try { localStorage.removeItem(storageKey); }     catch(e) {} }
+
+  function checkStatus() {
+    checks++;
+    saveChecks();
+    if (counter) counter.textContent = checks;
+
+    fetch(checkUrl, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (data.confirmed) {
+        clearChecks();
+        window.location.href = successUrl;
+      } else if (data.canceled) {
+        clearChecks();
+        window.location.href = canceledUrl;
+      } else if (data.state === 'unauthorized') {
+        clearChecks();
+        window.location.href = projectUrl;
+      } else if (checks >= maxChecks || remaining <= 0) {
+        clearChecks();
+        window.location.href = pendingUrl + '?touch_timeout=1';
+      } else {
+        if (statusMsg && checks > 6) {
+          statusMsg.textContent = '<%= t(".waiting_long") %>';
+        }
+        setTimeout(checkStatus, interval);
+      }
+    })
+    .catch(function() {
+      if (checks < maxChecks) {
+        setTimeout(checkStatus, interval);
+      } else {
+        clearChecks();
+        window.location.href = pendingUrl + '?touch_timeout=1';
+      }
+    });
+  }
+
+  // Start polling after 4 seconds (give time for user to scan)
+  setTimeout(checkStatus, 4000);
+})();
+</script>

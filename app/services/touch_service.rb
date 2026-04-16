@@ -129,13 +129,19 @@ class TouchService < ApplicationService
 
         @contribution.cfa_value = (@contribution.value * conversion_rate).round
 
+        # return_url / cancel_url: used by OM app to redirect back after QR code payment
+        success_url = touch_payment_return_project_contribution_url(@contribution.project, @contribution)
+        cancel_url  = edit_project_contribution_url(project_id: @contribution.project, id: @contribution)
+
         data = {
             'idFromClient' => id_client,
             'additionnalInfos': {
-                'recipientEmail' => @contribution.user.email,
+                'recipientEmail'     => @contribution.user.email,
                 'recipientFirstName' => @contribution.user.name,
-                'recipientLastName' => @contribution.user.name,
-                'destinataire' => @phone
+                'recipientLastName'  => @contribution.user.name,
+                'destinataire'       => @phone,
+                'return_url'         => success_url,
+                'cancel_url'         => cancel_url
             },
             'amount': @contribution.cfa_value.to_i,
             'callback' => @url_callback,

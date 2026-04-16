@@ -281,7 +281,6 @@ class Projects::ContributionsController < ApplicationController
     Rails.logger.debug("[TouchService] initiate_paiement response: #{@response}")
 
     if @response['status'] == 'INITIATED' && @response['idFromClient'].present?
-      flash.now[:notice] = 'Valider le paiement sur votre téléphone'
       render 'projects/contributions/touch_payment_initialization'
     else
       @response['message'] ||= @response['detailMessage']
