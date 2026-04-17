@@ -1,9 +1,29 @@
 <% content_for :title, @project.name %>
 
-<% qr_code   = @response['qrCode'].to_s %>
-<% om_link   = (@response['OM'] || @response['deepLink']).to_s %>
-<% maxit_link= @response['MAXIT'].to_s %>
-<% validity  = (@response['validity'] || '600').to_i %>
+<%
+  # Defensive + secure accessors — InTouch response is treated as untrusted input
+  qr_raw = TouchService.qr_code_from(@response).to_s
+
+  # Only accept known-safe raster image types (block SVG to prevent SVG-based XSS vectors)
+  qr_src =
+    if qr_raw =~ /\Adata:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+\/=\s]+\z/i
+      qr_raw
+    elsif qr_raw.present? && qr_raw =~ /\A[A-Za-z0-9+\/=\s]+\z/
+      "data:image/png;base64,#{qr_raw.gsub(/\s+/, '')}"
+    end
+
+  # Whitelist URL schemes for deeplinks + explicit denylist (belt and suspenders)
+  safe_url_scheme    = /\A[a-z][a-z0-9+.\-]*:\/\//i
+  dangerous_schemes  = /\A(javascript|vbscript|data|file|about|chrome|view-source):/i
+  raw_om_link        = (@response['OM']    || @response['deepLink'] || @response['om']).to_s
+  raw_maxit_link     = (@response['MAXIT'] || @response['maxit']).to_s
+  sanitize_deeplink  = ->(u) { (u =~ safe_url_scheme) && (u !~ dangerous_schemes) ? u : '' }
+  om_link            = sanitize_deeplink.call(raw_om_link)
+  maxit_link         = sanitize_deeplink.call(raw_maxit_link)
+
+  validity     = (@response['validity'] || '600').to_i
+  qr_available = qr_src.present? || om_link.present? || maxit_link.present?
+%>
 
 <div class="contribution-page">
   <%= hero_header_tag @project do %>
@@ -15,11 +35,24 @@
   <div class="row page-main-content">
     <div class="col-md-6 col-md-offset-3 text-center" style="padding: 30px 20px;">
 
+      <% unless qr_available %>
+        <%# Fail visibly instead of running a silent countdown with no QR %>
+        <div style="padding:20px; border:1px solid #f5c6cb; background:#f8d7da; color:#721c24; border-radius:6px; margin-bottom:20px; text-align:left;">
+          <h4 style="margin-top:0; color:#721c24;"><%= t('.qr_missing_title') %></h4>
+          <p style="margin-bottom:0;"><%= t('.qr_missing_message') %></p>
+        </div>
+        <div style="margin-top:20px;">
+          <%= link_to t('.qr_missing_retry'), touch_payment_new_project_contribution_path(@contribution.project, @contribution), class: 'btn btn-primary btn-medium-green' %>
+          &nbsp;
+          <%= link_to t('.back_to_project'), project_path(@project), class: 'btn btn-default' %>
+        </div>
+      <% else %>
+
       <p style="color:#555; margin-bottom:20px;"><%= t('.scan_instruction') %></p>
 
-      <% if qr_code.present? %>
+      <% if qr_src.present? %>
         <div style="display:inline-block; padding:12px; background:#fff; border:2px solid #e0e0e0; border-radius:8px; margin-bottom:20px;">
-          <img src="data:image/png;base64,<%= qr_code %>"
+          <img src="<%= qr_src %>"
                alt="QR Code Orange Money"
                style="width:220px; height:220px; display:block;" />
         </div>
@@ -66,6 +99,7 @@
         <%= link_to t('.back_to_project'), project_path(@project), class: 'btn btn-default btn-sm' %>
       </div>
 
+      <% end %>
     </div>
   </div>
 </div>
@@ -78,6 +112,7 @@
 }
 </style>
 
+<% if qr_available %>
 <script>
 (function() {
   var checkUrl   = '<%= touch_payment_check_status_project_contribution_path(@contribution.project, @contribution) %>';
@@ -168,3 +203,4 @@
   setTimeout(checkStatus, 4000);
 })();
 </script>
+<% end %>

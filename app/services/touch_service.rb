@@ -122,6 +122,14 @@ class TouchService < ApplicationService
         http.request(req)
     end
 
+    # Currency by country (XOF = CFA Ouest, XAF = CFA Centrale, GNF = Guinée)
+    CURRENCY_BY_COUNTRY = {
+        'SN' => 'XOF',
+        'CI' => 'XOF',
+        'CM' => 'XAF',
+        'GN' => 'GNF'
+    }.freeze
+
     def initiate_paiement
         return config_error_response unless valid_touch_config?
 
@@ -133,35 +141,49 @@ class TouchService < ApplicationService
         success_url = touch_payment_return_project_contribution_url(@contribution.project, @contribution)
         cancel_url  = edit_project_contribution_url(project_id: @contribution.project, id: @contribution)
 
+        # partner_name: displayed to the payer in the Orange Money app as the recipient merchant
+        partner_name = @contribution.project.try(:name).presence || (defined?(Configuration) && Configuration[:company_name].presence) || 'Fiatope'
+
+        additionnal_infos = {
+            'recipientEmail'     => @contribution.user.email,
+            'recipientFirstName' => @contribution.user.name,
+            'recipientLastName'  => @contribution.user.name,
+            'destinataire'       => @phone,
+            'partner_name'       => partner_name,
+            'return_url'         => success_url,
+            'cancel_url'         => cancel_url
+        }
+        currency = CURRENCY_BY_COUNTRY[@country]
+        additionnal_infos['currency'] = currency if currency.present?
+
         data = {
             'idFromClient' => id_client,
-            'additionnalInfos': {
-                'recipientEmail'     => @contribution.user.email,
-                'recipientFirstName' => @contribution.user.name,
-                'recipientLastName'  => @contribution.user.name,
-                'destinataire'       => @phone,
-                'return_url'         => success_url,
-                'cancel_url'         => cancel_url
-            },
+            'additionnalInfos': additionnal_infos,
             'amount': @contribution.cfa_value.to_i,
             'callback' => @url_callback,
             'recipientNumber' => @phone,
             'serviceCode' => @touch_servicecode
         }
 
-        Rails.logger.info("[TouchService] initiating payment country=#{@country} operator=#{@operator} path_id=#{@touch_path_id} login_api=#{masked_value(@touch_login_api)} service_code=#{@touch_servicecode}")
+        Rails.logger.info("[TouchService] initiating payment country=#{@country} operator=#{@operator} path_id=#{@touch_path_id} login_api=#{masked_value(@touch_login_api)} service_code=#{@touch_servicecode} currency=#{currency || 'none'}")
 
         response = request("/dist/api/touchpayapi/v1/#{@touch_path_id}/transaction", data, true)
         parsed = JSON.parse(response.body)
-        Rails.logger.info("[TouchService] initiate_paiement http_status=#{response.code} response_status=#{parsed['status']} id_from_client=#{parsed['idFromClient']} response_keys=#{parsed.keys.inspect}")
+        Rails.logger.info("[TouchService] initiate_paiement http_status=#{response.code} response_status=#{parsed['status']} id_from_client=#{parsed['idFromClient']} response_keys=#{parsed.keys.inspect} qr_present=#{self.class.qr_code_from(parsed).present?} om_link_present=#{parsed['OM'].present?} maxit_link_present=#{parsed['MAXIT'].present?} validity=#{parsed['validity']}")
         parsed
     rescue StandardError => e
-        Rails.logger.error("[TouchService] initiate_paiement failed: #{e.message}")
+        Rails.logger.error("[TouchService] initiate_paiement failed: #{e.class} #{e.message}")
         {
             'status' => 'CONFIG_ERROR',
             'message' => 'Touch configuration error',
             'detailMessage' => e.message
         }
+    end
+
+    # Defensive QR code accessor — tries several key variants returned by InTouch
+    def self.qr_code_from(response)
+        return nil unless response.is_a?(Hash)
+        response['qrCode'] || response['qr_code'] || response['qrcode'] || response['QRCode'] || response['QR_CODE']
     end
 
     def check_status id_client

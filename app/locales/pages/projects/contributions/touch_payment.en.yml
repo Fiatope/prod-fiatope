@@ -14,6 +14,9 @@ en:
         checks_done: "check(s)"
         new_payment: "Try again"
         back_to_project: "Back to project"
+        qr_missing_title: "Unable to display the QR code"
+        qr_missing_message: "We couldn't generate the payment QR code. Please try again or use another payment method. If the issue persists, contact support."
+        qr_missing_retry: "Try again"
       touch_payment_pending:
         title: "Payment awaiting confirmation"
         waiting_title: "Validation in progress..."

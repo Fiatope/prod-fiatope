@@ -14,6 +14,9 @@ fr:
         checks_done: "vérification(s)"
         new_payment: "Nouvelle tentative"
         back_to_project: "Retour au projet"
+        qr_missing_title: "Impossible d'afficher le QR code"
+        qr_missing_message: "Nous n'avons pas pu générer le QR code de paiement. Veuillez réessayer ou utiliser un autre moyen de paiement. Si le problème persiste, contactez le support."
+        qr_missing_retry: "Réessayer"
       touch_payment_pending:
         title: "Paiement en attente de confirmation"
         waiting_title: "Validation en cours..."

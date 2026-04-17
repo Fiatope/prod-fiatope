@@ -278,9 +278,13 @@ class Projects::ContributionsController < ApplicationController
       "country_operator" => touch_params[:country_operator]
     })
 
-    Rails.logger.debug("[TouchService] initiate_paiement response: #{@response}")
+    qr_present = TouchService.qr_code_from(@response).present?
+    Rails.logger.info("[ContributionsController#touch_payment_initialization] contribution_id=#{@contribution.id} status=#{@response['status']} id_from_client_present=#{@response['idFromClient'].present?} qr_present=#{qr_present} om_present=#{@response['OM'].present?} maxit_present=#{@response['MAXIT'].present?} validity=#{@response['validity']} response_keys=#{@response.keys.inspect}")
 
     if @response['status'] == 'INITIATED' && @response['idFromClient'].present?
+      unless qr_present || @response['OM'].present? || @response['MAXIT'].present?
+        Rails.logger.warn("[ContributionsController#touch_payment_initialization] INITIATED without any QR/OM/MAXIT link — contribution_id=#{@contribution.id} response_keys=#{@response.keys.inspect}")
+      end
       render 'projects/contributions/touch_payment_initialization'
     else
       @response['message'] ||= @response['detailMessage']
