@@ -152,7 +152,9 @@ class TouchService < ApplicationService
         Rails.logger.info("[TouchService] initiating payment country=#{@country} operator=#{@operator} path_id=#{@touch_path_id} login_api=#{masked_value(@touch_login_api)} service_code=#{@touch_servicecode}")
 
         response = request("/dist/api/touchpayapi/v1/#{@touch_path_id}/transaction", data, true)
-        JSON.parse(response.body)
+        parsed = JSON.parse(response.body)
+        Rails.logger.info("[TouchService] initiate_paiement http_status=#{response.code} response_status=#{parsed['status']} id_from_client=#{parsed['idFromClient']} response_keys=#{parsed.keys.inspect}")
+        parsed
     rescue StandardError => e
         Rails.logger.error("[TouchService] initiate_paiement failed: #{e.message}")
         {
