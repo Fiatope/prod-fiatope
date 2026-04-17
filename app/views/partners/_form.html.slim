@@ -13,7 +13,7 @@
         .image-preview
           = image_tag(@partner.uploaded_image.project_thumb.url, size: '220x172')
     .image-uploader
-      = f.input :hero_image, as: :file
+      = f.input :hero_image, as: :file, hint: "Format paysage recommandé (ex : 1500×500 px). Votre image sera affichée en entier, sans être coupée."
       - if @partner.hero_image.present?
         .image-preview
           = image_tag(@partner.hero_image_url(:blur), size: '220')

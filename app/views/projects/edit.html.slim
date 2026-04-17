@@ -64,7 +64,7 @@
 					                = image_tag(@project.uploaded_image.project_thumb.url, size: '220x172')
 					        - if policy(@project).permitted_for?(:hero_image, :update)
 					          .col-md-12.image-uploader
-					            = form.input :hero_image, as: :file
+					            = form.input :hero_image, as: :file, hint: "Format paysage recommandé (ex : 1500×500 px). Votre image sera affichée en entier, sans être coupée."
 					            - if @project.hero_image.present?
 					              .image-preview
 					                = image_tag(@project.hero_image_url(:blur), size: '220')
