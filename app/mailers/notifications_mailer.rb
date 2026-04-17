@@ -5,13 +5,13 @@ class NotificationsMailer < ActionMailer::Base
     @project = project
     partner = Partner.find(project.partner_id)
     if partner.has_attribute?(:email)
-      mail(from: ENV['EMAIL_SYSTEM'], to: partner.email, subject: "Nouveau projet créé")
+      mail(from: display_from(ENV['EMAIL_SYSTEM']), to: partner.email, subject: "Nouveau projet créé")
     end
   end
 
   def project_created(project)
     @project = project
-    mail(from: ENV['EMAIL_SYSTEM'], to: ENV['EMAIL_SYSTEM'], subject: "Un nouveau projet a été soumis")
+    mail(from: display_from(ENV['EMAIL_SYSTEM']), to: ENV['EMAIL_SYSTEM'], subject: "Un nouveau projet a été soumis")
   end
 
   def notify(notification)
@@ -35,4 +35,12 @@ class NotificationsMailer < ActionMailer::Base
     end
     m
   end
+
+  private
+
+  def display_from(addr = nil)
+    addr ||= ENV['EMAIL_CONTACT'] || 'contact@fiatope.com'
+    "Fiatope <#{addr}>"
+  end
+
 end
