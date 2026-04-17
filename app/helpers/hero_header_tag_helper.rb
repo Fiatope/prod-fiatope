@@ -20,16 +20,22 @@ module HeroHeaderTagHelper
   def hero_header_tag(object, options = {}, image = nil, &block)
     image ||= object.hero_image_url || '/assets/banner.jpg'
 
+    # NOTE: intentionally no `data: { 'image-url' => … }`. The legacy
+    # `backstretch` jQuery plugin (neighborly.js.coffee) scans
+    # `header.hero:not(.no-image)[data-image-url]` and injects its own
+    # absolutely-positioned <img> wrapper that fights with our CSS
+    # `background-image` + `aspect-ratio` layout (resulting in the hero
+    # going black). We render the image entirely in CSS here, so we keep
+    # backstretch from ever touching this particular <header>.
     content_tag :header,
                 class: [:hero, :baniereImageProject, options[:class], image],
                 style: "position: relative; overflow: hidden; " \
                        "width: 100%; aspect-ratio: 3 / 1; " \
                        "min-height: 200px; max-height: 60dvh; " \
                        "background-color: #B87333; " \
-                       "background-image: url(#{image}); " \
+                       "background-image: url('#{image}'); " \
                        "background-position: center; background-size: cover; " \
-                       "background-repeat: no-repeat;",
-                data: { 'image-url' => image_url(image) } do
+                       "background-repeat: no-repeat;" do
       safe_join([
         content_tag(:div, '', class: 'hero-gradient', 'aria-hidden': true, style:
           "position: absolute; inset: 0; z-index: 1; pointer-events: none; " \
