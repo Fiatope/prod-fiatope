@@ -135,7 +135,15 @@ class TouchService < ApplicationService
 
         id_client = "#{Time.now.to_i}#{@contribution.id}"
 
-        @contribution.cfa_value = (@contribution.value * conversion_rate).round
+        # For XOF/XAF/GNF projects, value is already in the local currency — no EUR conversion needed.
+        # Only multiply by conversion_rate for EUR (or other non-CFA) projects.
+        project_currency = @contribution.project.try(:currency).to_s.strip.upcase
+        @contribution.cfa_value =
+            if %w[XOF XAF GNF FCFA].include?(project_currency)
+                @contribution.value.to_i
+            else
+                (@contribution.value * conversion_rate).round
+            end
 
         # return_url / cancel_url: used by OM app to redirect back after QR code payment
         success_url = touch_payment_return_project_contribution_url(@contribution.project, @contribution)
@@ -143,6 +151,14 @@ class TouchService < ApplicationService
 
         # partner_name: displayed to the payer in the Orange Money app as the recipient merchant
         partner_name = @contribution.project.try(:name).presence || (defined?(Configuration) && Configuration[:company_name].presence) || 'Fiatope'
+
+        # For PAIEMENTMARCHANDOMQRCODE (and other merchant QR codes), recipientNumber MUST be the
+        # merchant's Orange Money number (who receives the money), not the payer's phone.
+        # Configure: TOUCH_{COUNTRY}_{OPERATOR}_MERCHANT_NUMBER in ENV.
+        # For legacy USSD service codes, fall back to @phone (payer's number, as before).
+        qr_merchant_codes = %w[PAIEMENTMARCHANDOMQRCODE SNPAIEMENTWAVE PAIEMENTMARCHANDTIGO]
+        merchant_number   = env_value("TOUCH_#{@country}_#{@operator}_MERCHANT_NUMBER")
+        recipient_number  = (qr_merchant_codes.include?(@touch_servicecode) && merchant_number.present?) ? merchant_number : @phone
 
         additionnal_infos = {
             'recipientEmail'     => @contribution.user.email,
@@ -161,7 +177,7 @@ class TouchService < ApplicationService
             'additionnalInfos': additionnal_infos,
             'amount': @contribution.cfa_value.to_i,
             'callback' => @url_callback,
-            'recipientNumber' => @phone,
+            'recipientNumber' => recipient_number,
             'serviceCode' => @touch_servicecode
         }
 
