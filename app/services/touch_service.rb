@@ -179,7 +179,14 @@ class TouchService < ApplicationService
             'serviceCode' => @touch_servicecode
         }
 
-        Rails.logger.info("[TouchService] initiating payment country=#{@country} operator=#{@operator} path_id=#{@touch_path_id} login_api=#{masked_value(@touch_login_api)} service_code=#{@touch_servicecode} currency=#{currency || 'none'} amount=#{@contribution.cfa_value.to_i} recipient_number=#{@phone} partner_name_raw=#{partner_name.inspect} partner_name_api=#{sanitize_for_api(partner_name).inspect} callback_url=#{@url_callback}")
+        safe_body = data.dup
+        safe_body['recipientNumber'] = safe_body['recipientNumber'].to_s.gsub(/.(?=.{3})/, '*')
+        safe_additionnal = (safe_body[:'additionnalInfos'] || safe_body['additionnalInfos'] || {}).dup
+        safe_additionnal['recipientEmail'] = safe_additionnal['recipientEmail'].to_s.gsub(/.(?=.{6}@)/, '*')
+        safe_additionnal['destinataire']   = safe_additionnal['destinataire'].to_s.gsub(/.(?=.{3})/, '*')
+        safe_body[:'additionnalInfos'] = safe_additionnal
+        Rails.logger.info("[TouchService] initiating payment country=#{@country} operator=#{@operator} path_id=#{@touch_path_id} login_api=#{masked_value(@touch_login_api)} service_code=#{@touch_servicecode} currency=#{currency || 'none'} project_currency=#{project_currency} contribution_value=#{@contribution.value} amount=#{@contribution.cfa_value.to_i} partner_name_raw=#{partner_name.inspect} partner_name_api=#{sanitize_for_api(partner_name).inspect}")
+        Rails.logger.info("[TouchService] request_body=#{safe_body.to_json}")
 
         response = request("/dist/api/touchpayapi/v1/#{@touch_path_id}/transaction", data, true)
         parsed = JSON.parse(response.body)
