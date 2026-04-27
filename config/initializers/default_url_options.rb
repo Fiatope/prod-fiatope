@@ -1,6 +1,7 @@
 if Rails.env.production?
-  ActionMailer::Base.asset_host = ::Configuration[:host]
-  Rails.application.routes.default_url_options = {host: ::Configuration[:host]} 
+  clean_host = ::Configuration[:host].to_s.sub(%r{/*\z}, '')
+  ActionMailer::Base.asset_host = clean_host
+  Rails.application.routes.default_url_options = { host: clean_host }
 else
-  Rails.application.routes.default_url_options = {host: 'localhost:3000'} 
+  Rails.application.routes.default_url_options = { host: 'localhost:3000' }
 end
