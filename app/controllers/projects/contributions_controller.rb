@@ -290,7 +290,8 @@ class Projects::ContributionsController < ApplicationController
       @response['message'] ||= @response['detailMessage']
       @response['message'] ||= @response['description']
       @response['status'] ||= @response['code']
-      redirect_to touch_payment_new_project_contribution_path(@contribution.project, @contribution), notice: "Code: #{@response['status']} #{@response['message']}"
+      Rails.logger.error("[ContributionsController#touch_payment_initialization] payment failed code=#{@response['status']} message=#{@response['message']}")
+      redirect_to touch_payment_new_project_contribution_path(@contribution.project, @contribution), notice: "Le paiement n'a pas pu être initié. Veuillez vérifier votre numéro et réessayer, ou utiliser un autre moyen de paiement."
     end
   end
 

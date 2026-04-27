@@ -160,10 +160,10 @@ class TouchService < ApplicationService
 
         additionnal_infos = {
             'recipientEmail'     => @contribution.user.email,
-            'recipientFirstName' => @contribution.user.name,
-            'recipientLastName'  => @contribution.user.name,
+            'recipientFirstName' => sanitize_for_api(@contribution.user.name),
+            'recipientLastName'  => sanitize_for_api(@contribution.user.name),
             'destinataire'       => @phone,
-            'partner_name'       => partner_name,
+            'partner_name'       => sanitize_for_api(partner_name),
             'return_url'         => success_url,
             'cancel_url'         => cancel_url
         }
@@ -233,6 +233,15 @@ class TouchService < ApplicationService
     end
 
     private
+
+    def sanitize_for_api(str)
+        return '' if str.blank?
+        # Transliterate accented/special chars to ASCII equivalents (é→e, ç→c, à→a, ü→u, etc.)
+        # Orange Money API rejects requests containing accented or non-ASCII characters.
+        result = ActiveSupport::Inflector.transliterate(str.to_s)
+        # Remove any remaining non-ASCII chars; keep alphanumeric, spaces, and safe punctuation
+        result.gsub(/[^A-Za-z0-9\s\-\.,'\/\@]/, ' ').gsub(/\s+/, ' ').strip
+    end
 
     def env_value(key)
         value = ENV[key]
