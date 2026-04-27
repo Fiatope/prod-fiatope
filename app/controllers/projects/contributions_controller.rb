@@ -285,6 +285,10 @@ class Projects::ContributionsController < ApplicationController
       unless qr_present || @response['OM'].present? || @response['MAXIT'].present?
         Rails.logger.warn("[ContributionsController#touch_payment_initialization] INITIATED without any QR/OM/MAXIT link — contribution_id=#{@contribution.id} response_keys=#{@response.keys.inspect}")
       end
+      if @contribution.canceled?
+        @contribution.pendent
+        Rails.logger.info("[ContributionsController#touch_payment_initialization] contribution #{@contribution.id} reset from canceled to pending for new payment attempt")
+      end
       render 'projects/contributions/touch_payment_initialization'
     else
       @response['message'] ||= @response['detailMessage']
