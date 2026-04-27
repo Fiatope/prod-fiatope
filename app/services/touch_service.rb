@@ -163,7 +163,7 @@ class TouchService < ApplicationService
             'recipientFirstName' => sanitize_for_api(@contribution.user.name),
             'recipientLastName'  => sanitize_for_api(@contribution.user.name),
             'destinataire'       => @phone,
-            'partner_name'       => sanitize_for_api(partner_name),
+            'partner_name'       => sanitize_for_api(partner_name).truncate(30, omission: '', separator: ' ').strip,
             'return_url'         => success_url,
             'cancel_url'         => cancel_url
         }
@@ -185,7 +185,8 @@ class TouchService < ApplicationService
         safe_additionnal['recipientEmail'] = safe_additionnal['recipientEmail'].to_s.gsub(/.(?=.{6}@)/, '*')
         safe_additionnal['destinataire']   = safe_additionnal['destinataire'].to_s.gsub(/.(?=.{3})/, '*')
         safe_body[:'additionnalInfos'] = safe_additionnal
-        Rails.logger.info("[TouchService] initiating payment country=#{@country} operator=#{@operator} path_id=#{@touch_path_id} login_api=#{masked_value(@touch_login_api)} service_code=#{@touch_servicecode} currency=#{currency || 'none'} project_currency=#{project_currency} contribution_value=#{@contribution.value} amount=#{@contribution.cfa_value.to_i} partner_name_raw=#{partner_name.inspect} partner_name_api=#{sanitize_for_api(partner_name).inspect}")
+        partner_name_api = sanitize_for_api(partner_name).truncate(30, omission: '', separator: ' ').strip
+        Rails.logger.info("[TouchService] initiating payment country=#{@country} operator=#{@operator} path_id=#{@touch_path_id} login_api=#{masked_value(@touch_login_api)} service_code=#{@touch_servicecode} currency=#{currency || 'none'} project_currency=#{project_currency} contribution_value=#{@contribution.value} amount=#{@contribution.cfa_value.to_i} partner_name_raw=#{partner_name.inspect} partner_name_api=#{partner_name_api.inspect}")
         Rails.logger.info("[TouchService] request_body=#{safe_body.to_json}")
 
         response = request("/dist/api/touchpayapi/v1/#{@touch_path_id}/transaction", data, true)
