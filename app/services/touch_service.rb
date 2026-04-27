@@ -179,11 +179,14 @@ class TouchService < ApplicationService
             'serviceCode' => @touch_servicecode
         }
 
-        Rails.logger.info("[TouchService] initiating payment country=#{@country} operator=#{@operator} path_id=#{@touch_path_id} login_api=#{masked_value(@touch_login_api)} service_code=#{@touch_servicecode} currency=#{currency || 'none'}")
+        Rails.logger.info("[TouchService] initiating payment country=#{@country} operator=#{@operator} path_id=#{@touch_path_id} login_api=#{masked_value(@touch_login_api)} service_code=#{@touch_servicecode} currency=#{currency || 'none'} amount=#{@contribution.cfa_value.to_i} recipient_number=#{@phone} callback_url=#{@url_callback}")
 
         response = request("/dist/api/touchpayapi/v1/#{@touch_path_id}/transaction", data, true)
         parsed = JSON.parse(response.body)
         Rails.logger.info("[TouchService] initiate_paiement http_status=#{response.code} response_status=#{parsed['status']} id_from_client=#{parsed['idFromClient']} response_keys=#{parsed.keys.inspect} qr_present=#{self.class.qr_code_from(parsed).present?} om_link_present=#{parsed['OM'].present?} maxit_link_present=#{parsed['MAXIT'].present?} validity=#{parsed['validity']}")
+        unless parsed['status'].to_s == 'INITIATED'
+            Rails.logger.error("[TouchService] NON-INITIATED response: detail_message=#{parsed['detailMessage'].to_s.first(500)} stack_trace=#{parsed['stackTrace'].to_s.first(300)} suppressed=#{parsed['suppressedExceptions'].inspect}")
+        end
         parsed
     rescue StandardError => e
         Rails.logger.error("[TouchService] initiate_paiement failed: #{e.class} #{e.message}")
