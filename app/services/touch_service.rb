@@ -152,13 +152,11 @@ class TouchService < ApplicationService
         # partner_name: displayed to the payer in the Orange Money app as the recipient merchant
         partner_name = @contribution.project.try(:name).presence || (defined?(Configuration) && Configuration[:company_name].presence) || 'Fiatope'
 
-        # For PAIEMENTMARCHANDOMQRCODE (and other merchant QR codes), recipientNumber MUST be the
-        # merchant's Orange Money number (who receives the money), not the payer's phone.
-        # Configure: TOUCH_{COUNTRY}_{OPERATOR}_MERCHANT_NUMBER in ENV.
-        # For legacy USSD service codes, fall back to @phone (payer's number, as before).
-        qr_merchant_codes = %w[PAIEMENTMARCHANDOMQRCODE SNPAIEMENTWAVE PAIEMENTMARCHANDTIGO]
-        merchant_number   = env_value("TOUCH_#{@country}_#{@operator}_MERCHANT_NUMBER")
-        recipient_number  = (qr_merchant_codes.include?(@touch_servicecode) && merchant_number.present?) ? merchant_number : @phone
+        # Per InTouch official spec (verified 2026-04-27):
+        # recipientNumber = payer's phone number for ALL service codes
+        # (PAIEMENTMARCHANDOMQRCODE, SNPAIEMENTWAVE, PAIEMENTMARCHANDTIGO, SN_INIT_PAIEMENT_TP, etc.)
+        # Both recipientNumber and destinataire must be the customer who is paying.
+        recipient_number = @phone
 
         additionnal_infos = {
             'recipientEmail'     => @contribution.user.email,
