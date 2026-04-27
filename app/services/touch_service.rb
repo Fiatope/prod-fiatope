@@ -179,7 +179,7 @@ class TouchService < ApplicationService
             'serviceCode' => @touch_servicecode
         }
 
-        Rails.logger.info("[TouchService] initiating payment country=#{@country} operator=#{@operator} path_id=#{@touch_path_id} login_api=#{masked_value(@touch_login_api)} service_code=#{@touch_servicecode} currency=#{currency || 'none'} amount=#{@contribution.cfa_value.to_i} recipient_number=#{@phone} callback_url=#{@url_callback}")
+        Rails.logger.info("[TouchService] initiating payment country=#{@country} operator=#{@operator} path_id=#{@touch_path_id} login_api=#{masked_value(@touch_login_api)} service_code=#{@touch_servicecode} currency=#{currency || 'none'} amount=#{@contribution.cfa_value.to_i} recipient_number=#{@phone} partner_name_raw=#{partner_name.inspect} partner_name_api=#{sanitize_for_api(partner_name).inspect} callback_url=#{@url_callback}")
 
         response = request("/dist/api/touchpayapi/v1/#{@touch_path_id}/transaction", data, true)
         parsed = JSON.parse(response.body)
