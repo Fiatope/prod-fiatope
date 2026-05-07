@@ -173,7 +173,7 @@
           - elsif !payout_ready
             = link_to pay_project_path(@project), class: "btn btn-block btn-warning" do
               i.fa.fa-exclamation-triangle
-              |  ⚙ Completer mon profil de retrait
+              |  Retirer mes fonds
           - elsif stripe_contributions_exist
             = link_to pay_project_path(@project), class: "btn btn-block btn-success" do
               i.fa.fa-paper-plane
@@ -181,7 +181,7 @@
           - else
             = link_to pay_project_path(@project), class: "btn btn-block btn-default" do
               i.fa.fa-info-circle
-              |  Informations de retrait
+              |  Retirer mes fonds
 
 
       /= simple_form_for(current_user, url: user_unsubscribes_path(user_id: current_user.id), html:{ method: :post}) do |f|

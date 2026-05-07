@@ -119,7 +119,10 @@
           h4[style="color:#e67e22;"]
             i.fa.fa-exclamation-triangle
             |  Completez votre profil de retrait
-          p | Pour retirer vos fonds sans quitter Fiatope, renseignez votre profil complet (identite, banque, justificatifs).
+          p | Pour retirer vos fonds sans quitter Fiatope, renseignez votre profil organisation (association, entreprise ou organisation), vos informations bancaires et vos justificatifs.
+          p.small[style="margin-top:8px;color:#6c757d;"]
+            i.fa.fa-info-circle
+            |  Profil applique automatiquement: organisation.
 
           - if @payout_profile_missing_fields.present?
             .alert-box.alert[style="margin-top:10px;"]
@@ -131,11 +134,7 @@
 
           = form_tag update_payout_profile_project_path(@project), method: :put, multipart: true do
             .row
-              .col-md-6
-                .form-group
-                  label for="profile_type" Type de profil
-                  = select_tag :profile_type, options_for_select([['Particulier', 'personal'], ['Entreprise', 'organization']], current_user.profile_type), class: 'form-control'
-              .col-md-6
+              .col-md-12
                 .form-group
                   label for="name" Nom complet du titulaire
                   = text_field_tag :name, current_user.name, class: 'form-control', required: true
@@ -157,8 +156,8 @@
             .row
               .col-md-6
                 .form-group
-                  label for="organization_name" Raison sociale (si entreprise)
-                  = text_field_tag :organization_name, @organization_name, class: 'form-control', placeholder: 'Nom de l entreprise'
+                  label for="organization_name" Nom de l association / entreprise / organisation
+                  = text_field_tag :organization_name, @organization_name, class: 'form-control', placeholder: 'Nom legal de la structure', required: true
               .col-md-6
                 .form-group
                   label for="mobile_phone" Telephone
@@ -233,7 +232,7 @@
               = form_tag request_payout_project_path(@project), method: :post, style: 'margin-top:15px;' do
                 button.btn.btn-lg.btn-success[type="submit" style="padding:14px 50px;font-size:1.2em;" data-confirm="Confirmer la demande de virement de #{number_to_currency(net_to_receive, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')} ?"]
                   i.fa.fa-paper-plane
-                  |  Retirer mes fonds (#{number_to_currency(net_to_receive, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')})
+                  |  Retirer mes fonds
               p.small[style="color:#95a5a6;margin-top:12px;"]
                 i.fa.fa-shield
                 |  Paiement sécurisé. Fonds versés sous 2-7 jours ouvrés.

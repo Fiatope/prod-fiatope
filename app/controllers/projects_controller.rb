@@ -131,6 +131,7 @@ class ProjectsController < ApplicationController
   def pay
     authorize resource
     @project = resource
+    current_user.profile_type = payout_profile_type_for_platform
     @bank_information = current_user.bank_information || current_user.build_bank_information
     @required_kyc_types = payout_profile_kyc_types_for(current_user)
     @required_kyc_labels = payout_profile_kyc_labels
@@ -155,7 +156,7 @@ class ProjectsController < ApplicationController
     begin
       ActiveRecord::Base.transaction do
         current_user.assign_attributes(payout_profile_user_params)
-        current_user.profile_type = 'personal' unless %w[personal organization].include?(current_user.profile_type)
+        current_user.profile_type = payout_profile_type_for_platform
         current_user.save!
 
         if current_user.profile_type == 'organization'
@@ -351,6 +352,10 @@ class ProjectsController < ApplicationController
 
   def payout_profile_kyc_types_for(user)
     user.payout_profile_required_kyc_types
+  end
+
+  def payout_profile_type_for_platform
+    'organization'
   end
 
   def payout_profile_kyc_labels
