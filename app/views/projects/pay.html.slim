@@ -22,7 +22,7 @@
           |  #{flash[:notice]}
 
       /= Données pré-calculées
-      - stripe_ready = @stripe_onboarding_complete
+      - payout_ready = @payout_profile_complete
       - already_paid  = @project.stripe_settlement_type == 'transferred' || @project.state == 'paid'
       - payout_pending = @project.state == 'request_funds' && !already_paid
       - stripe_contribs = @project.contributions.where(payment_method: 'Stripe', state: 'confirmed')
@@ -33,7 +33,10 @@
       - net_to_receive = (total_collected - platform_fee_amount).round(2)
       /= Frais Stripe (info interne - inclus dans la commission, PAS soustrait en plus)
       - stripe_fees_estimate = (contribs_count * 0.25 + total_collected * 0.029).round(2)
-      - current_step = already_paid ? 4 : (payout_pending ? 3 : (stripe_ready ? 2 : 1))
+      - current_step = already_paid ? 4 : (payout_pending ? 3 : (payout_ready ? 2 : 1))
+      - required_kyc_types = @required_kyc_types || []
+      - required_kyc_labels = @required_kyc_labels || {}
+      - existing_kyc_docs = @kyc_documents_by_type || {}
 
       / ===== TRACKER D'ÉTAPES VISUEL =====
       .panel.radius[style="background:#f8f9fa;border:1px solid #e9ecef;margin-bottom:25px;padding:20px 15px 10px;"]
@@ -111,27 +114,108 @@
             i.fa.fa-shield
             |  Sécurité : les fonds sont traités via un système certifié PCI DSS, conforme aux normes bancaires européennes.
 
-      - elsif !stripe_ready
+      - elsif !payout_ready
         .panel.radius[style="background:#fdf2e9;border:2px solid #e67e22;padding:20px;margin-bottom:25px;"]
           h4[style="color:#e67e22;"]
             i.fa.fa-exclamation-triangle
-            |  Configurez votre espace de virement
-          p | Pour recevoir vos fonds sur votre compte bancaire, configurez d'abord votre espace sécurisé. C'est gratuit et prend environ 5 minutes.
-          .panel.radius[style="background:#fff;margin-top:15px;padding:15px;"]
-            h5
-              i.fa.fa-list-ol
-              |  Étapes simples :
-            ol[style="margin-bottom:0;"]
-              li | Cliquez sur le bouton ci-dessous
-              li | Renseignez vos informations (identité + IBAN)
-              li | Revenez ici pour demander votre virement
-              li | Recevez vos fonds sous 2-7 jours ouvrés
-          .text-center[style="margin-top:20px;"]
-            = form_tag neighborly_stripe.connect_create_path, method: :post do
-              = hidden_field_tag :return_to, pay_project_path(@project)
+            |  Completez votre profil de retrait
+          p | Pour retirer vos fonds sans quitter Fiatope, renseignez votre profil complet (identite, banque, justificatifs).
+
+          - if @payout_profile_missing_fields.present?
+            .alert-box.alert[style="margin-top:10px;"]
+              p
+                strong Elements manquants:
+              ul[style="margin-bottom:0;"]
+                - @payout_profile_missing_fields.each do |missing_field|
+                  li = missing_field
+
+          = form_tag update_payout_profile_project_path(@project), method: :put, multipart: true do
+            .row
+              .col-md-6
+                .form-group
+                  label for="profile_type" Type de profil
+                  = select_tag :profile_type, options_for_select([['Particulier', 'personal'], ['Entreprise', 'organization']], current_user.profile_type), class: 'form-control'
+              .col-md-6
+                .form-group
+                  label for="name" Nom complet du titulaire
+                  = text_field_tag :name, current_user.name, class: 'form-control', required: true
+
+            .row
+              .col-md-4
+                .form-group
+                  label for="birthday" Date de naissance
+                  = date_field_tag :birthday, current_user.birthday, class: 'form-control', required: true
+              .col-md-4
+                .form-group
+                  label for="nationality" Nationalite (code pays)
+                  = text_field_tag :nationality, current_user.nationality, class: 'form-control', placeholder: 'FR', required: true
+              .col-md-4
+                .form-group
+                  label for="residence_country" Pays de residence (code pays)
+                  = text_field_tag :residence_country, current_user.residence_country, class: 'form-control', placeholder: 'FR', required: true
+
+            .row
+              .col-md-6
+                .form-group
+                  label for="organization_name" Raison sociale (si entreprise)
+                  = text_field_tag :organization_name, @organization_name, class: 'form-control', placeholder: 'Nom de l entreprise'
+              .col-md-6
+                .form-group
+                  label for="mobile_phone" Telephone
+                  = text_field_tag :mobile_phone, current_user.mobile_phone, class: 'form-control'
+
+            .row
+              .col-md-6
+                .form-group
+                  label for="owner_address" Adresse du titulaire du compte
+                  = text_field_tag :owner_address, @bank_information.owner_address, class: 'form-control', required: true
+              .col-md-3
+                .form-group
+                  label for="owner_city" Ville
+                  = text_field_tag :owner_city, @bank_information.owner_city, class: 'form-control', required: true
+              .col-md-3
+                .form-group
+                  label for="owner_region" Region
+                  = text_field_tag :owner_region, @bank_information.owner_region, class: 'form-control', required: true
+
+            .row
+              .col-md-3
+                .form-group
+                  label for="owner_postal_code" Code postal
+                  = text_field_tag :owner_postal_code, @bank_information.owner_postal_code, class: 'form-control', required: true
+              .col-md-3
+                .form-group
+                  label for="other_country" Pays du compte bancaire
+                  = text_field_tag :other_country, @bank_information.other_country.presence || current_user.residence_country, class: 'form-control', placeholder: 'FR'
+              .col-md-3
+                .form-group
+                  label for="iban" IBAN
+                  = text_field_tag :iban, @bank_information.iban, class: 'form-control', required: true
+              .col-md-3
+                .form-group
+                  label for="bic" BIC
+                  = text_field_tag :bic, @bank_information.bic, class: 'form-control', required: true
+
+            .panel.radius[style="background:#fff;margin-top:15px;padding:15px;"]
+              h5
+                i.fa.fa-id-card
+                |  Justificatifs a fournir
+              - required_kyc_types.each do |proof_type|
+                - existing_doc = existing_kyc_docs[proof_type]
+                - label = required_kyc_labels[proof_type] || proof_type.humanize
+                .form-group
+                  label = label
+                  = file_field_tag "kyc_files[#{proof_type}]", class: 'form-control'
+                  - if existing_doc.present? && existing_doc.uploaded_image.present?
+                    p.small[style="margin-top:5px;"]
+                      i.fa.fa-check-circle[style="color:#27ae60;"]
+                      |  Document actuel:
+                      = link_to ' voir', existing_doc.uploaded_image.url, target: '_blank'
+
+            .text-center[style="margin-top:20px;"]
               button.btn.btn-lg.btn-warning[type="submit" style="padding:12px 40px;font-size:1.1em;"]
-                i.fa.fa-lock
-                |  Configurer mon espace de virement
+                i.fa.fa-save
+                |  Enregistrer mon profil de retrait
 
       - else
         - if total_collected <= 0
@@ -149,7 +233,7 @@
               = form_tag request_payout_project_path(@project), method: :post, style: 'margin-top:15px;' do
                 button.btn.btn-lg.btn-success[type="submit" style="padding:14px 50px;font-size:1.2em;" data-confirm="Confirmer la demande de virement de #{number_to_currency(net_to_receive, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')} ?"]
                   i.fa.fa-paper-plane
-                  |  Demander mon virement de #{number_to_currency(net_to_receive, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')}
+                  |  Retirer mes fonds (#{number_to_currency(net_to_receive, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')})
               p.small[style="color:#95a5a6;margin-top:12px;"]
                 i.fa.fa-shield
                 |  Paiement sécurisé. Fonds versés sous 2-7 jours ouvrés.

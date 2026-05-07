@@ -215,6 +215,7 @@ Neighborly::Application.routes.draw do
       put :process_stripe_transfer, to: 'neighborly/admin/projects#process_stripe_transfer'
       put :process_stripe_refund, to: 'neighborly/admin/projects#process_stripe_refund'
       get :verify_stripe_wallet, to: 'neighborly/admin/projects#verify_stripe_wallet'
+      get :payout_profile, to: 'neighborly/admin/projects#payout_profile'
     end
 
     member do
@@ -227,6 +228,7 @@ Neighborly::Application.routes.draw do
       get 'english'
       get 'success'
       get 'pay'
+      put 'update_payout_profile'
       post 'request_payout'
       post 'change_recommended'
     end

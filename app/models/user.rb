@@ -101,6 +101,19 @@ class User < ActiveRecord::Base
     state :channel, value: 'channel'
   end
 
+  PAYOUT_REQUIRED_KYC_TYPES = {
+    'personal' => %w[IDENTITY_PROOF ADDRESS_PROOF],
+    'organization' => %w[REGISTRATION_PROOF ARTICLES_OF_ASSOCIATION]
+  }.freeze
+
+  PAYOUT_KYC_LABELS = {
+    'IDENTITY_PROOF' => 'Piece d identite',
+    'ADDRESS_PROOF' => 'Justificatif de domicile',
+    'REGISTRATION_PROOF' => 'Extrait d immatriculation',
+    'ARTICLES_OF_ASSOCIATION' => 'Statuts de l entreprise',
+    'SHAREHOLDER_DECLARATION' => 'Declaration des actionnaires'
+  }.freeze
+
   after_initialize :init
 
   def init
@@ -188,5 +201,57 @@ class User < ActiveRecord::Base
 
   def has_at_least_one_project?
     projects.any?
+  end
+
+  def payout_profile_required_kyc_types
+    key = profile_type == 'organization' ? 'organization' : 'personal'
+    PAYOUT_REQUIRED_KYC_TYPES.fetch(key)
+  end
+
+  def payout_kyc_label(proof_type)
+    PAYOUT_KYC_LABELS[proof_type.to_s] || proof_type.to_s.humanize
+  end
+
+  def payout_profile_missing_fields
+    missing = []
+
+    missing << 'Type de profil (particulier ou entreprise)' unless %w[personal organization].include?(profile_type)
+    missing << 'Nom complet' if name.blank?
+    missing << 'Date de naissance' if birthday.blank?
+    missing << 'Nationalite' if nationality.blank?
+    missing << 'Pays de residence' if residence_country.blank?
+
+    if profile_type == 'organization'
+      missing << 'Raison sociale de l entreprise' if organization.blank? || organization.name.blank?
+    end
+
+    info = bank_information
+    if info.blank?
+      missing << 'Adresse du titulaire du compte'
+      missing << 'Ville du titulaire du compte'
+      missing << 'Region du titulaire du compte'
+      missing << 'Code postal du titulaire du compte'
+      missing << 'IBAN'
+      missing << 'BIC'
+    else
+      missing << 'Adresse du titulaire du compte' if info.owner_address.blank?
+      missing << 'Ville du titulaire du compte' if info.owner_city.blank?
+      missing << 'Region du titulaire du compte' if info.owner_region.blank?
+      missing << 'Code postal du titulaire du compte' if info.owner_postal_code.blank?
+      missing << 'IBAN' if info.iban.blank?
+      missing << 'BIC' if info.bic.blank?
+    end
+
+    required_docs = payout_profile_required_kyc_types
+    uploaded_docs = kycs.where(proof_type: required_docs).where.not(uploaded_image: [nil, '']).pluck(:proof_type).uniq
+    (required_docs - uploaded_docs).each do |proof_type|
+      missing << "Document manquant: #{payout_kyc_label(proof_type)}"
+    end
+
+    missing
+  end
+
+  def payout_profile_complete?
+    payout_profile_missing_fields.empty?
   end
 end

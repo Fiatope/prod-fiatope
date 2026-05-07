@@ -34,31 +34,6 @@
           = flash[:wallet_details]
           a.close href="#" onclick="this.parentElement.style.display='none'; return false;" &times;
       
-      /= Affichage du lien onboarding Stripe si généré
-      - if flash[:stripe_onboarding_url].present?
-        .alert-box.success.stripe-onboarding-link
-          h5
-            i.icon-et-link
-            |  Lien d'onboarding Stripe généré
-          p Copiez ce lien et envoyez-le au porteur de projet pour qu'il complète son profil Stripe:
-          .row
-            .large-10.columns
-              input#stripe-onboarding-url.input-text type="text" value="#{flash[:stripe_onboarding_url]}" readonly=""
-            .large-2.columns
-              button.button.small.expand#copy-btn type="button" 📋 Copier
-          p.help-text
-            strong ⚠️ 
-            | Ce lien expire dans 24 heures. Le porteur doit l'utiliser rapidement.
-        javascript:
-          document.getElementById('copy-btn').addEventListener('click', function() {
-            var input = document.getElementById('stripe-onboarding-url');
-            input.select();
-            input.setSelectionRange(0, 99999);
-            document.execCommand('copy');
-            this.innerHTML = '✅ Copié!';
-            setTimeout(function() { document.getElementById('copy-btn').innerHTML = '📋 Copier'; }, 2000);
-          });
-
       .filters
         = form_tag projects_path, method: :get, class: 'form-horizontal' do |f|
           = hidden_field_tag :order_by, params[:order_by]
@@ -212,10 +187,11 @@
                     - if project.respond_to?(:use_stripe?)
                       - if project.use_stripe?
                         - stripe_account = project.stripe_account_id.presence || project.user.stripe_connect_account_id
-                        - if project.user.stripe_onboarding_complete?
-                          span.label.label-success title="Compte: #{stripe_account}" ✅ Prêt
+                        - profile_ready = project.user.payout_profile_complete?
+                        - if profile_ready
+                          span.label.label-success title="Compte: #{stripe_account}\nProfil de retrait complet" ✅ Profil retrait OK
                         - else
-                          span.label.label-warning title="Compte: #{stripe_account}\nLe porteur doit compléter son profil Stripe" ⏳ Onboarding
+                          span.label.label-warning title="Compte: #{stripe_account}\nLe porteur doit completer son profil de retrait" ⚠️ Profil incomplet
                         - if project.stripe_settlement_type == 'transferred'
                           br
                           span.label.label-info title="Transféré le #{project.stripe_settled_at&.strftime('%d/%m/%Y %H:%M')}" 💰 Transféré
@@ -309,6 +285,12 @@
                         /= === OPTIONS STRIPE ===
                         li.divider
                         - if project.respond_to?(:use_stripe?)
+                          li
+                            - payout_profile_url = main_app.payout_profile_project_path(project)
+                            = link_to "javascript:openPayoutProfileModal('#{j(project.name)}', '#{payout_profile_url}')" do
+                              i.icon-et-vcard
+                              = " 👤 Voir profil de retrait"
+
                           - unless project.use_stripe?
                             /= Activer Stripe (crée ou réutilise le compte du porteur)
                             li
@@ -316,13 +298,6 @@
                                 i.icon-et-credit-card
                                 = " Activer Stripe"
                           - else
-                            /= Lien onboarding (seulement si pas encore configuré)
-                            - unless project.user.stripe_onboarding_complete?
-                              li
-                                = link_to main_app.stripe_onboarding_link_project_path(project), method: :get do
-                                  i.icon-et-link
-                                  = " Lien Onboarding Stripe"
-                            
                             /= Contributions Stripe NON TRAITÉES (ni transférées, ni remboursées)
                             - stripe_contribs_pending = project.contributions.where(payment_method: 'Stripe', state: 'confirmed').where(stripe_refunded: [false, nil]).where(stripe_transferred: [false, nil])
                             - has_pending_contributions = stripe_contribs_pending.any?
@@ -340,8 +315,8 @@
                             - all_stripe_contribs = project.contributions.where(payment_method: 'Stripe', state: ['confirmed', 'refunded'])
                             - build_contrib_data = lambda { |c| status = c.stripe_transferred ? 'transferred' : (c.stripe_refunded ? 'refunded' : 'pending'); { id: c.id, user_id: c.user_id, name: c.user&.name || 'Anonyme', email: c.user&.email || '', amount: c.value.to_f, charge_id: c.stripe_charge_id, date: (c.confirmed_at || c.created_at)&.strftime('%d/%m/%Y %H:%M'), stripe_fee: (c.value.to_f * 0.029 + 0.25).round(2), status: status, transfer_id: c.stripe_transfer_id, refund_id: c.stripe_refund_id } }
                             
-                            /= TRANSFERT: si contributions EN ATTENTE + onboarding complété
-                            - can_transfer = has_pending_contributions && project.user.stripe_onboarding_complete?
+                            /= TRANSFERT: si contributions EN ATTENTE + profil de retrait local complet
+                            - can_transfer = has_pending_contributions && project.user.payout_profile_complete?
                             - if can_transfer
                               li
                                 - transfer_url = main_app.process_stripe_transfer_project_path(project)

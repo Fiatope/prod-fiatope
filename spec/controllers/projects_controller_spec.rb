@@ -268,4 +268,47 @@ describe ProjectsController do
       it { expect(response).to be_success }
     end
   end
+
+  describe 'POST request_payout' do
+    let(:current_user) { project.user }
+    let(:project) { create(:project, state: 'online', use_stripe: true) }
+
+    before do
+      project.update_column(:use_stripe, true)
+    end
+
+    context 'when payout profile is incomplete' do
+      before do
+        current_user.stub(:payout_profile_complete?).and_return(false)
+        post :request_payout, id: project
+      end
+
+      it 'redirects to pay page with an alert' do
+        expect(response).to redirect_to(pay_project_path(project))
+        expect(flash[:alert]).to include('completer votre profil')
+      end
+    end
+
+    context 'when profile is complete but stripe sync fails' do
+      before do
+        create(:contribution,
+               project: project,
+               user: create(:user),
+               payment_method: 'Stripe',
+               state: 'confirmed',
+               value: 20.0)
+
+        current_user.stub(:payout_profile_complete?).and_return(true)
+        sync_result = double('sync_result', success?: false, errors: ['sync error'], warnings: [])
+        Neighborly::Stripe::PayoutProfileSyncService.stub(:call).and_return(sync_result)
+
+        post :request_payout, id: project
+      end
+
+      it 'stops flow and redirects to pay page' do
+        expect(response).to redirect_to(pay_project_path(project))
+        expect(flash[:alert]).to include('Impossible de synchroniser')
+      end
+    end
+  end
 end

@@ -109,10 +109,9 @@ class ProjectsController < ApplicationController
 
     @project = resource
 
-    # Précalculer le statut Stripe du porteur pour éviter les appels API dans la vue
-    # Ne vérifier que si l'utilisateur connecté est le porteur du projet
-    @stripe_onboarding_complete = user_signed_in? && current_user == @project.user &&
-                                   current_user.stripe_onboarding_complete?
+    # Le statut de readiness pour retirer les fonds est base sur le profil local.
+    @payout_profile_complete = user_signed_in? && current_user == @project.user &&
+                   current_user.payout_profile_complete?
 
     if @project.id == 1053
       @bg_sm = "bg-small"
@@ -132,8 +131,64 @@ class ProjectsController < ApplicationController
   def pay
     authorize resource
     @project = resource
-    @stripe_onboarding_complete = current_user.respond_to?(:stripe_onboarding_complete?) &&
-                                   current_user.stripe_onboarding_complete?
+    @bank_information = current_user.bank_information || current_user.build_bank_information
+    @required_kyc_types = payout_profile_kyc_types_for(current_user)
+    @required_kyc_labels = payout_profile_kyc_labels
+    @kyc_documents_by_type = current_user.kycs.where(proof_type: @required_kyc_types)
+                                        .order(created_at: :desc)
+                                        .group_by(&:proof_type)
+                                        .transform_values(&:first)
+    @organization_name = current_user.organization&.name
+    @payout_profile_complete = current_user.payout_profile_complete?
+    @payout_profile_missing_fields = current_user.payout_profile_missing_fields
+  end
+
+  def update_payout_profile
+    authorize resource, :pay?
+    @project = resource
+
+    unless user_signed_in? && current_user == @project.user
+      flash[:alert] = 'Acces non autorise.'
+      return redirect_to project_path(@project)
+    end
+
+    begin
+      ActiveRecord::Base.transaction do
+        current_user.assign_attributes(payout_profile_user_params)
+        current_user.profile_type = 'personal' unless %w[personal organization].include?(current_user.profile_type)
+        current_user.save!
+
+        if current_user.profile_type == 'organization'
+          organization = current_user.organization || current_user.build_organization
+          organization.name = payout_profile_organization_name
+          organization.save!
+        end
+
+        bank_information = current_user.bank_information || current_user.build_bank_information
+        bank_information.assign_attributes(payout_profile_bank_params)
+        bank_information.save!
+
+        update_or_create_kyc_documents!(current_user)
+      end
+
+      sync_result = Neighborly::Stripe::PayoutProfileSyncService.call(current_user)
+      if sync_result.success?
+        if sync_result.warnings.any?
+          flash[:notice] = "Profil enregistre. Synchronisation Stripe partielle: #{sync_result.warnings.join(', ')}"
+        else
+          flash[:success] = 'Votre profil de retrait a ete enregistre avec succes.'
+        end
+      else
+        flash[:alert] = "Profil enregistre localement, mais la synchronisation Stripe a echoue: #{sync_result.errors.join(', ')}"
+      end
+    rescue ActiveRecord::RecordInvalid => e
+      flash[:alert] = e.record.errors.full_messages.to_sentence
+    rescue => e
+      Rails.logger.error "ProjectsController#update_payout_profile: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
+      flash[:alert] = "Erreur technique: #{e.message}"
+    end
+
+    redirect_to pay_project_path(@project)
   end
 
   def request_payout
@@ -149,11 +204,9 @@ class ProjectsController < ApplicationController
       return redirect_to pay_project_path(@project)
     end
 
-    # Le porteur DOIT avoir configuré Stripe avant de demander le virement
-    # (l'admin en aura besoin pour effectuer le transfert)
-    unless current_user.stripe_onboarding_complete?
-      flash[:alert] = I18n.t('stripe.payout.onboarding_required',
-        default: 'Vous devez d\'abord configurer votre espace de virement pour recevoir vos fonds.')
+    # Le porteur doit avoir complete son profil de retrait dans la plateforme.
+    unless current_user.payout_profile_complete?
+      flash[:alert] = 'Vous devez d abord completer votre profil de retrait (identite, banque, justificatifs) avant de demander le virement.'
       return redirect_to pay_project_path(@project)
     end
 
@@ -175,6 +228,13 @@ class ProjectsController < ApplicationController
                             .where(stripe_refunded: [false, nil], stripe_transferred: [false, nil])
     if contributions.empty?
       flash[:alert] = "Aucune contribution confirmée à virer pour ce projet."
+      return redirect_to pay_project_path(@project)
+    end
+
+    # Synchroniser les informations locales vers Stripe avant de soumettre la demande.
+    sync_result = Neighborly::Stripe::PayoutProfileSyncService.call(current_user)
+    unless sync_result.success?
+      flash[:alert] = "Impossible de synchroniser le profil de retrait vers Stripe: #{sync_result.errors.join(', ')}"
       return redirect_to pay_project_path(@project)
     end
 
@@ -275,6 +335,47 @@ class ProjectsController < ApplicationController
 
   def has_project_prerequisites?
     current_user.try(:mobile_phone).present?
+  end
+
+  def payout_profile_user_params
+    params.permit(:profile_type, :name, :birthday, :nationality, :residence_country, :mobile_phone)
+  end
+
+  def payout_profile_bank_params
+    params.permit(:owner_address, :owner_city, :owner_region, :owner_postal_code, :iban, :bic, :other_country)
+  end
+
+  def payout_profile_organization_name
+    params[:organization_name].to_s.strip
+  end
+
+  def payout_profile_kyc_types_for(user)
+    user.payout_profile_required_kyc_types
+  end
+
+  def payout_profile_kyc_labels
+    User::PAYOUT_KYC_LABELS
+  end
+
+  def update_or_create_kyc_documents!(user)
+    return if params[:kyc_files].blank?
+
+    required_types = payout_profile_kyc_types_for(user)
+    kyc_files = params[:kyc_files]
+    kyc_files = kyc_files.to_unsafe_h if kyc_files.respond_to?(:to_unsafe_h)
+
+    kyc_files.each do |proof_type, uploaded_image|
+      next if uploaded_image.blank?
+      next unless required_types.include?(proof_type.to_s)
+
+      kyc = user.kycs.where(proof_type: proof_type.to_s).order(created_at: :desc).first
+      if kyc
+        kyc.uploaded_image = uploaded_image
+        kyc.save!
+      else
+        user.kycs.create!(proof_type: proof_type.to_s, uploaded_image: uploaded_image)
+      end
+    end
   end
 
   def has_prerequisites

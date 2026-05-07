@@ -129,10 +129,10 @@ module Neighborly::Admin
           # enable_stripe! réutilise le compte existant ou en crée un nouveau
           @project.enable_stripe!
           
-          if @project.user.stripe_onboarding_complete?
-            flash[:success] = "Stripe activé! Le porteur a déjà un compte configuré - prêt pour les paiements."
+          if @project.user.payout_profile_complete?
+            flash[:success] = "Stripe active! Le porteur peut soumettre sa demande de retrait depuis la plateforme."
           else
-            flash[:success] = "Stripe activé! Le porteur doit compléter son profil Stripe (générer un lien d'onboarding)."
+            flash[:success] = "Stripe active! Le porteur doit completer son profil de retrait local (identite, banque, justificatifs)."
           end
         rescue => e
           flash[:alert] = "Erreur lors de l'activation de Stripe: #{e.message}"
@@ -142,32 +142,10 @@ module Neighborly::Admin
       redirect_back(fallback_location: projects_path)
     end
     
-    # Génère le lien d'onboarding Stripe pour le porteur
+    # Action desactivee: plus de generation de lien d'onboarding externe.
     def stripe_onboarding_link
       @project = Project.find_by_permalink params[:id]
-      
-      unless @project.use_stripe?
-        flash[:alert] = "Stripe n'est pas activé pour ce projet. Activez-le d'abord."
-        return redirect_back(fallback_location: projects_path)
-      end
-      
-      if @project.user.stripe_onboarding_complete?
-        flash[:notice] = "Le porteur a déjà complété son profil Stripe. Pas besoin de lien d'onboarding."
-        return redirect_back(fallback_location: projects_path)
-      end
-      
-      begin
-        base_url = request.base_url
-        onboarding_url = @project.user.stripe_account_onboarding_url(
-          refresh_url: "#{base_url}/stripe/connect/refresh",
-          return_url: "#{base_url}/stripe/connect/return"
-        )
-        
-        flash[:stripe_onboarding_url] = onboarding_url
-        flash[:success] = "Lien généré pour #{@project.user.name}. Envoyez-le par email."
-      rescue => e
-        flash[:alert] = "Erreur: #{e.message}"
-      end
+      flash[:alert] = "Cette action est desactivee. Le porteur doit completer son profil de retrait directement sur la plateforme."
       
       redirect_back(fallback_location: projects_path)
     end
@@ -182,8 +160,14 @@ module Neighborly::Admin
         return redirect_back(fallback_location: projects_path)
       end
       
-      unless @project.user.stripe_onboarding_complete?
-        flash[:alert] = "Le porteur n'a pas complété son profil Stripe. Générez un lien d'onboarding."
+      unless @project.user.payout_profile_complete?
+        flash[:alert] = "Le porteur n'a pas complete son profil de retrait local (identite, banque, justificatifs)."
+        return redirect_back(fallback_location: projects_path)
+      end
+
+      sync_result = Neighborly::Stripe::PayoutProfileSyncService.call(@project.user)
+      unless sync_result.success?
+        flash[:alert] = "Synchronisation Stripe impossible avant transfert: #{sync_result.errors.join(', ')}"
         return redirect_back(fallback_location: projects_path)
       end
       
@@ -329,6 +313,56 @@ module Neighborly::Admin
       end
       
       redirect_back(fallback_location: projects_path)
+    end
+
+    # Donnees locales du profil de retrait du porteur (identite, banque, KYC).
+    def payout_profile
+      @project = Project.find_by_permalink params[:id]
+      user = @project.user
+      bank = user.bank_information
+      required_types = user.payout_profile_required_kyc_types
+
+      documents_by_type = {}
+      user.kycs.where(proof_type: required_types).order(created_at: :desc).each do |document|
+        documents_by_type[document.proof_type] ||= document
+      end
+
+      render json: {
+        profile_complete: user.payout_profile_complete?,
+        missing_fields: user.payout_profile_missing_fields,
+        owner: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          profile_type: user.profile_type,
+          organization_name: user.organization&.name,
+          birthday: user.birthday,
+          nationality: user.nationality,
+          residence_country: user.residence_country,
+          mobile_phone: user.mobile_phone,
+          stripe_connect_account_id: user.stripe_connect_account_id,
+          stripe_onboarding_complete: user.stripe_onboarding_complete
+        },
+        bank: {
+          owner_address: bank&.owner_address,
+          owner_city: bank&.owner_city,
+          owner_region: bank&.owner_region,
+          owner_postal_code: bank&.owner_postal_code,
+          other_country: bank&.other_country,
+          iban: bank&.iban,
+          bic: bank&.bic
+        },
+        kyc_documents: required_types.map { |proof_type|
+          document = documents_by_type[proof_type]
+          {
+            proof_type: proof_type,
+            label: user.payout_kyc_label(proof_type),
+            uploaded: document.present?,
+            uploaded_at: document&.created_at,
+            url: document&.uploaded_image&.url
+          }
+        }
+      }
     end
 
     protected
