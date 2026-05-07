@@ -132,6 +132,7 @@ class ProjectsController < ApplicationController
     authorize resource
     @project = resource
     current_user.profile_type = payout_profile_type_for_platform
+    @payout_profile_edit_unlocked = payout_profile_edit_unlocked?(current_user)
     @bank_information = current_user.bank_information || current_user.build_bank_information
     @bank_reference_type = payout_profile_bank_reference_type(current_user)
     @bank_reference_value = payout_profile_bank_reference_value(current_user)
@@ -172,6 +173,8 @@ class ProjectsController < ApplicationController
 
         update_or_create_kyc_documents!(current_user)
       end
+
+      clear_payout_profile_edit_unlock!(current_user)
 
       sync_result = Neighborly::Stripe::PayoutProfileSyncService.call(current_user)
       if sync_result.success?
@@ -378,6 +381,18 @@ class ProjectsController < ApplicationController
 
   def payout_profile_kyc_labels
     User::PAYOUT_KYC_LABELS
+  end
+
+  def payout_profile_edit_unlock_cache_key(user)
+    "payout_profile_edit_unlock:user:#{user.id}"
+  end
+
+  def payout_profile_edit_unlocked?(user)
+    Rails.cache.read(payout_profile_edit_unlock_cache_key(user)).present?
+  end
+
+  def clear_payout_profile_edit_unlock!(user)
+    Rails.cache.delete(payout_profile_edit_unlock_cache_key(user))
   end
 
   def update_or_create_kyc_documents!(user)

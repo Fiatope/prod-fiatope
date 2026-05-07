@@ -158,7 +158,11 @@
           - already_paid = @project.stripe_settlement_type == 'transferred' || @project.state == 'paid'
           - payout_pending = @project.state == 'request_funds' && !already_paid
           - payout_ready = @payout_profile_complete
-          - stripe_contributions_exist = @project.contributions.where(payment_method: 'Stripe', state: 'confirmed').any?
+          - stripe_contributions_scope = @project.contributions.where(payment_method: 'Stripe', state: 'confirmed')
+          - stripe_contributions_exist = stripe_contributions_scope.any?
+          - stripe_collected_amount = stripe_contributions_scope.sum(:value).to_f
+          - project_balance_amount = @project.respond_to?(:reached_value) ? @project.reached_value.to_f : 0.0
+          - payout_amount_available = stripe_contributions_exist || stripe_collected_amount > 0 || project_balance_amount > 0 || @project.total_contributions.to_i > 0
           hr
           - if already_paid
             .alert-box.success.radius[style="margin-top:10px;"]
@@ -170,6 +174,11 @@
               i.fa.fa-clock-o
               strong |  Demande en cours de traitement
               p.small | Notre équipe traite votre demande de virement. Vous recevrez un email de confirmation.
+          - elsif !payout_amount_available
+            .alert-box[style="background:#f8f9fa;color:#495057;border-radius:5px;padding:10px;margin-top:10px;"]
+              i.fa.fa-info-circle
+              strong |  Retrait indisponible
+              p.small | Le retrait sera disponible dès qu au moins une contribution confirmée aura été enregistrée.
           - elsif !payout_ready
             = link_to pay_project_path(@project), class: "btn btn-block btn-warning" do
               i.fa.fa-exclamation-triangle

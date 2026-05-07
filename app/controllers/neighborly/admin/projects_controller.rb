@@ -316,6 +316,26 @@ module Neighborly::Admin
     end
 
     # Donnees locales du profil de retrait du porteur (identite, banque, KYC).
+    def unlock_payout_profile_edit
+      @project = Project.find_by_permalink params[:id]
+      user = @project.user
+
+      Rails.cache.write(
+        payout_profile_edit_unlock_cache_key(user),
+        { unlocked_at: Time.current.to_i, admin_id: current_user.try(:id) },
+        expires_in: 14.days
+      )
+
+      render json: {
+        success: true,
+        message: 'Le porteur peut modifier et soumettre a nouveau son profil de retrait pendant 14 jours.'
+      }
+    rescue => e
+      Rails.logger.error "unlock_payout_profile_edit failed: #{e.message}"
+      render json: { success: false, error: "Impossible d autoriser la reedition: #{e.message}" }, status: :unprocessable_entity
+    end
+
+    # Donnees locales du profil de retrait du porteur (identite, banque, KYC).
     def payout_profile
       @project = Project.find_by_permalink params[:id]
       user = @project.user
@@ -383,6 +403,11 @@ module Neighborly::Admin
     end
 
     protected
+
+    def payout_profile_edit_unlock_cache_key(user)
+      "payout_profile_edit_unlock:user:#{user.id}"
+    end
+
     def collection
       @projects = apply_scopes(end_of_association_chain).order('projects.created_at desc').without_state('deleted').page(params[:page])
     end

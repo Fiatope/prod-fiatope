@@ -114,7 +114,7 @@
             i.fa.fa-shield
             |  Sécurité : les fonds sont traités via un système certifié PCI DSS, conforme aux normes bancaires européennes.
 
-      - elsif !payout_ready
+      - elsif !payout_ready || @payout_profile_edit_unlocked
         .panel.radius[style="background:#fdf2e9;border:2px solid #e67e22;padding:20px;margin-bottom:25px;"]
           h4[style="color:#e67e22;"]
             i.fa.fa-exclamation-triangle
@@ -123,6 +123,11 @@
           p.small[style="margin-top:8px;color:#6c757d;"]
             i.fa.fa-info-circle
             |  Profil applique automatiquement: organisation.
+
+          - if @payout_profile_edit_unlocked
+            .alert-box.info[style="margin-top:10px;"]
+              i.fa.fa-unlock
+              |  L administration vous autorise a modifier et soumettre a nouveau ce formulaire.
 
           - if @payout_profile_missing_fields.present?
             .alert-box.alert[style="margin-top:10px;"]

@@ -287,7 +287,9 @@
                         - if project.respond_to?(:use_stripe?)
                           li
                             - payout_profile_url = main_app.payout_profile_project_path(project)
-                            = link_to "javascript:openPayoutProfileModal('#{j(project.name)}', '#{payout_profile_url}')" do
+                            - payout_unlock_url = main_app.unlock_payout_profile_edit_project_path(project)
+                            - payout_edit_url = main_app.pay_project_path(project)
+                            = link_to "javascript:openPayoutProfileModal('#{j(project.name)}', '#{payout_profile_url}', '#{payout_unlock_url}', '#{payout_edit_url}')" do
                               i.icon-et-vcard
                               = " 👤 Voir profil de retrait"
 
