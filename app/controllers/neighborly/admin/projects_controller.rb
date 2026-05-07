@@ -322,10 +322,7 @@ module Neighborly::Admin
       bank = user.bank_information
       required_types = user.payout_profile_required_kyc_types
 
-      documents_by_type = {}
-      user.kycs.where(proof_type: required_types).order(created_at: :desc).each do |document|
-        documents_by_type[document.proof_type] ||= document
-      end
+      documents_by_type = user.kycs.where(proof_type: required_types).order(created_at: :desc).group_by(&:proof_type)
 
       render json: {
         profile_complete: user.payout_profile_complete?,
@@ -349,17 +346,37 @@ module Neighborly::Admin
           owner_region: bank&.owner_region,
           owner_postal_code: bank&.owner_postal_code,
           other_country: bank&.other_country,
+          bank_reference_type: bank&.payout_bank_reference_type&.upcase,
+          bank_reference_value: bank&.payout_bank_reference_value,
           iban: bank&.iban,
           bic: bank&.bic
         },
         kyc_documents: required_types.map { |proof_type|
-          document = documents_by_type[proof_type]
+          documents = Array(documents_by_type[proof_type]).map do |document|
+            url = document.uploaded_image&.url
+            next if url.blank?
+
+            identifier = document.uploaded_image_identifier.to_s
+            filename = identifier.presence || File.basename(url.to_s.split('?').first)
+            extension = File.extname(filename.to_s).delete('.').downcase
+            {
+              id: document.id,
+              uploaded_at: document.created_at,
+              url: url,
+              filename: filename,
+              extension: extension,
+              image: %w[jpg jpeg png gif webp].include?(extension),
+              pdf: extension == 'pdf'
+            }
+          end.compact
+
           {
             proof_type: proof_type,
             label: user.payout_kyc_label(proof_type),
-            uploaded: document.present?,
-            uploaded_at: document&.created_at,
-            url: document&.uploaded_image&.url
+            uploaded: documents.any?,
+            uploaded_at: documents.first&.dig(:uploaded_at),
+            url: documents.first&.dig(:url),
+            documents: documents
           }
         }
       }

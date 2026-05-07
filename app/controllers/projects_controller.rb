@@ -133,12 +133,13 @@ class ProjectsController < ApplicationController
     @project = resource
     current_user.profile_type = payout_profile_type_for_platform
     @bank_information = current_user.bank_information || current_user.build_bank_information
+    @bank_reference_type = payout_profile_bank_reference_type(current_user)
+    @bank_reference_value = payout_profile_bank_reference_value(current_user)
     @required_kyc_types = payout_profile_kyc_types_for(current_user)
     @required_kyc_labels = payout_profile_kyc_labels
     @kyc_documents_by_type = current_user.kycs.where(proof_type: @required_kyc_types)
                                         .order(created_at: :desc)
                                         .group_by(&:proof_type)
-                                        .transform_values(&:first)
     @organization_name = current_user.organization&.name
     @payout_profile_complete = current_user.payout_profile_complete?
     @payout_profile_missing_fields = current_user.payout_profile_missing_fields
@@ -166,7 +167,7 @@ class ProjectsController < ApplicationController
         end
 
         bank_information = current_user.bank_information || current_user.build_bank_information
-        bank_information.assign_attributes(payout_profile_bank_params)
+        apply_payout_bank_reference!(bank_information, payout_profile_bank_params)
         bank_information.save!
 
         update_or_create_kyc_documents!(current_user)
@@ -343,7 +344,7 @@ class ProjectsController < ApplicationController
   end
 
   def payout_profile_bank_params
-    params.permit(:owner_address, :owner_city, :owner_region, :owner_postal_code, :iban, :bic, :other_country)
+    params.permit(:owner_address, :owner_city, :owner_region, :owner_postal_code, :other_country, :bank_reference_type, :bank_reference_value)
   end
 
   def payout_profile_organization_name
@@ -352,6 +353,23 @@ class ProjectsController < ApplicationController
 
   def payout_profile_kyc_types_for(user)
     user.payout_profile_required_kyc_types
+  end
+
+  def payout_profile_bank_reference_type(user)
+    user.bank_information&.payout_bank_reference_type || 'iban'
+  end
+
+  def payout_profile_bank_reference_value(user)
+    user.bank_information&.payout_bank_reference_value
+  end
+
+  def apply_payout_bank_reference!(bank_information, bank_params)
+    attrs = bank_params.to_h.symbolize_keys
+    reference_type = attrs.delete(:bank_reference_type)
+    reference_value = attrs.delete(:bank_reference_value)
+
+    bank_information.assign_attributes(attrs)
+    bank_information.apply_payout_bank_reference(type: reference_type, value: reference_value)
   end
 
   def payout_profile_type_for_platform
@@ -369,15 +387,13 @@ class ProjectsController < ApplicationController
     kyc_files = params[:kyc_files]
     kyc_files = kyc_files.to_unsafe_h if kyc_files.respond_to?(:to_unsafe_h)
 
-    kyc_files.each do |proof_type, uploaded_image|
-      next if uploaded_image.blank?
+    kyc_files.each do |proof_type, uploaded_images|
       next unless required_types.include?(proof_type.to_s)
 
-      kyc = user.kycs.where(proof_type: proof_type.to_s).order(created_at: :desc).first
-      if kyc
-        kyc.uploaded_image = uploaded_image
-        kyc.save!
-      else
+      files = uploaded_images.is_a?(Array) ? uploaded_images : [uploaded_images]
+      files.each do |uploaded_image|
+        next if uploaded_image.blank?
+
         user.kycs.create!(proof_type: proof_type.to_s, uploaded_image: uploaded_image)
       end
     end

@@ -90,7 +90,15 @@ module Neighborly
 
         info = user.bank_information
         return if info.blank?
-        return if info.iban.blank?
+
+        reference_type = info.payout_bank_reference_type
+        reference_value = info.payout_bank_reference_value.to_s
+        return if reference_value.blank?
+
+        unless reference_type == 'iban'
+          warnings << "Reference bancaire #{reference_type.to_s.upcase} enregistree localement. Synchronisation Stripe automatique ignoree (IBAN requis)."
+          return
+        end
 
         token = ::Stripe::Token.create(
           bank_account: {
@@ -98,7 +106,7 @@ module Neighborly
             currency: 'eur',
             account_holder_name: user.name.to_s,
             account_holder_type: business_type,
-            account_number: info.iban.to_s
+            account_number: reference_value
           }
         )
 

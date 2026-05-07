@@ -266,11 +266,11 @@
                   td.font-weight-bold Pays
                   td#payoutBankCountry
                 tr
-                  td.font-weight-bold IBAN
-                  td#payoutBankIban
+                  td.font-weight-bold Type de reference
+                  td#payoutBankReferenceType
                 tr
-                  td.font-weight-bold BIC
-                  td#payoutBankBic
+                  td.font-weight-bold Reference bancaire
+                  td#payoutBankReferenceValue
 
         .mt-3
           h6
@@ -289,6 +289,34 @@
       .modal-footer
         button.btn.btn-secondary[type="button" data-dismiss="modal"] Fermer
 
+#payoutDocumentViewerModal.modal.fade[tabindex="-1" role="dialog"]
+  .modal-dialog.modal-xl[role="document"]
+    .modal-content
+      .modal-header
+        h5.modal-title
+          i.fa.fa-search-plus.mr-2
+          | Visualisation du document
+        button.close[type="button" data-dismiss="modal" aria-label="Fermer"]
+          span[aria-hidden="true"] &times;
+      .modal-body
+        #payoutDocViewerStage.text-center[style="max-height:70vh;overflow:auto;background:#111;padding:10px;"]
+          img#payoutDocViewerImage[alt="Document" style="max-width:100%;transform:scale(1);transform-origin:center center;transition:transform .15s ease;"]
+      .modal-footer
+        span.badge.badge-light.mr-auto#payoutDocZoomLabel 100%
+        a#payoutDocOpenNewTab.btn.btn-outline-secondary[target="_blank" rel="noopener"]
+          i.fa.fa-external-link.mr-1
+          | Ouvrir dans un nouvel onglet
+        button.btn.btn-outline-primary[type="button" onclick="payoutDocZoomOut()"]
+          i.fa.fa-search-minus.mr-1
+          | De-zoomer
+        button.btn.btn-outline-primary[type="button" onclick="payoutDocZoomIn()"]
+          i.fa.fa-search-plus.mr-1
+          | Zoomer
+        button.btn.btn-outline-secondary[type="button" onclick="payoutDocZoomReset()"]
+          i.fa.fa-refresh.mr-1
+          | Restaurer
+        button.btn.btn-secondary[type="button" data-dismiss="modal"] Fermer
+
 - stripe_test_mode = ENV.fetch('STRIPE_SECRET_KEY', 'sk_test_').start_with?('sk_test_')
 javascript:
   // Mode test/prod Stripe pour adapter les URLs du dashboard
@@ -298,6 +326,48 @@ javascript:
   // Variables globales pour la modal de remboursement
   var refundContributorsData = [];
   var platformFeePercent = 0;
+  var payoutDocViewerScale = 1;
+  var payoutDocViewerUrl = null;
+
+  function escapeHtml(value) {
+    if (value === null || value === undefined) return '';
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function payoutDocApplyZoom() {
+    $('#payoutDocViewerImage').css('transform', 'scale(' + payoutDocViewerScale + ')');
+    $('#payoutDocZoomLabel').text(Math.round(payoutDocViewerScale * 100) + '%');
+  }
+
+  function openPayoutDocViewer(url) {
+    if (!url) return;
+    payoutDocViewerScale = 1;
+    payoutDocViewerUrl = url;
+    $('#payoutDocViewerImage').attr('src', url);
+    $('#payoutDocOpenNewTab').attr('href', url);
+    payoutDocApplyZoom();
+    $('#payoutDocumentViewerModal').modal('show');
+  }
+
+  function payoutDocZoomIn() {
+    payoutDocViewerScale = Math.min(5, payoutDocViewerScale + 0.2);
+    payoutDocApplyZoom();
+  }
+
+  function payoutDocZoomOut() {
+    payoutDocViewerScale = Math.max(0.2, payoutDocViewerScale - 0.2);
+    payoutDocApplyZoom();
+  }
+
+  function payoutDocZoomReset() {
+    payoutDocViewerScale = 1;
+    payoutDocApplyZoom();
+  }
   
   // Fonctions globales pour toggle des boutons
   function toggleTransferBtn() {
@@ -383,6 +453,10 @@ javascript:
     $('#refundForm').on('submit', function() {
       $('#confirmRefundBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin mr-1"></i> En cours...');
     });
+
+    $(document).on('click', '.payout-doc-thumb', function() {
+      openPayoutDocViewer($(this).data('fullUrl') || $(this).attr('src'));
+    });
   });
   
   // Génère le lien Stripe Dashboard adaptatif test/prod
@@ -428,7 +502,7 @@ javascript:
     $('#payoutProfileStatus').removeClass('alert-success alert-warning alert-danger').addClass('alert-info').html('<i class="fa fa-spinner fa-spin mr-2"></i>Chargement...');
 
     $('#payoutOwnerName, #payoutOwnerEmail, #payoutOwnerType, #payoutOwnerOrganization, #payoutOwnerBirthday, #payoutOwnerNationality, #payoutOwnerResidence, #payoutOwnerPhone, #payoutOwnerStripeAccount').text('—');
-    $('#payoutBankAddress, #payoutBankCity, #payoutBankRegion, #payoutBankPostal, #payoutBankCountry, #payoutBankIban, #payoutBankBic').text('—');
+    $('#payoutBankAddress, #payoutBankCity, #payoutBankRegion, #payoutBankPostal, #payoutBankCountry, #payoutBankReferenceType, #payoutBankReferenceValue').text('—');
     $('#payoutKycList').html('<li class="list-group-item text-muted">Chargement...</li>');
     $('#payoutMissingList').html('<li class="list-group-item text-muted">Chargement...</li>');
 
@@ -458,8 +532,8 @@ javascript:
         $('#payoutBankRegion').text(payoutValue(bank.owner_region));
         $('#payoutBankPostal').text(payoutValue(bank.owner_postal_code));
         $('#payoutBankCountry').text(payoutValue(bank.other_country));
-        $('#payoutBankIban').text(payoutValue(bank.iban));
-        $('#payoutBankBic').text(payoutValue(bank.bic));
+        $('#payoutBankReferenceType').text(payoutValue(bank.bank_reference_type));
+        $('#payoutBankReferenceValue').text(payoutValue(bank.bank_reference_value));
 
         var kycList = $('#payoutKycList');
         kycList.empty();
@@ -469,8 +543,29 @@ javascript:
           kycDocs.forEach(function(doc) {
             var status = doc.uploaded ? '<span class="badge badge-success">Recu</span>' : '<span class="badge badge-danger">Manquant</span>';
             var uploadedAt = doc.uploaded_at ? '<small class="text-muted ml-2">(' + doc.uploaded_at + ')</small>' : '';
-            var link = (doc.uploaded && doc.url) ? ' <a href="' + doc.url + '" target="_blank">Voir</a>' : '';
-            kycList.append('<li class="list-group-item d-flex justify-content-between align-items-center"><span>' + payoutValue(doc.label) + uploadedAt + link + '</span>' + status + '</li>');
+            var documents = doc.documents || [];
+            var filesHtml = '';
+
+            if (documents.length > 0) {
+              filesHtml += '<div class="mt-2 d-flex flex-wrap">';
+              documents.forEach(function(file) {
+                if (!file || !file.url) return;
+                var safeUrl = escapeHtml(file.url);
+                var safeName = escapeHtml(file.filename || 'Document');
+
+                if (file.pdf) {
+                  filesHtml += '<a class="btn btn-sm btn-outline-primary mr-2 mb-2" href="' + safeUrl + '" target="_blank" rel="noopener"><i class="fa fa-file-pdf-o mr-1"></i>' + safeName + '</a>';
+                } else if (file.image) {
+                  filesHtml += '<img src="' + safeUrl + '" data-full-url="' + safeUrl + '" alt="' + safeName + '" class="payout-doc-thumb mr-2 mb-2" style="height:64px;width:auto;cursor:zoom-in;border:1px solid #dee2e6;border-radius:4px;padding:2px;background:#fff;" />';
+                } else {
+                  filesHtml += '<a class="btn btn-sm btn-outline-secondary mr-2 mb-2" href="' + safeUrl + '" target="_blank" rel="noopener">' + safeName + '</a>';
+                }
+              });
+              filesHtml += '</div>';
+            }
+
+            var countBadge = documents.length > 0 ? '<span class="badge badge-light ml-2">' + documents.length + ' fichier(s)</span>' : '';
+            kycList.append('<li class="list-group-item"><div class="d-flex justify-content-between align-items-center"><div><strong>' + escapeHtml(payoutValue(doc.label)) + '</strong>' + uploadedAt + countBadge + '</div>' + status + '</div>' + filesHtml + '</li>');
           });
         }
 

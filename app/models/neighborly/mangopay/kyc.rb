@@ -2,6 +2,8 @@ module Neighborly::Mangopay
   class Kyc < ActiveRecord::Base
     self.table_name = :kyc_files
 
+    ALLOWED_EXTENSIONS = %w[jpg jpeg gif png pdf].freeze
+
     belongs_to :user, class_name: '::User'
     mount_uploader :uploaded_image, Neighborly::Mangopay::KycUploader, mount_on: :uploaded_image
 
@@ -12,6 +14,7 @@ module Neighborly::Mangopay
               :proof_type,
               :uploaded_image,
               presence: true
+    validate :uploaded_image_extension_allowed
 
     scope :other_documents, -> { where(proof_type: Neighborly::Mangopay::User::OTHER_DOCUMENT_TYPE) }
 
@@ -51,6 +54,16 @@ module Neighborly::Mangopay
     end
 
     private
+
+    def uploaded_image_extension_allowed
+      return if uploaded_image.blank?
+
+      extension = uploaded_image.file&.extension.to_s.downcase
+      extension = File.extname(uploaded_image_identifier.to_s).delete('.').downcase if extension.blank?
+      return if ALLOWED_EXTENSIONS.include?(extension)
+
+      errors.add(:uploaded_image, 'doit etre une image (JPG, JPEG, PNG, GIF) ou un PDF.')
+    end
 
     def send_to_mangopay
       # DÉSACTIVÉ si MANGOPAY_ENABLED n'est pas true

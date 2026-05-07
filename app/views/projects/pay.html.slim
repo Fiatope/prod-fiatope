@@ -186,30 +186,33 @@
                 .form-group
                   label for="other_country" Pays du compte bancaire
                   = text_field_tag :other_country, @bank_information.other_country.presence || current_user.residence_country, class: 'form-control', placeholder: 'FR'
-              .col-md-3
+              .col-md-2
                 .form-group
-                  label for="iban" IBAN
-                  = text_field_tag :iban, @bank_information.iban, class: 'form-control', required: true
-              .col-md-3
+                  label for="bank_reference_type" Reference
+                  = select_tag :bank_reference_type, options_for_select([['RIB', 'rib'], ['IBAN', 'iban'], ['BIC', 'bic']], @bank_reference_type), class: 'form-control'
+              .col-md-4
                 .form-group
-                  label for="bic" BIC
-                  = text_field_tag :bic, @bank_information.bic, class: 'form-control', required: true
+                  label for="bank_reference_value" Valeur
+                  = text_field_tag :bank_reference_value, @bank_reference_value, class: 'form-control', required: true, placeholder: 'Saisissez votre RIB, IBAN ou BIC'
 
             .panel.radius[style="background:#fff;margin-top:15px;padding:15px;"]
               h5
                 i.fa.fa-id-card
                 |  Justificatifs a fournir
               - required_kyc_types.each do |proof_type|
-                - existing_doc = existing_kyc_docs[proof_type]
+                - existing_docs = Array(existing_kyc_docs[proof_type])
                 - label = required_kyc_labels[proof_type] || proof_type.humanize
                 .form-group
                   label = label
-                  = file_field_tag "kyc_files[#{proof_type}]", class: 'form-control'
-                  - if existing_doc.present? && existing_doc.uploaded_image.present?
-                    p.small[style="margin-top:5px;"]
-                      i.fa.fa-check-circle[style="color:#27ae60;"]
-                      |  Document actuel:
-                      = link_to ' voir', existing_doc.uploaded_image.url, target: '_blank'
+                  = file_field_tag "kyc_files[#{proof_type}][]", class: 'form-control', multiple: true, accept: '.jpg,.jpeg,.png,.gif,.pdf'
+                  p.small.text-muted[style="margin-top:5px;"]
+                    | Formats acceptes: JPG, JPEG, PNG, GIF, PDF. Vous pouvez envoyer plusieurs fichiers (ex: recto/verso).
+                  - if existing_docs.any?
+                    ul[style="margin-top:8px;"]
+                      - existing_docs.each do |existing_doc|
+                        - next unless existing_doc.uploaded_image.present?
+                        li
+                          = link_to(existing_doc.uploaded_image_identifier.presence || 'Voir le document', existing_doc.uploaded_image.url, target: '_blank')
 
             .text-center[style="margin-top:20px;"]
               button.btn.btn-lg.btn-warning[type="submit" style="padding:12px 40px;font-size:1.1em;"]

@@ -231,15 +231,13 @@ class User < ActiveRecord::Base
       missing << 'Ville du titulaire du compte'
       missing << 'Region du titulaire du compte'
       missing << 'Code postal du titulaire du compte'
-      missing << 'IBAN'
-      missing << 'BIC'
+      missing << 'Reference bancaire (RIB, IBAN ou BIC)'
     else
       missing << 'Adresse du titulaire du compte' if info.owner_address.blank?
       missing << 'Ville du titulaire du compte' if info.owner_city.blank?
       missing << 'Region du titulaire du compte' if info.owner_region.blank?
       missing << 'Code postal du titulaire du compte' if info.owner_postal_code.blank?
-      missing << 'IBAN' if info.iban.blank?
-      missing << 'BIC' if info.bic.blank?
+      missing << 'Reference bancaire (RIB, IBAN ou BIC)' if info.payout_bank_reference_value.blank?
     end
 
     required_docs = payout_profile_required_kyc_types

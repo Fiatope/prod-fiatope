@@ -2,6 +2,8 @@ module Neighborly::Mangopay
   class BankInformation < ActiveRecord::Base
     self.table_name = :bank_informations
 
+    PAYOUT_BANK_REFERENCE_TYPES = %w[rib iban bic].freeze
+
     belongs_to :user, class_name: '::User'
     validates :iban, allow_blank: true, format: { with: /\A[a-zA-Z]{2}[0-9]{2}[a-zA-Z0-9]{4}[0-9]{7}([a-zA-Z0-9]?){0,16}?\Z/, message: "is not a valid IBAN number" }
     validates :bic, allow_blank: true, format: { with: /\A[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?\Z/, message: "is not a valid SWIFT/BIC code" }
@@ -18,6 +20,40 @@ module Neighborly::Mangopay
 
     # before_save :save_or_update_mangopay_bank_account
     after_validation :save_or_update_mangopay_bank_account
+
+    def payout_bank_reference_type
+      return 'iban' if iban.present?
+      return 'bic' if bic.present?
+      return 'rib' if other_account_number.present?
+
+      'iban'
+    end
+
+    def payout_bank_reference_value
+      iban.presence || bic.presence || other_account_number.presence
+    end
+
+    def apply_payout_bank_reference(type:, value:)
+      normalized_type = type.to_s.downcase
+      normalized_type = 'iban' unless PAYOUT_BANK_REFERENCE_TYPES.include?(normalized_type)
+      normalized_value = value.to_s.strip
+      normalized_value = normalized_value.upcase.gsub(/\s+/, '') if %w[iban bic].include?(normalized_type)
+
+      self.iban = nil
+      self.bic = nil
+      self.other_account_number = nil
+
+      case normalized_type
+      when 'bic'
+        self.bic = normalized_value
+      when 'rib'
+        self.other_account_number = normalized_value
+      else
+        self.iban = normalized_value
+      end
+
+      self.ca_account_type = normalized_type
+    end
 
     private
 
