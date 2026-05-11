@@ -22,23 +22,7 @@ module Neighborly
         
         # Créer directement la session Stripe Checkout et rediriger
         begin
-          currency_code = @project.stripe_currency_code
-          amount_cents = @project.stripe_amount_to_minor_units(@amount)
-          minimum_minor_units = @project.stripe_minimum_minor_units
-
-          if amount_cents < minimum_minor_units
-            minimum_display = display_amount_for_currency(
-              @project.stripe_amount_from_minor_units(minimum_minor_units, currency_code),
-              currency_code
-            )
-            flash[:alert] = I18n.t(
-              'stripe.minimum_amount_error',
-              currency: currency_code,
-              minimum: minimum_display,
-              default: "Montant minimum Stripe pour #{currency_code}: #{minimum_display}"
-            )
-            redirect_to "/projects/#{@project.permalink}" and return
-          end
+          amount_cents = (@amount * 100).to_i
           
           # Vérifier si le compte Connect peut recevoir des transferts
           connect_ready = false
@@ -76,7 +60,7 @@ module Neighborly
             payment_method_types: ['card'],
             line_items: [{
               price_data: {
-                currency: currency_code.downcase,
+                currency: @project.currency.presence&.downcase || 'eur',
                 product_data: product_data,
                 unit_amount: amount_cents
               },
@@ -102,7 +86,7 @@ module Neighborly
               contributor_id: current_user.id.to_s,
               contributor_name: current_user.display_name.to_s[0..99],
               contributor_email: current_user.email.to_s,
-              currency: currency_code,
+              currency: @project.currency.presence || 'EUR',
               amount: @amount.to_s
             }
           }
@@ -124,7 +108,7 @@ module Neighborly
               contributor_name: current_user.display_name.to_s[0..99],
               contributor_email: current_user.email.to_s,
               contribution_id: @contribution&.id.to_s,
-              currency: currency_code,
+              currency: @project.currency.presence || 'EUR',
               amount: @amount.to_s,
               # Stocker l'ID du compte Connect pour transfert futur par admin
               destination_account: connect_ready ? @project.stripe_account_id : nil
@@ -169,23 +153,8 @@ module Neighborly
         end
         
         begin
-          currency_code = @project.stripe_currency_code
-          amount_cents = @project.stripe_amount_to_minor_units(@amount)
-          minimum_minor_units = @project.stripe_minimum_minor_units
-
-          if amount_cents < minimum_minor_units
-            minimum_display = display_amount_for_currency(
-              @project.stripe_amount_from_minor_units(minimum_minor_units, currency_code),
-              currency_code
-            )
-            flash[:alert] = I18n.t(
-              'stripe.minimum_amount_error',
-              currency: currency_code,
-              minimum: minimum_display,
-              default: "Montant minimum Stripe pour #{currency_code}: #{minimum_display}"
-            )
-            redirect_to "/projects/#{@project.permalink}" and return
-          end
+          amount_cents = (@amount * 100).to_i
+          platform_fee = @project.platform_fee_amount(amount_cents)
           
           # Construire URL image valide pour action create aussi
           image_url_create = nil
@@ -223,7 +192,7 @@ module Neighborly
             payment_method_types: ['card'],
             line_items: [{
               price_data: {
-                currency: currency_code.downcase,
+                currency: @project.currency.presence&.downcase || 'eur',
                 product_data: product_data_create,
                 unit_amount: amount_cents
               },
@@ -249,7 +218,7 @@ module Neighborly
               contributor_id: current_user.id.to_s,
               contributor_name: current_user.display_name.to_s[0..99],
               contributor_email: current_user.email.to_s,
-              currency: currency_code,
+              currency: @project.currency.presence || 'EUR',
               amount: @amount.to_s
             }
           }
@@ -271,7 +240,7 @@ module Neighborly
               contributor_name: current_user.display_name.to_s[0..99],
               contributor_email: current_user.email.to_s,
               contribution_id: @contribution&.id.to_s,
-              currency: currency_code,
+              currency: @project.currency.presence || 'EUR',
               amount: @amount.to_s,
               # Stocker l'ID du compte Connect pour transfert futur par admin
               destination_account: connect_ready_create ? @project.stripe_account_id : nil
@@ -310,12 +279,7 @@ module Neighborly
               # Récupérer les métadonnées
               user_id = session.metadata['user_id']
               contribution_id = session.metadata['contribution_id']
-              session_currency = ::Neighborly::Stripe::CurrencyUtils.normalize_currency(
-                session.currency.presence || session.metadata['currency'].presence || @project.stripe_currency_code
-              )
-              amount = ::Neighborly::Stripe::CurrencyUtils
-                .amount_from_minor_units(session.amount_total, session_currency)
-                .to_f
+              amount = session.amount_total / 100.0
               
               user = ::User.find_by(id: user_id)
               
@@ -416,14 +380,6 @@ module Neighborly
         # Frais Stripe: 1.4% + 0.25€ pour les cartes européennes
         (amount * 0.014 + 0.25).round(2)
       end
-
-      def display_amount_for_currency(amount, currency_code)
-        if ::Neighborly::Stripe::CurrencyUtils.zero_decimal_currency?(currency_code)
-          amount.to_i.to_s
-        else
-          format('%.2f', amount)
-        end
-      end
       
       def create_stripe_order(session, contribution, amount)
         return unless contribution
@@ -437,13 +393,8 @@ module Neighborly
               order.project = @project
               order.contribution = contribution
               order.stripe_payment_intent_id = session.payment_intent
-              order.amount_cents = ::Neighborly::Stripe::CurrencyUtils.amount_to_minor_units(
-                amount,
-                session.currency || @project.stripe_currency_code
-              )
-              order.currency = ::Neighborly::Stripe::CurrencyUtils
-                .normalize_currency(session.currency || @project.stripe_currency_code)
-                .downcase
+              order.amount_cents = (amount * 100).to_i
+              order.currency = session.currency || 'eur'
               order.status = 'completed'
             end
           end

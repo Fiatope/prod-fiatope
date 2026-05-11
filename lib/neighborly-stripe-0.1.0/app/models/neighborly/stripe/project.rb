@@ -4,34 +4,6 @@ module Neighborly::Stripe::Project
   included do
     has_many :stripe_orders, class_name: 'Neighborly::Stripe::Order', foreign_key: 'project_id'
   end
-
-  def stripe_currency_code
-    ::Neighborly::Stripe::CurrencyUtils.normalize_currency(currency)
-  end
-
-  def stripe_currency_code_downcase
-    stripe_currency_code.downcase
-  end
-
-  def stripe_amount_to_minor_units(amount)
-    ::Neighborly::Stripe::CurrencyUtils.amount_to_minor_units(amount, stripe_currency_code)
-  end
-
-  def stripe_amount_from_minor_units(minor_amount, currency_code = stripe_currency_code)
-    ::Neighborly::Stripe::CurrencyUtils.amount_from_minor_units(minor_amount, currency_code).to_f
-  end
-
-  def stripe_amount_meets_minimum?(amount)
-    ::Neighborly::Stripe::CurrencyUtils.amount_meets_minimum?(amount, stripe_currency_code)
-  end
-
-  def stripe_minimum_minor_units
-    ::Neighborly::Stripe::CurrencyUtils.minimum_minor_units(stripe_currency_code)
-  end
-
-  def stripe_minimum_major_amount
-    stripe_amount_from_minor_units(stripe_minimum_minor_units, stripe_currency_code)
-  end
   
   def setup_stripe_account!
     return if stripe_account_id.present?
@@ -96,7 +68,7 @@ module Neighborly::Stripe::Project
     begin
       transfer = ::Stripe::Transfer.create({
         amount: amount_cents,
-        currency: stripe_currency_code_downcase,
+        currency: currency.downcase,
         destination: stripe_account_id,
         metadata: {
           project_id: self.id,
@@ -115,7 +87,7 @@ module Neighborly::Stripe::Project
     
     begin
       balance = ::Stripe::Balance.retrieve({}, { stripe_account: stripe_account_id })
-      balance.available.find { |b| b.currency == stripe_currency_code_downcase }&.amount || 0
+      balance.available.find { |b| b.currency == currency.downcase }&.amount || 0
     rescue ::Stripe::StripeError
       0
     end

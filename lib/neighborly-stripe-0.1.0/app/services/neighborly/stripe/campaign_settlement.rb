@@ -124,14 +124,14 @@ module Neighborly
         # DOIT correspondre à la devise du balance_transaction du charge.
         # Si le compte plateforme règle en RON, le balance_transaction est en RON
         # même si le charge a été créé en EUR.
-        transfer_currency = project.stripe_currency_code_downcase
+        transfer_currency = project.currency&.downcase || 'eur'
         balance_txn = nil
         if charge_id.present?
           begin
             charge_object = ::Stripe::Charge.retrieve(charge_id)
             if charge_object.balance_transaction.present?
               balance_txn = ::Stripe::BalanceTransaction.retrieve(charge_object.balance_transaction)
-              transfer_currency = normalized_currency(balance_txn.currency).downcase
+              transfer_currency = balance_txn.currency
               Rails.logger.info "  Contribution #{contribution.id}: devise balance_transaction = #{transfer_currency} (charge devise = #{charge_object.currency})"
             end
           rescue ::Stripe::StripeError => e
@@ -146,8 +146,7 @@ module Neighborly
         # Calcul du montant à transférer selon la devise
         # CRITIQUE: Si la balance_transaction est dans une devise différente (ex: RON),
         # le montant du transfert DOIT être en centimes de CETTE devise, pas en EUR.
-        charge_currency = normalized_currency(charge_object&.currency || project.stripe_currency_code).downcase
-        if balance_txn && normalized_currency(balance_txn.currency).downcase != charge_currency
+        if balance_txn && balance_txn.currency != (charge_object&.currency || project.currency&.downcase || 'eur')
           # ===== CAS MULTI-DEVISE (ex: charge EUR → balance RON) =====
           bt_gross_cents = balance_txn.amount       # montant brut en centimes devise plateforme (RON)
           bt_fee_cents   = balance_txn.fee          # frais Stripe en centimes devise plateforme
@@ -165,13 +164,9 @@ module Neighborly
           end
           
           # Logs en EUR pour lisibilité
-          platform_fee_major = minor_to_major(platform_fee_cents, transfer_currency)
-          amount_to_owner_major = minor_to_major(amount_to_transfer, transfer_currency)
-          stripe_fee_major = minor_to_major(bt_fee_cents, transfer_currency)
-
-          platform_fee_eur = exchange_rate && exchange_rate > 0 ? (platform_fee_major / exchange_rate).round(2) : (contribution.value * fee_percentage).round(2)
-          amount_to_owner_eur = exchange_rate && exchange_rate > 0 ? (amount_to_owner_major / exchange_rate).round(2) : (contribution.value - platform_fee_eur).round(2)
-          stripe_fee_eur = exchange_rate && exchange_rate > 0 ? (stripe_fee_major / exchange_rate).round(2) : estimate_stripe_fee(contribution.value)
+          platform_fee_eur = exchange_rate && exchange_rate > 0 ? (platform_fee_cents / 100.0 / exchange_rate).round(2) : (contribution.value * fee_percentage).round(2)
+          amount_to_owner_eur = exchange_rate && exchange_rate > 0 ? (amount_to_transfer / 100.0 / exchange_rate).round(2) : (contribution.value - platform_fee_eur).round(2)
+          stripe_fee_eur = exchange_rate && exchange_rate > 0 ? (bt_fee_cents / 100.0 / exchange_rate).round(2) : estimate_stripe_fee(contribution.value)
           platform_net_eur = platform_fee_eur - stripe_fee_eur
           
           Rails.logger.info "  Contribution #{contribution.id} [MULTI-DEVISE]: charge=#{charge_object&.currency}, balance=#{transfer_currency}, taux=#{exchange_rate}"
@@ -182,9 +177,9 @@ module Neighborly
           # ===== CAS MÊME DEVISE (ex: charge EUR → balance EUR) =====
           platform_fee      = (contribution.value * fee_percentage).round(2)
           amount_to_owner   = contribution.value - platform_fee
-          amount_to_transfer = major_to_minor(amount_to_owner, transfer_currency)
+          amount_to_transfer = (amount_to_owner * 100).to_i # en centimes
           
-          stripe_fee = balance_txn ? minor_to_major(balance_txn.fee, transfer_currency) : estimate_stripe_fee(contribution.value)
+          stripe_fee = balance_txn ? (balance_txn.fee / 100.0) : estimate_stripe_fee(contribution.value)
           platform_net_revenue = platform_fee - stripe_fee
           
           Rails.logger.info "  Contribution #{contribution.id}: brut=#{contribution.value}€, commission=#{platform_fee}€ (#{(fee_percentage*100)}%), stripe=#{stripe_fee}€, net_plateforme=#{platform_net_revenue}€, porteur=#{amount_to_owner}€, devise=#{transfer_currency}"
@@ -204,7 +199,7 @@ module Neighborly
               project_id: project.id,
               gross_amount: contribution.value,
               platform_fee_pct: (fee_percentage * 100).to_s + '%',
-              net_to_owner: minor_to_major(amount_to_transfer, transfer_currency),
+              net_to_owner: amount_to_transfer / 100.0,
               transfer_currency: transfer_currency
             }
           }
@@ -220,10 +215,8 @@ module Neighborly
             stripe_transferred: true,
             stripe_transfer_id: transfer.id
           )
-
-          transferred_amount = minor_to_major(amount_to_transfer, transfer_currency)
           
-          Rails.logger.info "CampaignSettlement: Contribution #{contribution.id} transférée (#{transferred_amount} #{transfer_currency.upcase}) - Transfer #{transfer.id}"
+          Rails.logger.info "CampaignSettlement: Contribution #{contribution.id} transférée (#{amount_to_transfer/100.0}€) - Transfer #{transfer.id}"
           
           { success: true, transfer_id: transfer.id }
         rescue ::Stripe::StripeError => e
@@ -238,7 +231,7 @@ module Neighborly
           begin
             charge = ::Stripe::Charge.retrieve(contribution.stripe_charge_id)
             balance_txn = ::Stripe::BalanceTransaction.retrieve(charge.balance_transaction)
-            return minor_to_major(balance_txn.fee, balance_txn.currency)
+            return (balance_txn.fee / 100.0)
           rescue ::Stripe::StripeError => e
             Rails.logger.warn "Impossible de récupérer frais Stripe pour contribution #{contribution.id}: #{e.message}"
           end
@@ -332,12 +325,11 @@ module Neighborly
           stripe_fee        = calculate_stripe_fee_for_contribution(contribution)
           fee_pct           = ENV.fetch('PLATFORM_FEE', '5.0').tr(',', '.').to_f / 100
           platform_fee      = (gross_amount * fee_pct).round(2)
-          refund_currency   = project.stripe_currency_code
           
           # Remboursé = brut - frais Stripe réels (non-remboursables) - commission plateforme
           net_refund_amount = gross_amount - stripe_fee - platform_fee
           net_refund_amount = 0 if net_refund_amount < 0
-          refund_amount_cents = major_to_minor(net_refund_amount, refund_currency)
+          refund_amount_cents = (net_refund_amount * 100).to_i
           
           Rails.logger.info "CampaignSettlement: Remboursement contribution #{contribution.id}"
           Rails.logger.info "  - Montant brut: #{gross_amount}€"
@@ -397,18 +389,6 @@ module Neighborly
       def add_error(message)
         @errors << message
         false
-      end
-
-      def normalized_currency(currency)
-        ::Neighborly::Stripe::CurrencyUtils.normalize_currency(currency)
-      end
-
-      def minor_to_major(minor_amount, currency)
-        ::Neighborly::Stripe::CurrencyUtils.amount_from_minor_units(minor_amount, currency).to_f
-      end
-
-      def major_to_minor(amount, currency)
-        ::Neighborly::Stripe::CurrencyUtils.amount_to_minor_units(amount, currency)
       end
       
       # Validation pour le transfert au porteur
@@ -522,7 +502,7 @@ module Neighborly
               # Récupérer les frais réels depuis Stripe
               charge = ::Stripe::Charge.retrieve(contribution.stripe_charge_id)
               balance_txn = ::Stripe::BalanceTransaction.retrieve(charge.balance_transaction)
-              total_fees += minor_to_major(balance_txn.fee, balance_txn.currency)
+              total_fees += (balance_txn.fee / 100.0)
             rescue ::Stripe::StripeError => e
               # En cas d'erreur, estimer les frais (3.4% + 0.25€)
               Rails.logger.warn "Impossible de récupérer les frais Stripe pour contribution #{contribution.id}: #{e.message}"

@@ -72,7 +72,7 @@ module Neighborly
         project_id = session.metadata['project_id']
         user_id = session.metadata['user_id']
         contribution_id = session.metadata['contribution_id']
-        amount_minor_units = session.amount_total
+        amount = session.amount_total
         
         return unless project_id && user_id
         
@@ -80,13 +80,6 @@ module Neighborly
         user = ::User.find_by(id: user_id)
         
         return unless project && user
-
-        session_currency = ::Neighborly::Stripe::CurrencyUtils.normalize_currency(
-          session.currency.presence || session.metadata['currency'].presence || project.stripe_currency_code
-        )
-        amount = ::Neighborly::Stripe::CurrencyUtils
-          .amount_from_minor_units(amount_minor_units, session_currency)
-          .to_f
         
         # Si contribution_id existe, utiliser la contribution existante
         if contribution_id.present?
@@ -101,7 +94,7 @@ module Neighborly
             contribution = ::Contribution.create!(
               project: project,
               user: user,
-              value: amount,
+              value: amount / 100.0,
               payment_method: 'Stripe',
               payment_id: session.payment_intent,
               state: 'pending'
@@ -112,7 +105,7 @@ module Neighborly
           contribution = ::Contribution.create!(
             project: project,
             user: user,
-            value: amount,
+            value: amount / 100.0,
             payment_method: 'Stripe',
             payment_id: session.payment_intent,
             state: 'pending'
@@ -304,11 +297,8 @@ module Neighborly
         user = ::User.find_by(stripe_connect_account_id: account_id)
         return unless user
         
-        payout_currency = ::Neighborly::Stripe::CurrencyUtils.normalize_currency(payout.currency)
-        amount = ::Neighborly::Stripe::CurrencyUtils
-          .amount_from_minor_units(payout.amount, payout_currency)
-          .to_f
-        Rails.logger.info "PAYOUT RÉUSSI: #{amount} #{payout_currency} vers compte bancaire de #{user.email} (#{account_id})"
+        amount = payout.amount / 100.0
+        Rails.logger.info "PAYOUT RÉUSSI: #{amount}€ vers compte bancaire de #{user.email} (#{account_id})"
         
         # Notifier le porteur que son argent est arrivé
         # Note: notify_owner ne prend que des colonnes valides de la table notifications
@@ -330,13 +320,10 @@ module Neighborly
         user = ::User.find_by(stripe_connect_account_id: account_id)
         return unless user
         
-        payout_currency = ::Neighborly::Stripe::CurrencyUtils.normalize_currency(payout.currency)
-        amount = ::Neighborly::Stripe::CurrencyUtils
-          .amount_from_minor_units(payout.amount, payout_currency)
-          .to_f
+        amount = payout.amount / 100.0
         failure_message = payout.failure_message || payout.failure_code || 'raison inconnue'
         
-        Rails.logger.error "PAYOUT ÉCHOUÉ: #{amount} #{payout_currency} pour #{user.email} (#{account_id}) - #{failure_message}"
+        Rails.logger.error "PAYOUT ÉCHOUÉ: #{amount}€ pour #{user.email} (#{account_id}) - #{failure_message}"
         
         # Notifier l'admin - action manuelle requise
         begin
