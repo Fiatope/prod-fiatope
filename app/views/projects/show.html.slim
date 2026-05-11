@@ -156,7 +156,8 @@
         - payout_states = ['successful', 'waiting_funds', 'online', 'request_funds', 'paid']
         - if can_request_payout && payout_states.include?(@project.state)
           - already_paid = @project.stripe_settlement_type == 'transferred' || @project.state == 'paid'
-          - payout_pending = @project.state == 'request_funds' && !already_paid
+          - payout_edit_unlocked = !!@payout_profile_edit_unlocked
+          - payout_pending = @project.state == 'request_funds' && !already_paid && !payout_edit_unlocked
           - payout_ready = @payout_profile_complete
           - stripe_contributions_scope = @project.contributions.where(payment_method: 'Stripe', state: 'confirmed')
           - stripe_contributions_exist = stripe_contributions_scope.any?
@@ -179,6 +180,10 @@
               i.fa.fa-info-circle
               strong |  Retrait indisponible
               p.small | Le retrait sera disponible dès qu au moins une contribution confirmée aura été enregistrée.
+          - elsif payout_edit_unlocked
+            = link_to pay_project_path(@project), class: "btn btn-block btn-warning" do
+              i.fa.fa-pencil
+              |  Mettre a jour mes infos de retrait
           - elsif !payout_ready
             = link_to pay_project_path(@project), class: "btn btn-block btn-warning" do
               i.fa.fa-exclamation-triangle

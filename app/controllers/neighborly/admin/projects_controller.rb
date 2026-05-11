@@ -346,6 +346,7 @@ module Neighborly::Admin
 
       render json: {
         profile_complete: user.payout_profile_complete?,
+        edit_unlock_active: Rails.cache.read(payout_profile_edit_unlock_cache_key(user)).present?,
         missing_fields: user.payout_profile_missing_fields,
         owner: {
           id: user.id,

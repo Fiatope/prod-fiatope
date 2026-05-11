@@ -572,8 +572,12 @@ javascript:
         var bank = data.bank || {};
         var missingFields = data.missing_fields || [];
         var kycDocs = data.kyc_documents || [];
+        var unlockActive = !!data.edit_unlock_active;
 
         updatePayoutProfileStatus(!!data.profile_complete, missingFields.length);
+        if (unlockActive) {
+          $('#payoutEditUnlockStatus').removeClass('text-muted text-danger').addClass('text-success').text('Reedition deja autorisee pour le porteur.');
+        }
 
         $('#payoutOwnerName').text(payoutValue(owner.name));
         $('#payoutOwnerEmail').text(payoutValue(owner.email));

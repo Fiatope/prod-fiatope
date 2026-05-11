@@ -23,8 +23,9 @@
 
       /= Données pré-calculées
       - payout_ready = @payout_profile_complete
+      - payout_reedit_enabled = !!@payout_profile_edit_unlocked
       - already_paid  = @project.stripe_settlement_type == 'transferred' || @project.state == 'paid'
-      - payout_pending = @project.state == 'request_funds' && !already_paid
+      - payout_pending = @project.state == 'request_funds' && !already_paid && !payout_reedit_enabled
       - stripe_contribs = @project.contributions.where(payment_method: 'Stripe', state: 'confirmed')
       - total_collected = stripe_contribs.sum(:value)
       - contribs_count = stripe_contribs.count
@@ -37,6 +38,11 @@
       - required_kyc_types = @required_kyc_types || []
       - required_kyc_labels = @required_kyc_labels || {}
       - existing_kyc_docs = @kyc_documents_by_type || {}
+      - ui_primary = '#f39c12'
+      - ui_primary_soft = '#fff8ed'
+      - ui_primary_border = '#f1d7b8'
+      - ui_primary_text = '#7a4d17'
+      - ui_success = '#27ae60'
 
       / ===== TRACKER D'ÉTAPES VISUEL =====
       .panel.radius[style="background:#f8f9fa;border:1px solid #e9ecef;margin-bottom:25px;padding:20px 15px 10px;"]
@@ -101,8 +107,8 @@
             |  Délai bancaire habituel : 2-7 jours ouvrés. Vous recevrez un email de confirmation.
 
       - elsif payout_pending
-        .panel.radius[style="background:#fef9e7;border:2px solid #f39c12;padding:20px;margin-bottom:25px;"]
-          h4[style="color:#f39c12;"]
+        .panel.radius[style="background:#{ui_primary_soft};border:1px solid #{ui_primary_border};padding:20px;margin-bottom:25px;"]
+          h4[style="color:#{ui_primary};"]
             i.fa.fa-clock-o
             |  Demande en cours de traitement
           p
@@ -115,8 +121,8 @@
             |  Sécurité : les fonds sont traités via un système certifié PCI DSS, conforme aux normes bancaires européennes.
 
       - elsif !payout_ready || @payout_profile_edit_unlocked
-        .panel.radius[style="background:#fdf2e9;border:2px solid #e67e22;padding:20px;margin-bottom:25px;"]
-          h4[style="color:#e67e22;"]
+        .panel.radius[style="background:#{ui_primary_soft};border:1px solid #{ui_primary_border};padding:20px;margin-bottom:25px;"]
+          h4[style="color:#{ui_primary};"]
             i.fa.fa-exclamation-triangle
             |  Completez votre profil de retrait
           p | Pour retirer vos fonds sans quitter Fiatope, renseignez votre profil organisation (association, entreprise ou organisation), vos informations bancaires et vos justificatifs.
@@ -130,7 +136,7 @@
               |  L administration vous autorise a modifier et soumettre a nouveau ce formulaire.
 
           - if @payout_profile_missing_fields.present?
-            .alert-box.alert[style="margin-top:10px;"]
+            .alert-box[style="margin-top:10px;background:#{ui_primary_soft};border:1px solid #{ui_primary_border};color:#{ui_primary_text};"]
               p
                 strong Elements manquants:
               ul[style="margin-bottom:0;"]
@@ -220,7 +226,7 @@
                           = link_to(existing_doc.uploaded_image_identifier.presence || 'Voir le document', existing_doc.uploaded_image.url, target: '_blank')
 
             .text-center[style="margin-top:20px;"]
-              button.btn.btn-lg.btn-warning[type="submit" style="padding:12px 40px;font-size:1.1em;"]
+              button.btn.btn-lg[type="submit" style="padding:12px 40px;font-size:1.1em;background:#{ui_primary};border-color:#{ui_primary};color:#fff;"]
                 i.fa.fa-save
                 |  Enregistrer mon profil de retrait
 
@@ -233,7 +239,7 @@
         - else
           .panel.radius[style="background:#eaf2f8;border:2px solid #27ae60;padding:20px;margin-bottom:25px;"]
             .text-center
-              p[style="color:#27ae60;font-size:1.1em;"]
+              p[style="color:#{ui_success};font-size:1.1em;"]
                 i.fa.fa-check-circle
                 strong |  Tout est prêt !
                 |  Votre espace est vérifié et vos contributions sont confirmées.
