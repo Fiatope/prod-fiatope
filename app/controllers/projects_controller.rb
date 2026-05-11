@@ -112,8 +112,6 @@ class ProjectsController < ApplicationController
     # Le statut de readiness pour retirer les fonds est base sur le profil local.
     @payout_profile_complete = user_signed_in? && current_user == @project.user &&
                    current_user.payout_profile_complete?
-    @payout_profile_edit_unlocked = user_signed_in? && current_user == @project.user &&
-                    payout_profile_edit_unlocked?(current_user)
 
     if @project.id == 1053
       @bg_sm = "bg-small"
@@ -223,9 +221,8 @@ class ProjectsController < ApplicationController
       return redirect_to pay_project_path(@project)
     end
 
-    # Demande déjà en cours de traitement (sauf si l'admin autorise explicitement une nouvelle soumission)
-    allow_resubmission = @project.state == 'request_funds' && payout_profile_edit_unlocked?(current_user)
-    if @project.state == 'request_funds' && !allow_resubmission
+    # Demande déjà en cours de traitement
+    if @project.state == 'request_funds'
       flash[:notice] = "Votre demande de virement est déjà en cours de traitement par notre équipe."
       return redirect_to pay_project_path(@project)
     end
@@ -247,29 +244,17 @@ class ProjectsController < ApplicationController
     end
 
     begin
-      total = contributions.sum(:value)
-      fee_pct = ENV.fetch('PLATFORM_FEE', '5.0').tr(',', '.').to_f / 100
-      net = (total * (1 - fee_pct)).round(2)
-
-      if allow_resubmission
-        clear_payout_profile_edit_unlock!(current_user)
-
-        begin
-          @project.notify_observers(:from_online_to_request_funds)
-        rescue => notify_err
-          Rails.logger.warn "request_payout (resubmission): notification admin échouée - #{notify_err.message}"
-        end
-
-        flash[:success] = "✅ Vos informations ont ete mises a jour et votre demande de virement de #{net}€ reste en cours de traitement."
-        return redirect_to pay_project_path(@project)
-      end
-
       # FLUX CROWDFUNDING CORRECT:
       # 1. Porteur initie → projet passe en request_funds + admin notifié
       # 2. Admin décide de payer → process_stripe_transfer (panel admin)
       # 3. CampaignSettlement effectue le Stripe Transfer → auto-payout vers banque porteur
       if @project.can_push_to_request_funds?
         @project.push_to_request_funds!
+        clear_payout_profile_edit_unlock!(current_user)
+
+        total = contributions.sum(:value)
+        fee_pct = ENV.fetch('PLATFORM_FEE', '5.0').tr(',', '.').to_f / 100
+        net = (total * (1 - fee_pct)).round(2)
 
         # Notifier l'admin par email
         begin
@@ -422,11 +407,9 @@ class ProjectsController < ApplicationController
       next unless required_types.include?(proof_type.to_s)
 
       files = uploaded_images.is_a?(Array) ? uploaded_images : [uploaded_images]
-      files = files.reject(&:blank?)
+      files = files.compact.reject(&:blank?)
       next if files.empty?
 
-      # Si de nouveaux fichiers sont fournis pour un type de preuve,
-      # on remplace les anciens justificatifs de ce type.
       user.kycs.where(proof_type: proof_type.to_s).destroy_all
 
       files.each do |uploaded_image|

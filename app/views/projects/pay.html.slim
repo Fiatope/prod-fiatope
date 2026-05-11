@@ -13,7 +13,7 @@
           i.fa.fa-check-circle
           |  #{flash[:success]}
       - if flash[:alert].present?
-        .alert-box.alert[style="margin-bottom:15px;padding:15px;border-radius:5px;"]
+        .alert-box[style="margin-bottom:15px;padding:15px;border-radius:5px;background:#fff7e6;border:1px solid #f0c36d;color:#8a6d3b;"]
           i.fa.fa-exclamation-triangle
           |  #{flash[:alert]}
       - if flash[:notice].present?
@@ -23,9 +23,8 @@
 
       /= Données pré-calculées
       - payout_ready = @payout_profile_complete
-      - payout_reedit_enabled = !!@payout_profile_edit_unlocked
       - already_paid  = @project.stripe_settlement_type == 'transferred' || @project.state == 'paid'
-      - payout_pending = @project.state == 'request_funds' && !already_paid && !payout_reedit_enabled
+      - payout_pending = @project.state == 'request_funds' && !already_paid
       - stripe_contribs = @project.contributions.where(payment_method: 'Stripe', state: 'confirmed')
       - total_collected = stripe_contribs.sum(:value)
       - contribs_count = stripe_contribs.count
@@ -38,11 +37,6 @@
       - required_kyc_types = @required_kyc_types || []
       - required_kyc_labels = @required_kyc_labels || {}
       - existing_kyc_docs = @kyc_documents_by_type || {}
-      - ui_primary = '#f39c12'
-      - ui_primary_soft = '#fff8ed'
-      - ui_primary_border = '#f1d7b8'
-      - ui_primary_text = '#7a4d17'
-      - ui_success = '#27ae60'
 
       / ===== TRACKER D'ÉTAPES VISUEL =====
       .panel.radius[style="background:#f8f9fa;border:1px solid #e9ecef;margin-bottom:25px;padding:20px 15px 10px;"]
@@ -106,9 +100,9 @@
             i.fa.fa-clock-o
             |  Délai bancaire habituel : 2-7 jours ouvrés. Vous recevrez un email de confirmation.
 
-      - elsif payout_pending
-        .panel.radius[style="background:#{ui_primary_soft};border:1px solid #{ui_primary_border};padding:20px;margin-bottom:25px;"]
-          h4[style="color:#{ui_primary};"]
+      - elsif payout_pending && !@payout_profile_edit_unlocked
+        .panel.radius[style="background:#eef5ff;border:1px solid #7aa7e0;padding:20px;margin-bottom:25px;"]
+          h4[style="color:#2f6fb2;"]
             i.fa.fa-clock-o
             |  Demande en cours de traitement
           p
@@ -121,10 +115,13 @@
             |  Sécurité : les fonds sont traités via un système certifié PCI DSS, conforme aux normes bancaires européennes.
 
       - elsif !payout_ready || @payout_profile_edit_unlocked
-        .panel.radius[style="background:#{ui_primary_soft};border:1px solid #{ui_primary_border};padding:20px;margin-bottom:25px;"]
-          h4[style="color:#{ui_primary};"]
-            i.fa.fa-exclamation-triangle
-            |  Completez votre profil de retrait
+        .panel.radius[style="background:#fffdf7;border:1px solid #f0d8a8;padding:20px;margin-bottom:25px;"]
+          h4[style="color:#b9770e;"]
+            i.fa.fa-id-card
+            - if @payout_profile_edit_unlocked
+              |  Modifiez votre profil de retrait
+            - else
+              |  Completez votre profil de retrait
           p | Pour retirer vos fonds sans quitter Fiatope, renseignez votre profil organisation (association, entreprise ou organisation), vos informations bancaires et vos justificatifs.
           p.small[style="margin-top:8px;color:#6c757d;"]
             i.fa.fa-info-circle
@@ -136,7 +133,7 @@
               |  L administration vous autorise a modifier et soumettre a nouveau ce formulaire.
 
           - if @payout_profile_missing_fields.present?
-            .alert-box[style="margin-top:10px;background:#{ui_primary_soft};border:1px solid #{ui_primary_border};color:#{ui_primary_text};"]
+            .alert-box[style="margin-top:10px;background:#fff8e1;border:1px solid #f3d38a;color:#7a5d00;"]
               p
                 strong Elements manquants:
               ul[style="margin-bottom:0;"]
@@ -219,14 +216,26 @@
                   p.small.text-muted[style="margin-top:5px;"]
                     | Formats acceptes: JPG, JPEG, PNG, GIF, PDF. Vous pouvez envoyer plusieurs fichiers (ex: recto/verso).
                   - if existing_docs.any?
-                    ul[style="margin-top:8px;"]
+                    p.small.text-muted[style="margin-top:8px;margin-bottom:6px;"]
+                      | Documents deja enregistres:
+                    .d-flex.flex-wrap[style="margin-top:4px;"]
                       - existing_docs.each do |existing_doc|
                         - next unless existing_doc.uploaded_image.present?
-                        li
-                          = link_to(existing_doc.uploaded_image_identifier.presence || 'Voir le document', existing_doc.uploaded_image.url, target: '_blank')
+                        - doc_url = existing_doc.uploaded_image.url
+                        - doc_name = existing_doc.uploaded_image_identifier.presence || 'Document'
+                        - doc_extension = File.extname(doc_name.to_s).delete('.').downcase
+                        - if %w[jpg jpeg png gif webp].include?(doc_extension)
+                          = link_to doc_url, target: '_blank', class: 'mr-2 mb-2', style: 'display:inline-block;' do
+                            = image_tag doc_url, alt: doc_name, style: 'height:72px;width:auto;border:1px solid #dee2e6;border-radius:4px;padding:2px;background:#fff;'
+                        - elsif doc_extension == 'pdf'
+                          = link_to doc_url, target: '_blank', class: 'btn btn-sm btn-outline-primary mr-2 mb-2' do
+                            i.fa.fa-file-pdf-o.mr-1
+                            = doc_name
+                        - else
+                          = link_to doc_name, doc_url, target: '_blank', class: 'btn btn-sm btn-outline-secondary mr-2 mb-2'
 
             .text-center[style="margin-top:20px;"]
-              button.btn.btn-lg[type="submit" style="padding:12px 40px;font-size:1.1em;background:#{ui_primary};border-color:#{ui_primary};color:#fff;"]
+              button.btn.btn-lg.btn-warning[type="submit" style="padding:12px 40px;font-size:1.1em;"]
                 i.fa.fa-save
                 |  Enregistrer mon profil de retrait
 
@@ -239,7 +248,7 @@
         - else
           .panel.radius[style="background:#eaf2f8;border:2px solid #27ae60;padding:20px;margin-bottom:25px;"]
             .text-center
-              p[style="color:#{ui_success};font-size:1.1em;"]
+              p[style="color:#27ae60;font-size:1.1em;"]
                 i.fa.fa-check-circle
                 strong |  Tout est prêt !
                 |  Votre espace est vérifié et vos contributions sont confirmées.

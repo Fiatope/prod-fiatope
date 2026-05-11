@@ -319,6 +319,12 @@ module Neighborly::Admin
     def unlock_payout_profile_edit
       @project = Project.find_by_permalink params[:id]
       user = @project.user
+      reopened_request = false
+
+      if @project.state == 'request_funds'
+        @project.update_column(:state, 'waiting_funds')
+        reopened_request = true
+      end
 
       Rails.cache.write(
         payout_profile_edit_unlock_cache_key(user),
@@ -328,7 +334,7 @@ module Neighborly::Admin
 
       render json: {
         success: true,
-        message: 'Le porteur peut modifier et soumettre a nouveau son profil de retrait pendant 14 jours.'
+        message: reopened_request ? 'Autorisation enregistree. La demande a ete reouverte pour une nouvelle soumission.' : 'Le porteur peut modifier et soumettre a nouveau son profil de retrait pendant 14 jours.'
       }
     rescue => e
       Rails.logger.error "unlock_payout_profile_edit failed: #{e.message}"
@@ -346,7 +352,6 @@ module Neighborly::Admin
 
       render json: {
         profile_complete: user.payout_profile_complete?,
-        edit_unlock_active: Rails.cache.read(payout_profile_edit_unlock_cache_key(user)).present?,
         missing_fields: user.payout_profile_missing_fields,
         owner: {
           id: user.id,
