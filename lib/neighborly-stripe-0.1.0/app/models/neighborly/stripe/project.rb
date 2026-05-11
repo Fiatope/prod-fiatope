@@ -4,6 +4,34 @@ module Neighborly::Stripe::Project
   included do
     has_many :stripe_orders, class_name: 'Neighborly::Stripe::Order', foreign_key: 'project_id'
   end
+
+  def stripe_currency_code
+    ::Neighborly::Stripe::CurrencyUtils.normalize_currency(currency)
+  end
+
+  def stripe_currency_code_downcase
+    stripe_currency_code.downcase
+  end
+
+  def stripe_amount_to_minor_units(amount)
+    ::Neighborly::Stripe::CurrencyUtils.amount_to_minor_units(amount, stripe_currency_code)
+  end
+
+  def stripe_amount_from_minor_units(minor_amount, currency_code = stripe_currency_code)
+    ::Neighborly::Stripe::CurrencyUtils.amount_from_minor_units(minor_amount, currency_code).to_f
+  end
+
+  def stripe_amount_meets_minimum?(amount)
+    ::Neighborly::Stripe::CurrencyUtils.amount_meets_minimum?(amount, stripe_currency_code)
+  end
+
+  def stripe_minimum_minor_units
+    ::Neighborly::Stripe::CurrencyUtils.minimum_minor_units(stripe_currency_code)
+  end
+
+  def stripe_minimum_major_amount
+    stripe_amount_from_minor_units(stripe_minimum_minor_units, stripe_currency_code)
+  end
   
   def setup_stripe_account!
     return if stripe_account_id.present?
@@ -66,11 +94,9 @@ module Neighborly::Stripe::Project
     return { success: false, error: 'Stripe account not ready' } unless stripe_ready?
     
     begin
-      stripe_currency = normalized_stripe_currency(currency)
-
       transfer = ::Stripe::Transfer.create({
         amount: amount_cents,
-        currency: stripe_currency,
+        currency: stripe_currency_code_downcase,
         destination: stripe_account_id,
         metadata: {
           project_id: self.id,
@@ -89,8 +115,7 @@ module Neighborly::Stripe::Project
     
     begin
       balance = ::Stripe::Balance.retrieve({}, { stripe_account: stripe_account_id })
-      stripe_currency = normalized_stripe_currency(currency)
-      balance.available.find { |b| b.currency == stripe_currency }&.amount || 0
+      balance.available.find { |b| b.currency == stripe_currency_code_downcase }&.amount || 0
     rescue ::Stripe::StripeError
       0
     end
@@ -99,21 +124,5 @@ module Neighborly::Stripe::Project
   def platform_fee_amount(contribution_amount)
     fee_percentage = ENV.fetch('PLATFORM_FEE', '5.0').tr(',', '.').to_f / 100
     (contribution_amount * fee_percentage).round
-  end
-
-  private
-
-  def normalized_stripe_currency(raw_currency)
-    currency_code = raw_currency.to_s.strip.downcase
-    return 'eur' if currency_code.blank?
-
-    return normalized_fcfa_currency if %w[fcfa cfa].include?(currency_code)
-
-    currency_code
-  end
-
-  def normalized_fcfa_currency
-    configured = ENV.fetch('STRIPE_FCFA_CURRENCY', 'xof').to_s.strip.downcase
-    %w[xof xaf].include?(configured) ? configured : 'xof'
   end
 end
