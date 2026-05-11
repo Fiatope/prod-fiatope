@@ -66,9 +66,11 @@ module Neighborly::Stripe::Project
     return { success: false, error: 'Stripe account not ready' } unless stripe_ready?
     
     begin
+      stripe_currency = normalized_stripe_currency(currency)
+
       transfer = ::Stripe::Transfer.create({
         amount: amount_cents,
-        currency: currency.downcase,
+        currency: stripe_currency,
         destination: stripe_account_id,
         metadata: {
           project_id: self.id,
@@ -87,7 +89,8 @@ module Neighborly::Stripe::Project
     
     begin
       balance = ::Stripe::Balance.retrieve({}, { stripe_account: stripe_account_id })
-      balance.available.find { |b| b.currency == currency.downcase }&.amount || 0
+      stripe_currency = normalized_stripe_currency(currency)
+      balance.available.find { |b| b.currency == stripe_currency }&.amount || 0
     rescue ::Stripe::StripeError
       0
     end
@@ -96,5 +99,21 @@ module Neighborly::Stripe::Project
   def platform_fee_amount(contribution_amount)
     fee_percentage = ENV.fetch('PLATFORM_FEE', '5.0').tr(',', '.').to_f / 100
     (contribution_amount * fee_percentage).round
+  end
+
+  private
+
+  def normalized_stripe_currency(raw_currency)
+    currency_code = raw_currency.to_s.strip.downcase
+    return 'eur' if currency_code.blank?
+
+    return normalized_fcfa_currency if %w[fcfa cfa].include?(currency_code)
+
+    currency_code
+  end
+
+  def normalized_fcfa_currency
+    configured = ENV.fetch('STRIPE_FCFA_CURRENCY', 'xof').to_s.strip.downcase
+    %w[xof xaf].include?(configured) ? configured : 'xof'
   end
 end

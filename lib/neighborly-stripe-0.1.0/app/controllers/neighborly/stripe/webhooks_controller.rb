@@ -80,6 +80,8 @@ module Neighborly
         user = ::User.find_by(id: user_id)
         
         return unless project && user
+
+        session_currency = normalized_stripe_currency(session.currency.presence || project.currency)
         
         # Si contribution_id existe, utiliser la contribution existante
         if contribution_id.present?
@@ -94,7 +96,7 @@ module Neighborly
             contribution = ::Contribution.create!(
               project: project,
               user: user,
-              value: amount / 100.0,
+              value: amount_from_minor_units(amount, session_currency),
               payment_method: 'Stripe',
               payment_id: session.payment_intent,
               state: 'pending'
@@ -105,7 +107,7 @@ module Neighborly
           contribution = ::Contribution.create!(
             project: project,
             user: user,
-            value: amount / 100.0,
+            value: amount_from_minor_units(amount, session_currency),
             payment_method: 'Stripe',
             payment_id: session.payment_intent,
             state: 'pending'
@@ -297,8 +299,8 @@ module Neighborly
         user = ::User.find_by(stripe_connect_account_id: account_id)
         return unless user
         
-        amount = payout.amount / 100.0
-        Rails.logger.info "PAYOUT RÉUSSI: #{amount}€ vers compte bancaire de #{user.email} (#{account_id})"
+        amount = amount_from_minor_units(payout.amount, payout.currency)
+        Rails.logger.info "PAYOUT RÉUSSI: #{amount} #{payout.currency.to_s.upcase} vers compte bancaire de #{user.email} (#{account_id})"
         
         # Notifier le porteur que son argent est arrivé
         # Note: notify_owner ne prend que des colonnes valides de la table notifications
@@ -320,10 +322,10 @@ module Neighborly
         user = ::User.find_by(stripe_connect_account_id: account_id)
         return unless user
         
-        amount = payout.amount / 100.0
+        amount = amount_from_minor_units(payout.amount, payout.currency)
         failure_message = payout.failure_message || payout.failure_code || 'raison inconnue'
         
-        Rails.logger.error "PAYOUT ÉCHOUÉ: #{amount}€ pour #{user.email} (#{account_id}) - #{failure_message}"
+        Rails.logger.error "PAYOUT ÉCHOUÉ: #{amount} #{payout.currency.to_s.upcase} pour #{user.email} (#{account_id}) - #{failure_message}"
         
         # Notifier l'admin - action manuelle requise
         begin
@@ -355,6 +357,31 @@ module Neighborly
           )
           Rails.logger.warn "Transfer reversed: Projet #{project.id} - règlement annulé"
         end
+      end
+
+      def normalized_stripe_currency(raw_currency)
+        currency_code = raw_currency.to_s.strip.downcase
+        return 'eur' if currency_code.blank?
+
+        return normalized_fcfa_currency if %w[fcfa cfa].include?(currency_code)
+
+        currency_code
+      end
+
+      def normalized_fcfa_currency
+        configured = ENV.fetch('STRIPE_FCFA_CURRENCY', 'xof').to_s.strip.downcase
+        %w[xof xaf].include?(configured) ? configured : 'xof'
+      end
+
+      def zero_decimal_currency?(currency_code)
+        %w[bif clp djf gnf jpy kmf krw mga pyg rwf ugx vnd vuv xaf xof xpf].include?(currency_code.to_s.downcase)
+      end
+
+      def amount_from_minor_units(amount_minor, currency_code)
+        amount_decimal = amount_minor.to_d
+        return amount_decimal.to_f if zero_decimal_currency?(currency_code)
+
+        (amount_decimal / 100).to_f
       end
     end
   end

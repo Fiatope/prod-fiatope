@@ -22,7 +22,8 @@ module Neighborly
         
         # Créer directement la session Stripe Checkout et rediriger
         begin
-          amount_cents = (@amount * 100).to_i
+          stripe_currency = normalized_stripe_currency(@project.currency)
+          amount_cents = amount_to_minor_units(@amount, stripe_currency)
           
           # Vérifier si le compte Connect peut recevoir des transferts
           connect_ready = false
@@ -60,7 +61,7 @@ module Neighborly
             payment_method_types: ['card'],
             line_items: [{
               price_data: {
-                currency: @project.currency.presence&.downcase || 'eur',
+                currency: stripe_currency,
                 product_data: product_data,
                 unit_amount: amount_cents
               },
@@ -86,7 +87,7 @@ module Neighborly
               contributor_id: current_user.id.to_s,
               contributor_name: current_user.display_name.to_s[0..99],
               contributor_email: current_user.email.to_s,
-              currency: @project.currency.presence || 'EUR',
+              currency: stripe_currency.upcase,
               amount: @amount.to_s
             }
           }
@@ -108,7 +109,7 @@ module Neighborly
               contributor_name: current_user.display_name.to_s[0..99],
               contributor_email: current_user.email.to_s,
               contribution_id: @contribution&.id.to_s,
-              currency: @project.currency.presence || 'EUR',
+              currency: stripe_currency.upcase,
               amount: @amount.to_s,
               # Stocker l'ID du compte Connect pour transfert futur par admin
               destination_account: connect_ready ? @project.stripe_account_id : nil
@@ -153,7 +154,8 @@ module Neighborly
         end
         
         begin
-          amount_cents = (@amount * 100).to_i
+          stripe_currency = normalized_stripe_currency(@project.currency)
+          amount_cents = amount_to_minor_units(@amount, stripe_currency)
           platform_fee = @project.platform_fee_amount(amount_cents)
           
           # Construire URL image valide pour action create aussi
@@ -192,7 +194,7 @@ module Neighborly
             payment_method_types: ['card'],
             line_items: [{
               price_data: {
-                currency: @project.currency.presence&.downcase || 'eur',
+                currency: stripe_currency,
                 product_data: product_data_create,
                 unit_amount: amount_cents
               },
@@ -218,7 +220,7 @@ module Neighborly
               contributor_id: current_user.id.to_s,
               contributor_name: current_user.display_name.to_s[0..99],
               contributor_email: current_user.email.to_s,
-              currency: @project.currency.presence || 'EUR',
+              currency: stripe_currency.upcase,
               amount: @amount.to_s
             }
           }
@@ -240,7 +242,7 @@ module Neighborly
               contributor_name: current_user.display_name.to_s[0..99],
               contributor_email: current_user.email.to_s,
               contribution_id: @contribution&.id.to_s,
-              currency: @project.currency.presence || 'EUR',
+              currency: stripe_currency.upcase,
               amount: @amount.to_s,
               # Stocker l'ID du compte Connect pour transfert futur par admin
               destination_account: connect_ready_create ? @project.stripe_account_id : nil
@@ -279,7 +281,8 @@ module Neighborly
               # Récupérer les métadonnées
               user_id = session.metadata['user_id']
               contribution_id = session.metadata['contribution_id']
-              amount = session.amount_total / 100.0
+              session_currency = normalized_stripe_currency(session.currency.presence || @project.currency)
+              amount = amount_from_minor_units(session.amount_total, session_currency)
               
               user = ::User.find_by(id: user_id)
               
@@ -375,6 +378,38 @@ module Neighborly
       end
       
       private
+
+      def normalized_stripe_currency(raw_currency)
+        currency_code = raw_currency.to_s.strip.downcase
+        return 'eur' if currency_code.blank?
+
+        return normalized_fcfa_currency if %w[fcfa cfa].include?(currency_code)
+
+        currency_code
+      end
+
+      def normalized_fcfa_currency
+        configured = ENV.fetch('STRIPE_FCFA_CURRENCY', 'xof').to_s.strip.downcase
+        %w[xof xaf].include?(configured) ? configured : 'xof'
+      end
+
+      def zero_decimal_currency?(currency_code)
+        %w[bif clp djf gnf jpy kmf krw mga pyg rwf ugx vnd vuv xaf xof xpf].include?(currency_code.to_s.downcase)
+      end
+
+      def amount_to_minor_units(amount, currency_code)
+        amount_decimal = amount.to_d
+        return amount_decimal.round(0).to_i if zero_decimal_currency?(currency_code)
+
+        (amount_decimal * 100).round(0).to_i
+      end
+
+      def amount_from_minor_units(amount_minor, currency_code)
+        amount_decimal = amount_minor.to_d
+        return amount_decimal.to_f if zero_decimal_currency?(currency_code)
+
+        (amount_decimal / 100).to_f
+      end
       
       def calculate_stripe_fee(amount)
         # Frais Stripe: 1.4% + 0.25€ pour les cartes européennes
@@ -393,8 +428,8 @@ module Neighborly
               order.project = @project
               order.contribution = contribution
               order.stripe_payment_intent_id = session.payment_intent
-              order.amount_cents = (amount * 100).to_i
-              order.currency = session.currency || 'eur'
+              order.currency = normalized_stripe_currency(session.currency.presence || @project.currency)
+              order.amount_cents = amount_to_minor_units(amount, order.currency)
               order.status = 'completed'
             end
           end

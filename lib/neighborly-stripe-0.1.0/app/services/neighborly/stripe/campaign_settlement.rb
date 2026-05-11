@@ -124,7 +124,8 @@ module Neighborly
         # DOIT correspondre à la devise du balance_transaction du charge.
         # Si le compte plateforme règle en RON, le balance_transaction est en RON
         # même si le charge a été créé en EUR.
-        transfer_currency = project.currency&.downcase || 'eur'
+        project_currency = normalized_stripe_currency(project.currency)
+        transfer_currency = project_currency
         balance_txn = nil
         if charge_id.present?
           begin
@@ -146,7 +147,7 @@ module Neighborly
         # Calcul du montant à transférer selon la devise
         # CRITIQUE: Si la balance_transaction est dans une devise différente (ex: RON),
         # le montant du transfert DOIT être en centimes de CETTE devise, pas en EUR.
-        if balance_txn && balance_txn.currency != (charge_object&.currency || project.currency&.downcase || 'eur')
+        if balance_txn && balance_txn.currency != (charge_object&.currency || project_currency)
           # ===== CAS MULTI-DEVISE (ex: charge EUR → balance RON) =====
           bt_gross_cents = balance_txn.amount       # montant brut en centimes devise plateforme (RON)
           bt_fee_cents   = balance_txn.fee          # frais Stripe en centimes devise plateforme
@@ -164,9 +165,12 @@ module Neighborly
           end
           
           # Logs en EUR pour lisibilité
-          platform_fee_eur = exchange_rate && exchange_rate > 0 ? (platform_fee_cents / 100.0 / exchange_rate).round(2) : (contribution.value * fee_percentage).round(2)
-          amount_to_owner_eur = exchange_rate && exchange_rate > 0 ? (amount_to_transfer / 100.0 / exchange_rate).round(2) : (contribution.value - platform_fee_eur).round(2)
-          stripe_fee_eur = exchange_rate && exchange_rate > 0 ? (bt_fee_cents / 100.0 / exchange_rate).round(2) : estimate_stripe_fee(contribution.value)
+          platform_fee_major = amount_from_minor_units(platform_fee_cents, transfer_currency)
+          amount_to_owner_major = amount_from_minor_units(amount_to_transfer, transfer_currency)
+          stripe_fee_major = amount_from_minor_units(bt_fee_cents, transfer_currency)
+          platform_fee_eur = exchange_rate && exchange_rate > 0 ? (platform_fee_major / exchange_rate).round(2) : (contribution.value * fee_percentage).round(2)
+          amount_to_owner_eur = exchange_rate && exchange_rate > 0 ? (amount_to_owner_major / exchange_rate).round(2) : (contribution.value - platform_fee_eur).round(2)
+          stripe_fee_eur = exchange_rate && exchange_rate > 0 ? (stripe_fee_major / exchange_rate).round(2) : estimate_stripe_fee(contribution.value)
           platform_net_eur = platform_fee_eur - stripe_fee_eur
           
           Rails.logger.info "  Contribution #{contribution.id} [MULTI-DEVISE]: charge=#{charge_object&.currency}, balance=#{transfer_currency}, taux=#{exchange_rate}"
@@ -177,9 +181,9 @@ module Neighborly
           # ===== CAS MÊME DEVISE (ex: charge EUR → balance EUR) =====
           platform_fee      = (contribution.value * fee_percentage).round(2)
           amount_to_owner   = contribution.value - platform_fee
-          amount_to_transfer = (amount_to_owner * 100).to_i # en centimes
+          amount_to_transfer = amount_to_minor_units(amount_to_owner, transfer_currency)
           
-          stripe_fee = balance_txn ? (balance_txn.fee / 100.0) : estimate_stripe_fee(contribution.value)
+          stripe_fee = balance_txn ? amount_from_minor_units(balance_txn.fee, transfer_currency) : estimate_stripe_fee(contribution.value)
           platform_net_revenue = platform_fee - stripe_fee
           
           Rails.logger.info "  Contribution #{contribution.id}: brut=#{contribution.value}€, commission=#{platform_fee}€ (#{(fee_percentage*100)}%), stripe=#{stripe_fee}€, net_plateforme=#{platform_net_revenue}€, porteur=#{amount_to_owner}€, devise=#{transfer_currency}"
@@ -199,7 +203,7 @@ module Neighborly
               project_id: project.id,
               gross_amount: contribution.value,
               platform_fee_pct: (fee_percentage * 100).to_s + '%',
-              net_to_owner: amount_to_transfer / 100.0,
+              net_to_owner: amount_from_minor_units(amount_to_transfer, transfer_currency),
               transfer_currency: transfer_currency
             }
           }
@@ -216,7 +220,7 @@ module Neighborly
             stripe_transfer_id: transfer.id
           )
           
-          Rails.logger.info "CampaignSettlement: Contribution #{contribution.id} transférée (#{amount_to_transfer/100.0}€) - Transfer #{transfer.id}"
+          Rails.logger.info "CampaignSettlement: Contribution #{contribution.id} transférée (#{amount_from_minor_units(amount_to_transfer, transfer_currency)} #{transfer_currency.upcase}) - Transfer #{transfer.id}"
           
           { success: true, transfer_id: transfer.id }
         rescue ::Stripe::StripeError => e
@@ -231,7 +235,7 @@ module Neighborly
           begin
             charge = ::Stripe::Charge.retrieve(contribution.stripe_charge_id)
             balance_txn = ::Stripe::BalanceTransaction.retrieve(charge.balance_transaction)
-            return (balance_txn.fee / 100.0)
+            return amount_from_minor_units(balance_txn.fee, balance_txn.currency)
           rescue ::Stripe::StripeError => e
             Rails.logger.warn "Impossible de récupérer frais Stripe pour contribution #{contribution.id}: #{e.message}"
           end
@@ -329,7 +333,9 @@ module Neighborly
           # Remboursé = brut - frais Stripe réels (non-remboursables) - commission plateforme
           net_refund_amount = gross_amount - stripe_fee - platform_fee
           net_refund_amount = 0 if net_refund_amount < 0
-          refund_amount_cents = (net_refund_amount * 100).to_i
+          charge = ::Stripe::Charge.retrieve(charge_id)
+          refund_currency = normalized_stripe_currency(charge.currency)
+          refund_amount_cents = amount_to_minor_units(net_refund_amount, refund_currency)
           
           Rails.logger.info "CampaignSettlement: Remboursement contribution #{contribution.id}"
           Rails.logger.info "  - Montant brut: #{gross_amount}€"
@@ -340,7 +346,7 @@ module Neighborly
           # Créer le remboursement PARTIEL (montant net seulement)
           refund = ::Stripe::Refund.create({
             charge: charge_id,
-            amount: refund_amount_cents, # Remboursement PARTIEL en centimes
+            amount: refund_amount_cents, # Remboursement PARTIEL dans l'unité Stripe de la devise
             metadata: {
               contribution_id: contribution.id,
               project_id: project.id,
@@ -502,7 +508,7 @@ module Neighborly
               # Récupérer les frais réels depuis Stripe
               charge = ::Stripe::Charge.retrieve(contribution.stripe_charge_id)
               balance_txn = ::Stripe::BalanceTransaction.retrieve(charge.balance_transaction)
-              total_fees += (balance_txn.fee / 100.0)
+              total_fees += amount_from_minor_units(balance_txn.fee, balance_txn.currency)
             rescue ::Stripe::StripeError => e
               # En cas d'erreur, estimer les frais (3.4% + 0.25€)
               Rails.logger.warn "Impossible de récupérer les frais Stripe pour contribution #{contribution.id}: #{e.message}"
@@ -522,6 +528,38 @@ module Neighborly
       # On prend une moyenne de ~2.5% + 0.25€
       def estimate_stripe_fee(amount)
         (amount * 0.025 + 0.25).round(2)
+      end
+
+      def normalized_stripe_currency(raw_currency)
+        currency_code = raw_currency.to_s.strip.downcase
+        return 'eur' if currency_code.blank?
+
+        return normalized_fcfa_currency if %w[fcfa cfa].include?(currency_code)
+
+        currency_code
+      end
+
+      def normalized_fcfa_currency
+        configured = ENV.fetch('STRIPE_FCFA_CURRENCY', 'xof').to_s.strip.downcase
+        %w[xof xaf].include?(configured) ? configured : 'xof'
+      end
+
+      def zero_decimal_currency?(currency_code)
+        %w[bif clp djf gnf jpy kmf krw mga pyg rwf ugx vnd vuv xaf xof xpf].include?(currency_code.to_s.downcase)
+      end
+
+      def amount_to_minor_units(amount, currency_code)
+        amount_decimal = amount.to_d
+        return amount_decimal.round(0).to_i if zero_decimal_currency?(currency_code)
+
+        (amount_decimal * 100).round(0).to_i
+      end
+
+      def amount_from_minor_units(amount_minor, currency_code)
+        amount_decimal = amount_minor.to_d
+        return amount_decimal.to_f if zero_decimal_currency?(currency_code)
+
+        (amount_decimal / 100).to_f
       end
       
       def notify_owner_transfer_complete(transfer, amount)
