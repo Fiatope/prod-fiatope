@@ -190,7 +190,31 @@ module Neighborly
       end
 
       def bank_country(bank_information)
-        bank_information.other_country.presence || user.residence_country.presence || 'FR'
+        requested_country = bank_information.other_country.presence || user.residence_country.presence || 'FR'
+        country_aligned_with_connect_account(requested_country)
+      end
+
+      def stripe_account_country
+        return @stripe_account_country if defined?(@stripe_account_country)
+
+        account = ::Stripe::Account.retrieve(user.stripe_connect_account_id)
+        @stripe_account_country = account&.country.to_s.upcase.presence
+      rescue ::Stripe::StripeError => e
+        add_warning_once("Verification du pays du compte Stripe indisponible: #{e.message}")
+        @stripe_account_country = nil
+      end
+
+      def country_aligned_with_connect_account(requested_country)
+        requested = requested_country.to_s.upcase.presence || 'FR'
+        account_country = stripe_account_country
+        return requested if account_country.blank? || requested == account_country
+
+        add_warning_once("Pays #{requested} ajuste en #{account_country} pour respecter le compte Stripe existant.")
+        account_country
+      end
+
+      def add_warning_once(message)
+        warnings << message unless warnings.include?(message)
       end
 
       def split_name(full_name)
@@ -217,12 +241,14 @@ module Neighborly
         info = user.bank_information
         return nil if info.blank?
 
+        requested_country = info.other_country.presence || user.residence_country.presence || 'FR'
+
         {
           line1: info.owner_address.to_s.presence,
           city: info.owner_city.to_s.presence,
           state: info.owner_region.to_s.presence,
           postal_code: info.owner_postal_code.to_s.presence,
-          country: bank_country(info)
+          country: country_aligned_with_connect_account(requested_country)
         }.compact
       end
 
