@@ -190,7 +190,7 @@ class ProjectsController < ApplicationController
       flash[:alert] = e.record.errors.full_messages.to_sentence
     rescue => e
       Rails.logger.error "ProjectsController#update_payout_profile: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
-      flash[:alert] = "Erreur technique: #{e.message}"
+      flash[:alert] = 'Erreur technique lors de la sauvegarde du profil de retrait. Verifiez vos justificatifs et reessayez.'
     end
 
     redirect_to pay_project_path(@project)
@@ -269,7 +269,7 @@ class ProjectsController < ApplicationController
       end
     rescue => e
       Rails.logger.error "ProjectsController#request_payout: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
-      flash[:alert] = "Erreur technique : #{e.message}"
+      flash[:alert] = 'Erreur technique lors de la demande de virement. Veuillez reessayer.'
     end
 
     redirect_to pay_project_path(@project)
