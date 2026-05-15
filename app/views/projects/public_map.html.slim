@@ -3,16 +3,15 @@
 - maps_api_url = ENV['GOOGLE_KEY_API'].present? ? "https://maps.googleapis.com/maps/api/js?key=#{ENV['GOOGLE_KEY_API']}&callback=initPublicProjectsMap" : 'https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&callback=initPublicProjectsMap'
 
 .public-map-page
-  .public-map-top
-    .public-map-shell
+  .public-map-shell
+    .public-map-top
       p.public-map-top__brand FIATOPE
       h1.public-map-top__title Carte des projets accompagnes
       p.public-map-top__description
-        | Fiatope met en avant les initiatives financees par sa communaute. Parcourez la carte, consultez les informations essentielles et ouvrez chaque projet en un clic.
-      p.public-map-top__meta
-        span = "#{projects_count} projets geolocalises"
-        span Donnees publiques confirmees
-        span Visualisation en temps reel
+        | Fiatope accompagne les initiatives a impact sur le terrain. Cette carte publique presente les projets finances avec des donnees verifiees sur la plateforme.
+      p.public-map-top__stats
+        strong = projects_count
+        |  projets geolocalises et consultables
 
   .public-map-shell
     .row.public-map-grid
@@ -26,7 +25,7 @@
 
   .public-map-shell
     p.public-map-footnote
-      | Les montants et contributions affiches proviennent des informations publiques confirmees sur la plateforme.
+      | Les montants et contributions affiches proviennent des donnees publiques confirmees sur Fiatope.
 
 script#publicMapData[type='application/json']
   == @map_projects.to_json
@@ -34,60 +33,53 @@ script#publicMapData[type='application/json']
 css:
   .public-map-page {
     background: #f6f8f7;
-    padding: 0 0 34px;
+    padding: 16px 0 30px;
   }
 
   .public-map-shell {
-    width: calc(100vw - 42px);
-    max-width: 1580px;
+    width: calc(100vw - 18px);
+    max-width: 1860px;
     margin: 0 auto;
   }
 
   .public-map-top {
     background: #ffffff;
-    border-bottom: 1px solid #dde7e1;
-    margin-bottom: 22px;
-  }
-
-  .public-map-top .public-map-shell {
-    padding: 18px 6px 16px;
+    border: 1px solid #d9e3dc;
+    border-top: 4px solid #a3320c;
+    border-radius: 6px;
+    padding: 18px 16px 16px;
+    margin-bottom: 14px;
+    box-shadow: 0 6px 18px rgba(36, 70, 49, 0.08);
   }
 
   .public-map-top__brand {
     margin: 0;
     color: #a3320c;
     font-size: 12px;
-    letter-spacing: 0.12em;
+    letter-spacing: .14em;
     font-weight: 700;
   }
 
   .public-map-top__title {
     margin: 6px 0 8px;
-    color: #244631;
-    font-size: 34px;
-    line-height: 1.2;
+    color: #234733;
+    font-size: 48px;
+    line-height: 1.15;
     font-weight: 600;
   }
 
   .public-map-top__description {
     margin: 0;
-    color: #4f6558;
+    color: #50675a;
     font-size: 15px;
     line-height: 1.55;
-    max-width: 1080px;
+    max-width: 1160px;
   }
 
-  .public-map-top__meta {
-    margin: 11px 0 0;
-    color: #476153;
-    font-size: 13px;
-    font-weight: 600;
-  }
-
-  .public-map-top__meta span + span::before {
-    content: " | ";
-    color: #9baea2;
-    margin: 0 7px;
+  .public-map-top__stats {
+    margin: 10px 0 0;
+    color: #425a4d;
+    font-size: 14px;
   }
 
   .public-map-grid {
@@ -100,10 +92,10 @@ css:
 
   .public-map-canvas {
     width: 100%;
-    height: 680px;
-    border: 1px solid #d9e5dd;
+    height: 720px;
+    border: 1px solid #d8e4dc;
     border-radius: 6px;
-    background: #f8fbf9;
+    background: #f7faf8;
     box-shadow: 0 8px 20px rgba(36, 70, 49, 0.08);
   }
 
@@ -114,8 +106,8 @@ css:
   }
 
   .public-map-selection {
-    min-height: 680px;
-    border: 1px solid #d9e5dd;
+    min-height: 720px;
+    border: 1px solid #d8e4dc;
     border-radius: 6px;
     background: #ffffff;
     box-shadow: 0 8px 20px rgba(36, 70, 49, 0.08);
@@ -123,23 +115,22 @@ css:
   }
 
   .public-map-selection-empty {
-    border: 1px dashed #cfddd3;
+    min-height: 688px;
+    border: 1px dashed #cddbd2;
     border-radius: 6px;
-    min-height: 648px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    text-align: center;
-    color: #5d7567;
-    padding: 18px;
     background: #fbfdfc;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+    color: #5a7365;
+    padding: 16px;
   }
 
   .public-map-selection-empty h4 {
     margin: 0 0 8px;
-    color: #2b4b3a;
-    font-size: 21px;
+    color: #2b4c3b;
+    font-size: 24px;
     font-weight: 600;
   }
 
@@ -151,27 +142,27 @@ css:
 
   .public-map-card-image {
     width: 100%;
-    height: 196px;
+    height: 200px;
     object-fit: cover;
     object-position: center center;
+    border: 1px solid #dce7df;
     border-radius: 6px;
     margin-bottom: 12px;
-    border: 1px solid #dde7e1;
-    background: #f3f7f4;
+    background: #f4f8f5;
   }
 
   .public-map-card-title {
     margin: 0 0 8px;
-    color: #244631;
-    font-size: 26px;
-    line-height: 1.2;
+    color: #234733;
+    font-size: 36px;
+    line-height: 1.22;
     font-weight: 600;
     word-break: break-word;
   }
 
   .public-map-card-headline {
     margin: 0 0 10px;
-    color: #4f6558;
+    color: #4e6458;
     font-size: 14px;
     line-height: 1.45;
     word-break: break-word;
@@ -179,15 +170,15 @@ css:
 
   .public-map-card-meta {
     margin: 0 0 8px;
-    color: #50665a;
+    color: #4c6256;
     font-size: 13px;
   }
 
   .public-map-card-summary {
     margin: 10px 0 12px;
-    color: #445a4d;
+    color: #43594d;
     font-size: 14px;
-    line-height: 1.5;
+    line-height: 1.55;
     display: -webkit-box;
     -webkit-line-clamp: 6;
     -webkit-box-orient: vertical;
@@ -197,14 +188,16 @@ css:
 
   .public-map-card-cta {
     display: inline-block;
-    margin-top: 8px;
     padding: 9px 14px;
     border: 1px solid #db9500;
+    border-radius: 4px;
     color: #db9500;
     text-decoration: none;
-    border-radius: 4px;
     font-weight: 600;
+    background: #ffffff;
     transition: all .2s ease;
+    outline: none;
+    box-shadow: none;
   }
 
   .public-map-card-cta:hover,
@@ -212,37 +205,37 @@ css:
     background: #db9500;
     color: #ffffff;
     text-decoration: none;
-  }
-
-  .public-map-card-cta:focus,
-  .public-map-card-cta:active {
     outline: none;
     box-shadow: none;
   }
 
-  .gm-style .public-map-infowindow-link,
-  .gm-style .public-map-infowindow-link:hover,
-  .gm-style .public-map-infowindow-link:focus,
-  .gm-style .public-map-infowindow-link:active {
+  .public-map-infowindow-link {
     display: inline-block;
     padding: 6px 10px;
     border: 1px solid #db9500;
     border-radius: 4px;
     color: #db9500 !important;
+    background: #ffffff;
     font-size: 12px;
     font-weight: 600;
     text-decoration: none !important;
     outline: none !important;
     box-shadow: none !important;
-    background: #ffffff;
   }
 
-  .gm-style .public-map-infowindow-link:hover {
+  .public-map-infowindow-link:hover,
+  .public-map-infowindow-link:focus {
     background: #db9500;
     color: #ffffff !important;
+    text-decoration: none !important;
+    outline: none !important;
+    box-shadow: none !important;
   }
 
+  .gm-style a,
   .gm-style a:focus,
+  .gm-style a:active,
+  .gm-style button,
   .gm-style button:focus {
     outline: none !important;
     box-shadow: none !important;
@@ -253,46 +246,40 @@ css:
   }
 
   .public-map-footnote {
-    margin: 12px 0 0;
+    margin: 10px 0 0;
+    color: #667f70;
     font-size: 12px;
-    color: #6a8173;
   }
 
-  @media (max-width: 1400px) {
+  @media (max-width: 1450px) {
     .public-map-canvas {
-      height: 640px;
+      height: 670px;
     }
 
     .public-map-selection {
-      min-height: 640px;
+      min-height: 670px;
     }
 
     .public-map-selection-empty {
-      min-height: 608px;
+      min-height: 638px;
+    }
+
+    .public-map-card-title {
+      font-size: 30px;
     }
   }
 
   @media (max-width: 991px) {
     .public-map-shell {
-      width: calc(100vw - 24px);
+      width: calc(100vw - 12px);
     }
 
     .public-map-top__title {
-      font-size: 28px;
-    }
-
-    .public-map-top__meta span + span::before {
-      content: "";
-      margin: 0;
-    }
-
-    .public-map-top__meta span {
-      display: block;
-      margin-bottom: 3px;
+      font-size: 34px;
     }
 
     .public-map-canvas {
-      height: 480px;
+      height: 500px;
       margin-bottom: 14px;
     }
 
@@ -301,7 +288,11 @@ css:
     }
 
     .public-map-selection-empty {
-      min-height: 220px;
+      min-height: 230px;
+    }
+
+    .public-map-card-title {
+      font-size: 30px;
     }
   }
 
@@ -345,6 +336,25 @@ javascript:
         .replace(/'/g, '&#39;');
     }
 
+    function cleanText(value) {
+      return String(value || '')
+        .replace(/!\[[^\]]*\]\([^)]+\)/g, ' ')
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1')
+        .replace(/https?:\/\/\S+/g, ' ')
+        .replace(/[|`*_>#]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function truncateText(value, maxLength) {
+      var text = cleanText(value);
+      if (text.length <= maxLength) {
+        return text;
+      }
+
+      return text.slice(0, maxLength).replace(/\s+\S*$/, '') + '...';
+    }
+
     function toNumber(value) {
       var parsed = parseFloat(value);
       return isFinite(parsed) ? parsed : 0;
@@ -356,19 +366,6 @@ javascript:
         currency: 'EUR',
         maximumFractionDigits: 0
       });
-    }
-
-    function normalizeText(value) {
-      return String(value || '').replace(/\s+/g, ' ').trim();
-    }
-
-    function truncateText(value, length) {
-      var cleanValue = normalizeText(value);
-      if (cleanValue.length <= length) {
-        return cleanValue;
-      }
-
-      return cleanValue.slice(0, length).replace(/\s+\S*$/, '') + '...';
     }
 
     function showMapMessage(message, type) {
@@ -387,7 +384,7 @@ javascript:
     }
 
     function cardImageHtml(project) {
-      var imageUrl = normalizeText(project.image_url || project.fallback_image_url || '');
+      var imageUrl = cleanText(project.image_url || project.fallback_image_url || '');
       if (!imageUrl) {
         return '<div class="public-map-card-image" style="display:flex;align-items:center;justify-content:center;color:#789181;"><i class="fa fa-picture-o" style="font-size:24px;"></i></div>';
       }
@@ -397,14 +394,14 @@ javascript:
 
     function selectionCardHtml(project) {
       var categoryLine = project.category_name
-        ? '<p class="public-map-card-meta"><i class="fa fa-tag"></i> ' + escapeHtml(project.category_name) + '</p>'
+        ? '<p class="public-map-card-meta"><i class="fa fa-tag"></i> ' + escapeHtml(truncateText(project.category_name, 70)) + '</p>'
         : '';
 
       return '' +
         cardImageHtml(project) +
-        '<h3 class="public-map-card-title">' + escapeHtml(project.name || '') + '</h3>' +
-        '<p class="public-map-card-headline">' + escapeHtml(truncateText(project.headline || '', 160)) + '</p>' +
-        '<p class="public-map-card-meta"><i class="fa fa-map-marker"></i> ' + escapeHtml(project.location || 'Localisation non renseignee') + '</p>' +
+        '<h3 class="public-map-card-title">' + escapeHtml(truncateText(project.name || '', 95)) + '</h3>' +
+        '<p class="public-map-card-headline">' + escapeHtml(truncateText(project.headline || '', 150)) + '</p>' +
+        '<p class="public-map-card-meta"><i class="fa fa-map-marker"></i> ' + escapeHtml(truncateText(project.location || 'Localisation non renseignee', 80)) + '</p>' +
         categoryLine +
         '<p class="public-map-card-meta"><i class="fa fa-line-chart"></i> Collecte: <strong>' + currency(project.pledged) + '</strong> / Objectif: ' + currency(project.goal) + '</p>' +
         '<p class="public-map-card-meta"><i class="fa fa-users"></i> ' + Math.max(0, parseInt(project.total_contributions || 0, 10) || 0) + ' contribution(s)</p>' +
@@ -415,8 +412,8 @@ javascript:
     function infoWindowHtml(project) {
       return '' +
         '<div style="max-width:255px;">' +
-          '<h5 style="margin:0 0 6px;font-size:15px;color:#244631;line-height:1.35;">' + escapeHtml(project.name || '') + '</h5>' +
-          '<p style="margin:0 0 10px;font-size:12px;color:#4d6256;">' + escapeHtml(project.location || '') + '</p>' +
+          '<h5 style="margin:0 0 6px;font-size:15px;color:#244631;line-height:1.35;">' + escapeHtml(truncateText(project.name || '', 70)) + '</h5>' +
+          '<p style="margin:0 0 10px;font-size:12px;color:#4d6256;">' + escapeHtml(truncateText(project.location || '', 70)) + '</p>' +
           '<a class="public-map-infowindow-link" href="' + escapeHtml(project.project_url || '#') + '" target="_blank" rel="noopener">Ouvrir le projet</a>' +
         '</div>';
     }

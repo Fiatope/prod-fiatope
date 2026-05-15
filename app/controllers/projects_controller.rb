@@ -1,6 +1,4 @@
 # coding: utf-8
-require 'cgi'
-
 class ProjectsController < ApplicationController
   after_action :verify_authorized, except: [:index, :video, :video_embed, :embed,
                                             :embed_panel, :comments, :budget, :english,
@@ -346,8 +344,6 @@ class ProjectsController < ApplicationController
   end
 
   def public_map_projects
-    fallback_image_url = helpers.image_path('image-placeholder-upload-in-progress.jpg')
-
     projects = Project.visible
                       .where(state: public_map_states)
                       .where.not(latitude: nil, longitude: nil)
@@ -360,20 +356,20 @@ class ProjectsController < ApplicationController
     projects.map do |project|
       {
         id: project.id,
-        name: project.name.to_s,
-        headline: project.headline.to_s,
-        summary: public_map_summary(project.about),
-        location: project.location.to_s,
+        name: public_map_clean_text(project.name.to_s),
+        headline: helpers.truncate(public_map_clean_text(project.headline.to_s), length: 170, separator: ' '),
+        summary: helpers.truncate(public_map_clean_text(project.about.to_s), length: 260, separator: ' '),
+        location: public_map_clean_text(project.location.to_s),
         latitude: project.latitude.to_f,
         longitude: project.longitude.to_f,
         state: project.state.to_s,
         state_label: public_map_state_label(project.state.to_s),
-        category_name: project.category&.name_pt.to_s.presence || project.category&.name_en.to_s,
+        category_name: public_map_clean_text(project.category&.name_pt.to_s.presence || project.category&.name_en.to_s),
         goal: project.goal.to_f,
         pledged: project.project_total&.pledged.to_f,
         total_contributions: project.project_total&.total_contributions.to_i,
         image_url: public_map_image_url(project),
-        fallback_image_url: fallback_image_url,
+        fallback_image_url: public_map_default_image_url,
         permalink: project.permalink.to_s,
         project_url: project_path(project)
       }
@@ -393,31 +389,48 @@ class ProjectsController < ApplicationController
     end
   end
 
-  def public_map_summary(raw_text)
-    text = raw_text.to_s.encode('UTF-8', invalid: :replace, undef: :replace, replace: '')
+  def public_map_clean_text(value)
+    text = value.to_s.encode('UTF-8', invalid: :replace, undef: :replace, replace: '')
     text = helpers.strip_tags(text)
-    text = text.gsub(/!\[[^\]]*\]\((?:[^()]|\([^()]*\))*\)/, ' ')
-    text = text.gsub(/\[([^\]]+)\]\((?:[^()]|\([^()]*\))*\)/, '\\1')
+    text = text.gsub(/!\[[^\]]*\]\([^)]+\)/, ' ')
+    text = text.gsub(/\[([^\]]+)\]\(([^)]+)\)/, '\\1')
     text = text.gsub(%r{https?://\S+}, ' ')
-    text = CGI.unescapeHTML(text)
-    text = text.gsub(/\s+/, ' ').strip
+    text = text.gsub(/[|`*_>#]/, ' ')
+    text.gsub(/\s+/, ' ').strip
+  end
 
-    helpers.truncate(text, length: 240, separator: ' ', omission: '...')
+  def public_map_default_image_url
+    helpers.image_path('image-placeholder-upload-in-progress.jpg')
   end
 
   def public_map_image_url(project)
-    image_path = project.display_image('project_thumb_large').to_s
-    return helpers.image_path('image-placeholder-upload-in-progress.jpg') if image_path.blank?
+    candidates = [
+      project.display_image('project_thumb_large'),
+      project.display_image('project_thumb'),
+      project.hero_image&.url,
+      project.uploaded_image&.url
+    ]
 
-    image_path = image_path.sub(%r{\Ahttp://}i, 'https://')
-
-    if image_path.start_with?('http://', 'https://', '/')
-      image_path
-    else
-      helpers.image_path(image_path)
+    candidates.each do |candidate|
+      normalized = public_map_normalize_image_url(candidate)
+      return normalized if normalized.present?
     end
+
+    public_map_default_image_url
   rescue StandardError
-    helpers.image_path('image-placeholder-upload-in-progress.jpg')
+    public_map_default_image_url
+  end
+
+  def public_map_normalize_image_url(value)
+    image_url = value.to_s.strip
+    return '' if image_url.blank?
+
+    image_url = "https:#{image_url}" if image_url.start_with?('//')
+    image_url = image_url.gsub(' ', '%20')
+
+    return image_url if image_url.start_with?('http://', 'https://', '/')
+
+    helpers.image_path(image_url)
   end
 
   def has_project_prerequisites?
