@@ -313,7 +313,7 @@
           span[aria-hidden="true"] &times;
       .modal-body
         #payoutDocViewerStage.text-center[style="max-height:70vh;overflow:auto;background:#111;padding:10px;"]
-          img#payoutDocViewerImage[alt="Document" style="max-width:100%;transform:scale(1);transform-origin:center center;transition:transform .15s ease;"]
+          img#payoutDocViewerImage[alt="Document" style="display:block;max-width:100%;width:auto;height:auto;margin:0 auto;transition:width .15s ease;cursor:zoom-in;"]
       .modal-footer
         span.badge.badge-light.mr-auto#payoutDocZoomLabel 100%
         a#payoutDocOpenNewTab.btn.btn-outline-secondary[target="_blank" rel="noopener"]
@@ -355,7 +355,14 @@ javascript:
   }
 
   function payoutDocApplyZoom() {
-    $('#payoutDocViewerImage').css('transform', 'scale(' + payoutDocViewerScale + ')');
+    var widthPercent = Math.max(100, Math.round(payoutDocViewerScale * 100));
+    var cursor = payoutDocViewerScale > 1 ? 'zoom-out' : 'zoom-in';
+
+    $('#payoutDocViewerImage').css({
+      width: widthPercent + '%',
+      maxWidth: 'none',
+      cursor: cursor
+    });
     $('#payoutDocZoomLabel').text(Math.round(payoutDocViewerScale * 100) + '%');
   }
 
@@ -366,6 +373,7 @@ javascript:
     $('#payoutDocViewerImage').attr('src', url);
     $('#payoutDocOpenNewTab').attr('href', url);
     payoutDocApplyZoom();
+    $('#payoutDocViewerStage').scrollTop(0).scrollLeft(0);
     $('#payoutDocumentViewerModal').modal('show');
   }
 
@@ -375,7 +383,7 @@ javascript:
   }
 
   function payoutDocZoomOut() {
-    payoutDocViewerScale = Math.max(0.2, payoutDocViewerScale - 0.2);
+    payoutDocViewerScale = Math.max(1, payoutDocViewerScale - 0.2);
     payoutDocApplyZoom();
   }
 
@@ -471,6 +479,34 @@ javascript:
 
     $(document).on('click', '.payout-doc-thumb', function() {
       openPayoutDocViewer($(this).data('fullUrl') || $(this).attr('src'));
+    });
+
+    $(document).on('click', '#payoutDocViewerImage', function() {
+      if (payoutDocViewerScale > 1) {
+        payoutDocZoomReset();
+      } else {
+        payoutDocViewerScale = 2;
+        payoutDocApplyZoom();
+      }
+    });
+
+    $(document).on('wheel', '#payoutDocViewerStage', function(event) {
+      if (!$('#payoutDocumentViewerModal').hasClass('show')) {
+        return;
+      }
+
+      event.preventDefault();
+      var deltaY = event.originalEvent && event.originalEvent.deltaY ? event.originalEvent.deltaY : 0;
+      if (deltaY < 0) {
+        payoutDocZoomIn();
+      } else if (deltaY > 0) {
+        payoutDocZoomOut();
+      }
+    });
+
+    $('#payoutDocumentViewerModal').on('hidden.bs.modal', function() {
+      payoutDocZoomReset();
+      $('#payoutDocViewerImage').attr('src', '');
     });
   });
   
