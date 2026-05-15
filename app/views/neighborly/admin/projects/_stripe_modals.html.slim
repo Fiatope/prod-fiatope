@@ -341,6 +341,7 @@ javascript:
   var platformFeePercent = 0;
   var payoutDocViewerScale = 1;
   var payoutDocViewerUrl = null;
+  var payoutProfileWasVisibleBeforeViewer = false;
   var payoutProfileUnlockUrl = null;
   var payoutProfileEditUrl = null;
 
@@ -366,6 +367,10 @@ javascript:
     $('#payoutDocZoomLabel').text(Math.round(payoutDocViewerScale * 100) + '%');
   }
 
+  function showPayoutDocViewerModal() {
+    $('#payoutDocumentViewerModal').modal('show');
+  }
+
   function openPayoutDocViewer(url) {
     if (!url) return;
     payoutDocViewerScale = 1;
@@ -374,7 +379,15 @@ javascript:
     $('#payoutDocOpenNewTab').attr('href', url);
     payoutDocApplyZoom();
     $('#payoutDocViewerStage').scrollTop(0).scrollLeft(0);
-    $('#payoutDocumentViewerModal').modal('show');
+
+    payoutProfileWasVisibleBeforeViewer = $('#payoutProfileModal').is(':visible');
+    if (payoutProfileWasVisibleBeforeViewer) {
+      $('#payoutProfileModal').one('hidden.bs.modal', function() {
+        showPayoutDocViewerModal();
+      }).modal('hide');
+    } else {
+      showPayoutDocViewerModal();
+    }
   }
 
   function payoutDocZoomIn() {
@@ -507,6 +520,11 @@ javascript:
     $('#payoutDocumentViewerModal').on('hidden.bs.modal', function() {
       payoutDocZoomReset();
       $('#payoutDocViewerImage').attr('src', '');
+
+      if (payoutProfileWasVisibleBeforeViewer) {
+        payoutProfileWasVisibleBeforeViewer = false;
+        $('#payoutProfileModal').modal('show');
+      }
     });
   });
   
