@@ -3,29 +3,28 @@
 - maps_api_url = ENV['GOOGLE_KEY_API'].present? ? "https://maps.googleapis.com/maps/api/js?key=#{ENV['GOOGLE_KEY_API']}&callback=initPublicProjectsMap" : 'https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&callback=initPublicProjectsMap'
 
 .public-map-page
-  .container
-    .public-map-header
-      p.public-map-header__brand FIATOPE
-      h1 Carte des projets accompagnes
-      p.public-map-header__description
-        | Fiatope met en avant des initiatives financees par sa communaute. Explorez la carte, consultez les resumes et accedez a chaque projet en un clic.
-      .public-map-header__chips
-        span.public-map-chip
-          strong = projects_count
-          |  projets geolocalises
-        span.public-map-chip Donnees publiques confirmees
-        span.public-map-chip Impact local visible
+  .public-map-top
+    .public-map-shell
+      p.public-map-top__brand FIATOPE
+      h1.public-map-top__title Carte des projets accompagnes
+      p.public-map-top__description
+        | Fiatope met en avant les initiatives financees par sa communaute. Parcourez la carte, consultez les informations essentielles et ouvrez chaque projet en un clic.
+      p.public-map-top__meta
+        span = "#{projects_count} projets geolocalises"
+        span Donnees publiques confirmees
+        span Visualisation en temps reel
 
-  .container
-    .row
-      .col-md-8
+  .public-map-shell
+    .row.public-map-grid
+      .col-lg-9.col-md-8
         #publicProjectsMap.public-map-canvas[data-maps-api-url=maps_api_url]
-      .col-md-4
+      .col-lg-3.col-md-4
         #publicMapSelectionCard.public-map-selection
           .public-map-selection-empty
             h4 Selectionnez un projet
             p Cliquez sur un marqueur de la carte pour afficher ses details.
 
+  .public-map-shell
     p.public-map-footnote
       | Les montants et contributions affiches proviennent des informations publiques confirmees sur la plateforme.
 
@@ -34,30 +33,35 @@ script#publicMapData[type='application/json']
 
 css:
   .public-map-page {
-    background: linear-gradient(180deg, #f8faf9 0%, #ffffff 220px);
-    padding: 26px 0 40px;
+    background: #f6f8f7;
+    padding: 0 0 34px;
   }
 
-  .public-map-header {
+  .public-map-shell {
+    width: calc(100vw - 42px);
+    max-width: 1580px;
+    margin: 0 auto;
+  }
+
+  .public-map-top {
     background: #ffffff;
-    border: 1px solid #e4ebe6;
-    border-top: 4px solid #db9500;
-    border-radius: 6px;
-    box-shadow: 0 8px 24px rgba(36, 70, 49, 0.08);
-    padding: 18px 20px;
-    margin-bottom: 18px;
+    border-bottom: 1px solid #dde7e1;
+    margin-bottom: 22px;
   }
 
-  .public-map-header__brand {
+  .public-map-top .public-map-shell {
+    padding: 18px 6px 16px;
+  }
+
+  .public-map-top__brand {
     margin: 0;
     color: #a3320c;
     font-size: 12px;
+    letter-spacing: 0.12em;
     font-weight: 700;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
   }
 
-  .public-map-header h1 {
+  .public-map-top__title {
     margin: 6px 0 8px;
     color: #244631;
     font-size: 34px;
@@ -65,42 +69,42 @@ css:
     font-weight: 600;
   }
 
-  .public-map-header__description {
+  .public-map-top__description {
     margin: 0;
     color: #4f6558;
     font-size: 15px;
     line-height: 1.55;
-    max-width: 980px;
+    max-width: 1080px;
   }
 
-  .public-map-header__chips {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-top: 14px;
+  .public-map-top__meta {
+    margin: 11px 0 0;
+    color: #476153;
+    font-size: 13px;
+    font-weight: 600;
   }
 
-  .public-map-chip {
-    display: inline-block;
-    background: #f6f9f7;
-    border: 1px solid #dbe5de;
-    color: #365445;
-    border-radius: 999px;
-    font-size: 12px;
-    padding: 5px 10px;
+  .public-map-top__meta span + span::before {
+    content: " | ";
+    color: #9baea2;
+    margin: 0 7px;
   }
 
-  .public-map-chip strong {
-    color: #2a4838;
+  .public-map-grid {
+    margin: 0 -8px;
+  }
+
+  .public-map-grid > [class*='col-'] {
+    padding: 0 8px;
   }
 
   .public-map-canvas {
     width: 100%;
-    height: 560px;
-    border: 1px solid #dfe8e2;
+    height: 680px;
+    border: 1px solid #d9e5dd;
     border-radius: 6px;
-    background: #f7faf8;
-    box-shadow: 0 6px 18px rgba(36, 70, 49, 0.06);
+    background: #f8fbf9;
+    box-shadow: 0 8px 20px rgba(36, 70, 49, 0.08);
   }
 
   .public-map-canvas img,
@@ -110,48 +114,50 @@ css:
   }
 
   .public-map-selection {
-    min-height: 560px;
-    border: 1px solid #dfe8e2;
+    min-height: 680px;
+    border: 1px solid #d9e5dd;
     border-radius: 6px;
     background: #ffffff;
-    box-shadow: 0 6px 18px rgba(36, 70, 49, 0.06);
+    box-shadow: 0 8px 20px rgba(36, 70, 49, 0.08);
     padding: 14px;
   }
 
   .public-map-selection-empty {
-    border: 1px dashed #d3e1d8;
+    border: 1px dashed #cfddd3;
     border-radius: 6px;
-    min-height: 528px;
+    min-height: 648px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-direction: column;
     text-align: center;
-    color: #5f7668;
+    color: #5d7567;
     padding: 18px;
     background: #fbfdfc;
   }
 
   .public-map-selection-empty h4 {
     margin: 0 0 8px;
-    color: #2d4b3b;
-    font-size: 31px;
-    font-weight: 500;
+    color: #2b4b3a;
+    font-size: 21px;
+    font-weight: 600;
   }
 
   .public-map-selection-empty p {
     margin: 0;
     font-size: 15px;
-    line-height: 1.5;
+    line-height: 1.45;
   }
 
   .public-map-card-image {
     width: 100%;
-    height: 190px;
+    height: 196px;
     object-fit: cover;
+    object-position: center center;
     border-radius: 6px;
     margin-bottom: 12px;
-    border: 1px solid #dfe8e2;
+    border: 1px solid #dde7e1;
+    background: #f3f7f4;
   }
 
   .public-map-card-title {
@@ -160,6 +166,7 @@ css:
     font-size: 26px;
     line-height: 1.2;
     font-weight: 600;
+    word-break: break-word;
   }
 
   .public-map-card-headline {
@@ -167,6 +174,7 @@ css:
     color: #4f6558;
     font-size: 14px;
     line-height: 1.45;
+    word-break: break-word;
   }
 
   .public-map-card-meta {
@@ -177,9 +185,14 @@ css:
 
   .public-map-card-summary {
     margin: 10px 0 12px;
-    color: #455b4e;
+    color: #445a4d;
     font-size: 14px;
     line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 6;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
   }
 
   .public-map-card-cta {
@@ -201,6 +214,40 @@ css:
     text-decoration: none;
   }
 
+  .public-map-card-cta:focus,
+  .public-map-card-cta:active {
+    outline: none;
+    box-shadow: none;
+  }
+
+  .gm-style .public-map-infowindow-link,
+  .gm-style .public-map-infowindow-link:hover,
+  .gm-style .public-map-infowindow-link:focus,
+  .gm-style .public-map-infowindow-link:active {
+    display: inline-block;
+    padding: 6px 10px;
+    border: 1px solid #db9500;
+    border-radius: 4px;
+    color: #db9500 !important;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: #ffffff;
+  }
+
+  .gm-style .public-map-infowindow-link:hover {
+    background: #db9500;
+    color: #ffffff !important;
+  }
+
+  .gm-style a:focus,
+  .gm-style button:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
   .public-map-inline-alert {
     margin: 16px;
   }
@@ -208,16 +255,44 @@ css:
   .public-map-footnote {
     margin: 12px 0 0;
     font-size: 12px;
-    color: #6b8174;
+    color: #6a8173;
+  }
+
+  @media (max-width: 1400px) {
+    .public-map-canvas {
+      height: 640px;
+    }
+
+    .public-map-selection {
+      min-height: 640px;
+    }
+
+    .public-map-selection-empty {
+      min-height: 608px;
+    }
   }
 
   @media (max-width: 991px) {
-    .public-map-header h1 {
+    .public-map-shell {
+      width: calc(100vw - 24px);
+    }
+
+    .public-map-top__title {
       font-size: 28px;
     }
 
+    .public-map-top__meta span + span::before {
+      content: "";
+      margin: 0;
+    }
+
+    .public-map-top__meta span {
+      display: block;
+      margin-bottom: 3px;
+    }
+
     .public-map-canvas {
-      height: 420px;
+      height: 480px;
       margin-bottom: 14px;
     }
 
@@ -232,7 +307,6 @@ css:
 
 javascript:
   (function() {
-    var BRAND_COLOR = '#db9500';
     var MARKER_COLOR = '#2f7f8f';
 
     function byId(id) {
@@ -271,9 +345,30 @@ javascript:
         .replace(/'/g, '&#39;');
     }
 
+    function toNumber(value) {
+      var parsed = parseFloat(value);
+      return isFinite(parsed) ? parsed : 0;
+    }
+
     function currency(value) {
-      var amount = parseFloat(value || 0);
-      return amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+      return toNumber(value).toLocaleString('fr-FR', {
+        style: 'currency',
+        currency: 'EUR',
+        maximumFractionDigits: 0
+      });
+    }
+
+    function normalizeText(value) {
+      return String(value || '').replace(/\s+/g, ' ').trim();
+    }
+
+    function truncateText(value, length) {
+      var cleanValue = normalizeText(value);
+      if (cleanValue.length <= length) {
+        return cleanValue;
+      }
+
+      return cleanValue.slice(0, length).replace(/\s+\S*$/, '') + '...';
     }
 
     function showMapMessage(message, type) {
@@ -291,38 +386,61 @@ javascript:
       );
     }
 
-    function selectionCardHtml(project) {
-      var imageHtml = project.image_url
-        ? '<img class="public-map-card-image" src="' + escapeHtml(project.image_url) + '" alt="' + escapeHtml(project.name) + '" />'
-        : '<div class="public-map-card-image" style="display:flex;align-items:center;justify-content:center;background:#f3f7f4;color:#789181;"><i class="fa fa-picture-o" style="font-size:24px;"></i></div>';
+    function cardImageHtml(project) {
+      var imageUrl = normalizeText(project.image_url || project.fallback_image_url || '');
+      if (!imageUrl) {
+        return '<div class="public-map-card-image" style="display:flex;align-items:center;justify-content:center;color:#789181;"><i class="fa fa-picture-o" style="font-size:24px;"></i></div>';
+      }
 
+      return '<img class="public-map-card-image" src="' + escapeHtml(imageUrl) + '" alt="' + escapeHtml(project.name || 'Projet') + '" loading="lazy" />';
+    }
+
+    function selectionCardHtml(project) {
       var categoryLine = project.category_name
         ? '<p class="public-map-card-meta"><i class="fa fa-tag"></i> ' + escapeHtml(project.category_name) + '</p>'
         : '';
 
       return '' +
-        imageHtml +
-        '<h3 class="public-map-card-title">' + escapeHtml(project.name) + '</h3>' +
-        '<p class="public-map-card-headline">' + escapeHtml(project.headline || '') + '</p>' +
+        cardImageHtml(project) +
+        '<h3 class="public-map-card-title">' + escapeHtml(project.name || '') + '</h3>' +
+        '<p class="public-map-card-headline">' + escapeHtml(truncateText(project.headline || '', 160)) + '</p>' +
         '<p class="public-map-card-meta"><i class="fa fa-map-marker"></i> ' + escapeHtml(project.location || 'Localisation non renseignee') + '</p>' +
         categoryLine +
-        '<p class="public-map-card-meta"><i class="fa fa-line-chart"></i> Collecte: <strong>' + currency(project.pledged || 0) + '</strong> / Objectif: ' + currency(project.goal || 0) + '</p>' +
-        '<p class="public-map-card-meta"><i class="fa fa-users"></i> ' + parseInt(project.total_contributions || 0, 10) + ' contribution(s)</p>' +
-        '<p class="public-map-card-summary">' + escapeHtml(project.summary || '') + '</p>' +
+        '<p class="public-map-card-meta"><i class="fa fa-line-chart"></i> Collecte: <strong>' + currency(project.pledged) + '</strong> / Objectif: ' + currency(project.goal) + '</p>' +
+        '<p class="public-map-card-meta"><i class="fa fa-users"></i> ' + Math.max(0, parseInt(project.total_contributions || 0, 10) || 0) + ' contribution(s)</p>' +
+        '<p class="public-map-card-summary">' + escapeHtml(truncateText(project.summary || '', 260)) + '</p>' +
         '<a class="public-map-card-cta" href="' + escapeHtml(project.project_url || '#') + '" target="_blank" rel="noopener">En savoir plus</a>';
     }
 
     function infoWindowHtml(project) {
       return '' +
-        '<div style="max-width:250px;">' +
-          '<h5 style="margin:0 0 6px;font-size:15px;color:#244631;">' + escapeHtml(project.name) + '</h5>' +
-          '<p style="margin:0 0 8px;font-size:12px;color:#4d6256;">' + escapeHtml(project.location || '') + '</p>' +
-          '<a href="' + escapeHtml(project.project_url || '#') + '" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:' + BRAND_COLOR + ';">Ouvrir le projet</a>' +
+        '<div style="max-width:255px;">' +
+          '<h5 style="margin:0 0 6px;font-size:15px;color:#244631;line-height:1.35;">' + escapeHtml(project.name || '') + '</h5>' +
+          '<p style="margin:0 0 10px;font-size:12px;color:#4d6256;">' + escapeHtml(project.location || '') + '</p>' +
+          '<a class="public-map-infowindow-link" href="' + escapeHtml(project.project_url || '#') + '" target="_blank" rel="noopener">Ouvrir le projet</a>' +
         '</div>';
+    }
+
+    function attachCardImageFallback(project) {
+      var card = byId('publicMapSelectionCard');
+      if (!card || !project.fallback_image_url) {
+        return;
+      }
+
+      var imageNode = card.querySelector('.public-map-card-image');
+      if (!imageNode || imageNode.tagName.toLowerCase() !== 'img') {
+        return;
+      }
+
+      imageNode.addEventListener('error', function onImageError() {
+        imageNode.removeEventListener('error', onImageError);
+        imageNode.src = project.fallback_image_url;
+      });
     }
 
     function renderSelection(project) {
       setHtml(byId('publicMapSelectionCard'), selectionCardHtml(project));
+      attachCardImageFallback(project);
     }
 
     window.initPublicProjectsMap = function() {
@@ -361,8 +479,8 @@ javascript:
       var firstMarker = null;
 
       projects.forEach(function(project) {
-        var latitude = parseFloat(project.latitude);
-        var longitude = parseFloat(project.longitude);
+        var latitude = toNumber(project.latitude);
+        var longitude = toNumber(project.longitude);
 
         if (!isFinite(latitude) || !isFinite(longitude)) {
           return;
@@ -371,7 +489,7 @@ javascript:
         var marker = new google.maps.Marker({
           position: { lat: latitude, lng: longitude },
           map: map,
-          title: project.name,
+          title: project.name || '',
           icon: {
             path: google.maps.SymbolPath.CIRCLE,
             scale: 8,

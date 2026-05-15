@@ -1,4 +1,6 @@
 # coding: utf-8
+require 'cgi'
+
 class ProjectsController < ApplicationController
   after_action :verify_authorized, except: [:index, :video, :video_embed, :embed,
                                             :embed_panel, :comments, :budget, :english,
@@ -344,6 +346,8 @@ class ProjectsController < ApplicationController
   end
 
   def public_map_projects
+    fallback_image_url = helpers.image_path('image-placeholder-upload-in-progress.jpg')
+
     projects = Project.visible
                       .where(state: public_map_states)
                       .where.not(latitude: nil, longitude: nil)
@@ -358,7 +362,7 @@ class ProjectsController < ApplicationController
         id: project.id,
         name: project.name.to_s,
         headline: project.headline.to_s,
-        summary: helpers.truncate(helpers.strip_tags(project.about.to_s), length: 190),
+        summary: public_map_summary(project.about),
         location: project.location.to_s,
         latitude: project.latitude.to_f,
         longitude: project.longitude.to_f,
@@ -368,7 +372,8 @@ class ProjectsController < ApplicationController
         goal: project.goal.to_f,
         pledged: project.project_total&.pledged.to_f,
         total_contributions: project.project_total&.total_contributions.to_i,
-        image_url: project.uploaded_image&.url.to_s,
+        image_url: public_map_image_url(project),
+        fallback_image_url: fallback_image_url,
         permalink: project.permalink.to_s,
         project_url: project_path(project)
       }
@@ -386,6 +391,33 @@ class ProjectsController < ApplicationController
     else
       state.to_s.humanize
     end
+  end
+
+  def public_map_summary(raw_text)
+    text = raw_text.to_s.encode('UTF-8', invalid: :replace, undef: :replace, replace: '')
+    text = helpers.strip_tags(text)
+    text = text.gsub(/!\[[^\]]*\]\((?:[^()]|\([^()]*\))*\)/, ' ')
+    text = text.gsub(/\[([^\]]+)\]\((?:[^()]|\([^()]*\))*\)/, '\\1')
+    text = text.gsub(%r{https?://\S+}, ' ')
+    text = CGI.unescapeHTML(text)
+    text = text.gsub(/\s+/, ' ').strip
+
+    helpers.truncate(text, length: 240, separator: ' ', omission: '...')
+  end
+
+  def public_map_image_url(project)
+    image_path = project.display_image('project_thumb_large').to_s
+    return helpers.image_path('image-placeholder-upload-in-progress.jpg') if image_path.blank?
+
+    image_path = image_path.sub(%r{\Ahttp://}i, 'https://')
+
+    if image_path.start_with?('http://', 'https://', '/')
+      image_path
+    else
+      helpers.image_path(image_path)
+    end
+  rescue StandardError
+    helpers.image_path('image-placeholder-upload-in-progress.jpg')
   end
 
   def has_project_prerequisites?
