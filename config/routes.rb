@@ -195,6 +195,8 @@ Neighborly::Application.routes.draw do
   post 'webhooks/pay-plus-africa-payment-confirmations', to: 'projects/contributions#pay_plus_africa_payment_confirmation'
   get  'webhooks/pay-plus-africa-payment-confirmations', to: 'projects/contributions#pay_plus_africa_payment_confirmation'
 
+  get '/carte-projets-accomplis', to: 'projects#public_map', as: :public_projects_map
+
   resources :projects, except: [ :destroy ] do
     resources :faqs, controller: 'projects/faqs', only: [ :index, :create, :destroy ]
     resources :terms, controller: 'projects/terms', only: [ :index, :create, :destroy ]
