@@ -1,28 +1,37 @@
 - content_for :title, t('.title')
 - projects_count = @map_projects.size
+- total_contributions = @map_projects.sum { |project| project[:total_contributions].to_i }
+- total_pledged = @map_projects.sum { |project| project[:pledged].to_f }
 - maps_api_url = ENV['GOOGLE_KEY_API'].present? ? "https://maps.googleapis.com/maps/api/js?key=#{ENV['GOOGLE_KEY_API']}&callback=initPublicProjectsMap" : 'https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&callback=initPublicProjectsMap'
 
 .public-map-page
   .public-map-shell
     .panel.public-map-top
       .panel-body
-        .public-map-top__row
+        .public-map-top__head
           .public-map-top__copy
             p.public-map-top__brand FIATOPE
             h1.public-map-top__title Carte des projets accompagnes
             p.public-map-top__description
-              | Retrouvez les projets finances et verifies sur la plateforme, avec leur localisation et un acces direct aux details publics.
-          .public-map-top__stats
-            p
-              strong = projects_count
-              |  projets geolocalises
-            p Etats affiches : accomplis
+              | Une vue publique, claire et geolocalisee des projets accomplis sur Fiatope.
+          p.public-map-top__badge Projets accomplis verifies
+
+        .public-map-kpis
+          .public-map-kpi
+            span.public-map-kpi__label Projets geolocalises
+            strong.public-map-kpi__value = number_with_delimiter(projects_count, delimiter: ' ')
+          .public-map-kpi
+            span.public-map-kpi__label Contributions confirmees
+            strong.public-map-kpi__value = number_with_delimiter(total_contributions, delimiter: ' ')
+          .public-map-kpi
+            span.public-map-kpi__label Montant collecte
+            strong.public-map-kpi__value = number_to_currency(total_pledged, unit: 'EUR ', precision: 0)
 
   .public-map-shell
-    .row.public-map-grid
-      .col-md-9.col-sm-8
+    .public-map-layout
+      .public-map-layout__map
         #publicProjectsMap.public-map-canvas[data-maps-api-url=maps_api_url]
-      .col-md-3.col-sm-4
+      .public-map-layout__details
         #publicMapSelectionCard.public-map-selection
           .public-map-selection-empty
             h4 Selectionnez un projet
@@ -37,37 +46,38 @@ script#publicMapData[type='application/json']
 
 css:
   .public-map-page {
-    background: #f6f8f7;
-    padding: 12px 0 24px;
+    --public-map-height: clamp(560px, 78vh, 940px);
+    background: linear-gradient(180deg, #f4f7f5 0%, #eef3ef 100%);
+    padding: 10px 0 22px;
   }
 
   .public-map-shell {
     width: 100%;
     max-width: none;
     margin: 0 auto;
-    padding: 0 14px;
+    padding: 0 10px;
   }
 
   .public-map-top {
-    margin: 0 0 12px;
+    margin: 0 0 10px;
     border: 1px solid #d8e2dc;
     border-top: 3px solid #a3320c;
-    box-shadow: 0 4px 14px rgba(36, 70, 49, 0.08);
+    box-shadow: 0 4px 12px rgba(36, 70, 49, 0.07);
   }
 
   .public-map-top .panel-body {
-    padding: 14px 16px;
+    padding: 11px 14px;
   }
 
-  .public-map-top__row {
+  .public-map-top__head {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 16px;
+    gap: 14px;
   }
 
   .public-map-top__copy {
-    max-width: 980px;
+    max-width: 920px;
   }
 
   .public-map-top__brand {
@@ -76,56 +86,87 @@ css:
     font-size: 11px;
     letter-spacing: .14em;
     font-weight: 700;
+    text-transform: uppercase;
   }
 
   .public-map-top__title {
-    margin: 6px 0 6px;
-    color: #234733;
-    font-size: 24px;
-    line-height: 1.25;
+    margin: 4px 0 4px;
+    color: #214531;
+    font-size: 21px;
+    line-height: 1.2;
     font-weight: 600;
   }
 
   .public-map-top__description {
     margin: 0;
     color: #4d6458;
-    font-size: 14px;
+    font-size: 13px;
     line-height: 1.45;
   }
 
-  .public-map-top__stats {
-    min-width: 200px;
+  .public-map-top__badge {
+    margin: 0;
+    padding: 6px 9px;
+    border: 1px solid #d7e2db;
+    border-radius: 4px;
+    background: #f8fbf9;
+    color: #415b4d;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .public-map-kpis {
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(160px, 1fr));
+    gap: 8px;
+  }
+
+  .public-map-kpi {
     border: 1px solid #d8e2dc;
     border-radius: 4px;
-    background: #f9fbfa;
-    padding: 10px 12px;
-    color: #425a4d;
-    font-size: 13px;
-    line-height: 1.35;
+    background: #fbfdfc;
+    padding: 7px 10px;
   }
 
-  .public-map-top__stats p {
-    margin: 0;
+  .public-map-kpi__label {
+    display: block;
+    color: #5b7265;
+    font-size: 11px;
+    line-height: 1.2;
   }
 
-  .public-map-top__stats p + p {
-    margin-top: 5px;
+  .public-map-kpi__value {
+    display: block;
+    margin-top: 3px;
+    color: #214531;
+    font-size: 15px;
+    line-height: 1.2;
+    font-weight: 700;
   }
 
-  .public-map-grid {
-    margin: 0 -6px;
+  .public-map-layout {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
   }
 
-  .public-map-grid > [class*='col-'] {
-    padding: 0 6px;
+  .public-map-layout__map {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .public-map-layout__details {
+    flex: 0 0 min(320px, 30vw);
+    width: min(320px, 30vw);
+    margin-left: auto;
   }
 
   .public-map-canvas {
     width: 100%;
-    height: 72vh;
-    min-height: 560px;
-    max-height: 860px;
-    border: 1px solid #d8e4dc;
+    height: var(--public-map-height);
+    border: 1px solid #d6e2da;
     border-radius: 4px;
     background: #f7faf8;
     box-shadow: 0 6px 18px rgba(36, 70, 49, 0.08);
@@ -138,19 +179,20 @@ css:
   }
 
   .public-map-selection {
-    min-height: 72vh;
-    max-height: 860px;
-    border: 1px solid #d8e4dc;
+    height: var(--public-map-height);
+    border: 1px solid #d6e2da;
     border-radius: 4px;
     background: #ffffff;
     box-shadow: 0 6px 18px rgba(36, 70, 49, 0.08);
-    padding: 12px;
-    overflow: auto;
+    padding: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
 
   .public-map-selection-empty {
-    min-height: calc(72vh - 24px);
-    max-height: 836px;
+    flex: 1 1 auto;
+    min-height: 0;
     border: 1px dashed #cddbd2;
     border-radius: 4px;
     background: #fbfdfc;
@@ -163,40 +205,64 @@ css:
   }
 
   .public-map-selection-empty h4 {
-    margin: 0 0 8px;
+    margin: 0 0 7px;
     color: #2b4c3b;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 600;
   }
 
   .public-map-selection-empty p {
     margin: 0;
-    font-size: 14px;
+    font-size: 13px;
     line-height: 1.4;
+  }
+
+  .public-map-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
 
   .public-map-card-image {
     width: 100%;
-    height: 186px;
+    height: 174px;
     object-fit: cover;
     object-position: center center;
     border: 1px solid #dce7df;
     border-radius: 4px;
-    margin-bottom: 10px;
+    margin-bottom: 9px;
     background: #f4f8f5;
+    flex: 0 0 auto;
+  }
+
+  .public-map-card-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    padding-right: 2px;
+  }
+
+  .public-map-card-content::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .public-map-card-content::-webkit-scrollbar-thumb {
+    background: #d2ddd6;
+    border-radius: 6px;
   }
 
   .public-map-card-title {
-    margin: 0 0 7px;
+    margin: 0 0 6px;
     color: #234733;
-    font-size: 20px;
+    font-size: 19px;
     line-height: 1.3;
     font-weight: 600;
     word-break: break-word;
   }
 
   .public-map-card-headline {
-    margin: 0 0 8px;
+    margin: 0 0 7px;
     color: #4e6458;
     font-size: 13px;
     line-height: 1.45;
@@ -204,27 +270,27 @@ css:
   }
 
   .public-map-card-meta {
-    margin: 0 0 7px;
+    margin: 0 0 6px;
     color: #4c6256;
     font-size: 13px;
     line-height: 1.35;
   }
 
   .public-map-card-summary {
-    margin: 8px 0 10px;
+    margin: 7px 0 2px;
     color: #43594d;
     font-size: 13px;
     line-height: 1.5;
-    display: -webkit-box;
-    -webkit-line-clamp: 7;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
     word-break: break-word;
+  }
+
+  .public-map-card-cta-wrap {
+    flex: 0 0 auto;
+    margin-top: 10px;
   }
 
   .public-map-card-cta {
     display: inline-block;
-    margin-top: 2px;
     padding: 8px 12px;
     border: 1px solid #db9500;
     border-radius: 4px;
@@ -278,21 +344,18 @@ css:
 
   .public-map-footnote {
     margin: 10px 0 0;
-    color: #667f70;
+    color: #637d6e;
     font-size: 12px;
   }
 
-  @media (max-width: 1199px) {
-    .public-map-canvas {
-      min-height: 520px;
+  @media (max-width: 1200px) {
+    .public-map-page {
+      --public-map-height: clamp(520px, 72vh, 820px);
     }
 
-    .public-map-selection {
-      min-height: 520px;
-    }
-
-    .public-map-selection-empty {
-      min-height: calc(520px - 24px);
+    .public-map-layout__details {
+      flex-basis: min(302px, 31vw);
+      width: min(302px, 31vw);
     }
 
     .public-map-card-title {
@@ -301,45 +364,8 @@ css:
   }
 
   @media (max-width: 991px) {
-    .public-map-shell {
-      padding: 0 10px;
-    }
-
-    .public-map-top__row {
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .public-map-top__stats {
-      min-width: 0;
-      width: 100%;
-    }
-
-    .public-map-top__title {
-      font-size: 21px;
-    }
-
-    .public-map-canvas {
-      height: 520px;
-      min-height: 520px;
-      margin-bottom: 12px;
-    }
-
-    .public-map-selection {
-      min-height: auto;
-      max-height: none;
-      overflow: visible;
-    }
-
-    .public-map-selection-empty {
-      min-height: 220px;
-      max-height: none;
-    }
-  }
-
-  @media (max-width: 767px) {
     .public-map-page {
-      padding-top: 8px;
+      --public-map-height: 520px;
     }
 
     .public-map-shell {
@@ -347,7 +373,12 @@ css:
     }
 
     .public-map-top .panel-body {
-      padding: 12px;
+      padding: 10px 12px;
+    }
+
+    .public-map-top__head {
+      flex-direction: column;
+      gap: 8px;
     }
 
     .public-map-top__title {
@@ -355,16 +386,50 @@ css:
     }
 
     .public-map-top__description {
-      font-size: 13px;
+      font-size: 12px;
     }
 
-    .public-map-canvas {
-      height: 420px;
-      min-height: 420px;
+    .public-map-top__badge {
+      white-space: normal;
+    }
+
+    .public-map-kpis {
+      grid-template-columns: repeat(2, minmax(130px, 1fr));
+    }
+
+    .public-map-layout {
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .public-map-layout__details {
+      width: 100%;
+      flex-basis: auto;
+      margin-left: 0;
+    }
+
+    .public-map-selection {
+      height: auto;
+      max-height: none;
+    }
+
+    .public-map-selection-empty {
+      min-height: 200px;
+    }
+  }
+
+  @media (max-width: 680px) {
+    .public-map-page {
+      --public-map-height: 420px;
+      padding-top: 6px;
+    }
+
+    .public-map-kpis {
+      grid-template-columns: 1fr;
     }
 
     .public-map-card-image {
-      height: 170px;
+      height: 162px;
     }
   }
 
@@ -494,15 +559,21 @@ javascript:
         : '';
 
       return '' +
-        cardImageHtml(project) +
-        '<h3 class="public-map-card-title">' + escapeHtml(truncateText(project.name || '', 95)) + '</h3>' +
-        '<p class="public-map-card-headline">' + escapeHtml(truncateText(project.headline || '', 150)) + '</p>' +
-        '<p class="public-map-card-meta"><i class="fa fa-map-marker"></i> ' + escapeHtml(truncateText(project.location || 'Localisation non renseignee', 90)) + '</p>' +
-        categoryLine +
-        '<p class="public-map-card-meta"><i class="fa fa-line-chart"></i> Collecte: <strong>' + currency(project.pledged) + '</strong> / Objectif: ' + currency(project.goal) + '</p>' +
-        '<p class="public-map-card-meta"><i class="fa fa-users"></i> ' + Math.max(0, parseInt(project.total_contributions || 0, 10) || 0) + ' contribution(s)</p>' +
-        '<p class="public-map-card-summary">' + escapeHtml(truncateText(project.summary || '', 280)) + '</p>' +
-        '<a class="public-map-card-cta" href="' + escapeHtml(project.project_url || '#') + '" target="_blank" rel="noopener">En savoir plus</a>';
+        '<article class="public-map-card">' +
+          cardImageHtml(project) +
+          '<div class="public-map-card-content">' +
+            '<h3 class="public-map-card-title">' + escapeHtml(truncateText(project.name || '', 95)) + '</h3>' +
+            '<p class="public-map-card-headline">' + escapeHtml(truncateText(project.headline || '', 150)) + '</p>' +
+            '<p class="public-map-card-meta"><i class="fa fa-map-marker"></i> ' + escapeHtml(truncateText(project.location || 'Localisation non renseignee', 90)) + '</p>' +
+            categoryLine +
+            '<p class="public-map-card-meta"><i class="fa fa-line-chart"></i> Collecte: <strong>' + currency(project.pledged) + '</strong> / Objectif: ' + currency(project.goal) + '</p>' +
+            '<p class="public-map-card-meta"><i class="fa fa-users"></i> ' + Math.max(0, parseInt(project.total_contributions || 0, 10) || 0) + ' contribution(s)</p>' +
+            '<p class="public-map-card-summary">' + escapeHtml(truncateText(project.summary || '', 390)) + '</p>' +
+          '</div>' +
+          '<div class="public-map-card-cta-wrap">' +
+            '<a class="public-map-card-cta" href="' + escapeHtml(project.project_url || '#') + '" target="_blank" rel="noopener">En savoir plus</a>' +
+          '</div>' +
+        '</article>';
     }
 
     function infoWindowHtml(project) {
