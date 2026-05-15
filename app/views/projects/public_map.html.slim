@@ -1,7 +1,8 @@
-- content_for :title, t('.title')
-- projects_count = @map_projects.size
-- total_contributions = @map_projects.sum { |project| project[:total_contributions].to_i }
-- total_pledged = @map_projects.sum { |project| project[:pledged].to_f }
+- content_for :title, 'Carte des projets accompagnes - Fiatope'
+- map_stats = @map_stats || {}
+- projects_count = map_stats[:projects_count].to_i
+- total_contributions = map_stats[:total_contributions].to_i
+- total_collected = map_stats[:total_collected].to_f
 - maps_api_url = ENV['GOOGLE_KEY_API'].present? ? "https://maps.googleapis.com/maps/api/js?key=#{ENV['GOOGLE_KEY_API']}&callback=initPublicProjectsMap" : 'https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&callback=initPublicProjectsMap'
 
 .public-map-page
@@ -25,7 +26,7 @@
             strong.public-map-kpi__value = number_with_delimiter(total_contributions, delimiter: ' ')
           .public-map-kpi
             span.public-map-kpi__label Montant collecte
-            strong.public-map-kpi__value = number_to_currency(total_pledged, unit: 'EUR ', precision: 0)
+            strong.public-map-kpi__value = number_to_currency(total_collected, unit: 'EUR ', precision: 0)
 
   .public-map-shell
     .public-map-layout

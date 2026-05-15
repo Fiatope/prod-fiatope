@@ -60,7 +60,9 @@ class ProjectsController < ApplicationController
   end
 
   def public_map
-    @map_projects = public_map_projects
+    projects = public_map_scope
+    @map_projects = public_map_projects(projects)
+    @map_stats = public_map_stats(projects)
   end
 
   def create
@@ -343,16 +345,18 @@ class ProjectsController < ApplicationController
     @project ||= Project.find_by_permalink!(params[:id])
   end
 
-  def public_map_projects
-    projects = Project.visible
-                      .where(state: public_map_states)
-                      .where.not(latitude: nil, longitude: nil)
-                      .joins(:contributions)
-                      .where(contributions: { state: 'confirmed' })
-                      .includes(:category, :project_total)
-                      .order('projects.updated_at DESC')
-                      .distinct
+  def public_map_scope
+    Project.visible
+           .where(state: public_map_states)
+           .where.not(latitude: nil, longitude: nil)
+           .joins(:contributions)
+           .where(contributions: { state: 'confirmed' })
+           .includes(:category, :project_total)
+           .order('projects.updated_at DESC')
+           .distinct
+  end
 
+  def public_map_projects(projects = public_map_scope)
     projects.map do |project|
       {
         id: project.id,
@@ -374,6 +378,19 @@ class ProjectsController < ApplicationController
         project_url: project_path(project)
       }
     end
+  end
+
+  def public_map_stats(projects)
+    project_ids = projects.pluck(:id)
+    return { projects_count: 0, total_contributions: 0, total_collected: 0.0 } if project_ids.empty?
+
+    confirmed_contributions = Contribution.where(project_id: project_ids, state: 'confirmed')
+
+    {
+      projects_count: project_ids.size,
+      total_contributions: confirmed_contributions.count,
+      total_collected: confirmed_contributions.sum(:value).to_f
+    }
   end
 
   def public_map_states
@@ -400,8 +417,8 @@ class ProjectsController < ApplicationController
     main_image = project.display_image('project_thumb_large').to_s
 
     if main_image.blank? || main_image.include?('image-placeholder-upload-in-progress.jpg')
-      hero_image = project.hero_image_url(:blur).to_s.presence || project.hero_image_url.to_s
-      main_image = hero_image.presence || main_image
+      hero_image = project.hero_image_url(:blur).to_s.presence || project.hero_image_url.to_s.presence
+      main_image = hero_image.presence || public_map_fallback_image_url
     end
 
     normalize_public_map_image_url(main_image)
@@ -418,7 +435,7 @@ class ProjectsController < ApplicationController
   end
 
   def public_map_fallback_image_url
-    helpers.image_url('image-placeholder-upload-in-progress.jpg')
+    helpers.image_url('banner.jpg')
   end
 
   def has_project_prerequisites?
