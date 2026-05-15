@@ -668,7 +668,7 @@ javascript:
                 if (file.pdf) {
                   filesHtml += '<a class="btn btn-sm btn-outline-primary mr-2 mb-2" href="' + safeUrl + '" target="_blank" rel="noopener"><i class="fa fa-file-pdf-o mr-1"></i>' + safeName + '</a>';
                 } else if (file.image) {
-                  filesHtml += '<img src="' + safeUrl + '" data-full-url="' + safeUrl + '" alt="' + safeName + '" class="payout-doc-thumb mr-2 mb-2" style="height:64px;width:auto;cursor:zoom-in;border:1px solid #dee2e6;border-radius:4px;padding:2px;background:#fff;" />';
+                  filesHtml += '<img src="' + safeUrl + '" data-full-url="' + safeUrl + '" alt="' + safeName + '" title="Cliquer pour agrandir" onclick="openPayoutDocViewer(this.dataset.fullUrl || this.src); return false;" class="payout-doc-thumb mr-2 mb-2" style="height:64px;width:auto;cursor:zoom-in;border:1px solid #dee2e6;border-radius:4px;padding:2px;background:#fff;" />';
                 } else {
                   filesHtml += '<a class="btn btn-sm btn-outline-secondary mr-2 mb-2" href="' + safeUrl + '" target="_blank" rel="noopener">' + safeName + '</a>';
                 }
