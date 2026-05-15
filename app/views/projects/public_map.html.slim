@@ -1,11 +1,7 @@
 - content_for :title, 'Carte des projets accompagnes'
 
 - projects_count = @map_projects.size
-- maps_api_url = if ENV['GOOGLE_KEY_API'].present?
-  "https://maps.googleapis.com/maps/api/js?key=#{ENV['GOOGLE_KEY_API']}&callback=initPublicProjectsMap"
-- else
-  'https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&callback=initPublicProjectsMap'
-- end
+- maps_api_url = ENV['GOOGLE_KEY_API'].present? ? "https://maps.googleapis.com/maps/api/js?key=#{ENV['GOOGLE_KEY_API']}&callback=initPublicProjectsMap" : 'https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&callback=initPublicProjectsMap'
 
 .public-map-page
   .discover.text-center
