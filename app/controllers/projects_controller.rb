@@ -4,7 +4,7 @@ class ProjectsController < ApplicationController
                                             :embed_panel, :comments, :budget, :english,
                                             :reward_contact, :send_reward_email,
                                             :start, :coaching, :crowdfunding, :consulting, :change_recommended,
-                                            :request_payout]
+                                            :request_payout, :public_map]
 
   before_action :has_prerequisites, only: [:new, :create]
 
@@ -57,6 +57,10 @@ class ProjectsController < ApplicationController
       @partner = Partner.find_by_permalink(params[:partner_id])
       render layout: 'application_partner' and return
     end
+  end
+
+  def public_map
+    @map_projects = public_map_projects
   end
 
   def create
@@ -337,6 +341,55 @@ class ProjectsController < ApplicationController
 
   def resource
     @project ||= Project.find_by_permalink!(params[:id])
+  end
+
+  def public_map_projects
+    projects = Project.visible
+                      .where(state: public_map_states)
+                      .where.not(latitude: nil, longitude: nil)
+                      .joins(:contributions)
+                      .where(contributions: { state: 'confirmed' })
+                      .includes(:category, :project_total)
+                      .order('projects.updated_at DESC')
+                      .distinct
+
+    projects.map do |project|
+      {
+        id: project.id,
+        name: project.name.to_s,
+        headline: project.headline.to_s,
+        summary: helpers.truncate(helpers.strip_tags(project.about.to_s), length: 190),
+        location: project.location.to_s,
+        latitude: project.latitude.to_f,
+        longitude: project.longitude.to_f,
+        state: project.state.to_s,
+        state_label: public_map_state_label(project.state.to_s),
+        category_name: project.category&.name_pt.to_s.presence || project.category&.name_en.to_s,
+        goal: project.goal.to_f,
+        pledged: project.project_total&.pledged.to_f,
+        total_contributions: project.project_total&.total_contributions.to_i,
+        image_url: project.uploaded_image&.url.to_s,
+        permalink: project.permalink.to_s,
+        project_url: project_path(project)
+      }
+    end
+  end
+
+  def public_map_states
+    %w[successful waiting_funds request_funds paid]
+  end
+
+  def public_map_state_label(state)
+    case state
+    when 'paid'
+      'Traite'
+    when 'request_funds', 'waiting_funds'
+      'En traitement'
+    when 'successful'
+      'Accompli'
+    else
+      state.to_s.humanize
+    end
   end
 
   def has_project_prerequisites?

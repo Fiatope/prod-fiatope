@@ -202,6 +202,7 @@ Neighborly::Application.routes.draw do
 
     collection do
       get 'video'
+      get 'carte-projets-accomplis', action: :public_map, as: :public_map
       resources :build, controller: 'projects/build', as: 'project_build'
     end
 
