@@ -376,16 +376,12 @@ class ProjectsController < ApplicationController
   end
 
   def public_map_states
-    %w[successful waiting_funds request_funds paid]
+    %w[successful paid]
   end
 
   def public_map_state_label(state)
     case state
-    when 'paid'
-      'Traite'
-    when 'request_funds', 'waiting_funds'
-      'En traitement'
-    when 'successful'
+    when 'successful', 'paid'
       'Accompli'
     else
       state.to_s.humanize

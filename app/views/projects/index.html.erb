@@ -10,20 +10,6 @@
 
 <%= render 'carousel' %> 
 
-<div class="public-map-home-spotlight" style="padding: 22px 0 8px; background: linear-gradient(120deg, #f6fff8 0%, #fff8ea 100%); border-bottom: 1px solid #e5eedf;">
-	<div class="container">
-		<div class="row" style="display:flex;align-items:center;">
-			<div class="col-md-9 col-sm-8" style="text-align:left;">
-				<h3 style="margin:0 0 6px;color:#1f5c3d;font-weight:700;font-size:26px;">Nouveau: carte des projets accompagnes et traites</h3>
-				<p style="margin:0;color:#4c6b58;font-size:15px;">Visualisez en un clic les projets geolocalises deja accompagnes sur Fiatope, avec un resume interactif par marqueur.</p>
-			</div>
-			<div class="col-md-3 col-sm-4 text-right" style="margin-top:8px;">
-				<%= link_to 'Voir la carte publique', public_projects_map_path, class: 'btn-medium-yellow', style: 'display:inline-block;font-weight:700;' %>
-			</div>
-		</div>
-	</div>
-</div>
-
 <!-- <div class="jumbo">
 
 	<div id="homeCarousel" class="carousel slide" data-ride="carousel">
@@ -193,6 +179,7 @@
 
 	<div class="see-more">
 		<%= link_to t('.discover.button1'), discover_path, class: 'btn-medium-yellow-border' %>
+		<%= link_to 'Voir la carte des projets accompagnes', public_projects_map_path, class: 'btn-medium-yellow-border', style: 'margin-left: 8px;' %>
 	</div>
 </div>
 
