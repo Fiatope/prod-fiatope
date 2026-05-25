@@ -116,6 +116,36 @@ module Neighborly::Admin
       
       redirect_back(fallback_location: projects_path)
     end
+
+    # Pousse explicitement les donnees locales du profil de retrait vers Stripe.
+    # Utile apres correction par le porteur ou si la synchronisation automatique a echoue.
+    def sync_payout_profile_to_stripe
+      @project = Project.find_by_permalink params[:id]
+      user = @project.user
+
+      unless user.payout_profile_complete?
+        flash[:alert] = "Profil de retrait incomplet: #{user.payout_profile_missing_fields.join(', ')}"
+        return redirect_back(fallback_location: projects_path)
+      end
+
+      sync_result = Neighborly::Stripe::PayoutProfileSyncService.call(
+        user,
+        request_ip: request.remote_ip,
+        user_agent: request.user_agent
+      )
+
+      if sync_result.success?
+        warnings = sync_result.warnings.any? ? " Avertissements: #{sync_result.warnings.join(', ').truncate(200)}" : ''
+        flash[:success] = "Profil de retrait synchronise vers Stripe.#{warnings}"
+      else
+        flash[:alert] = "Synchronisation Stripe impossible: #{sync_result.errors.join(', ').truncate(200)}"
+      end
+    rescue => e
+      flash[:alert] = "Erreur de synchronisation Stripe: #{e.message.truncate(200)}"
+      Rails.logger.error "[Admin] Payout profile sync error: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
+    ensure
+      redirect_back(fallback_location: projects_path) unless performed?
+    end
     
     # Active Stripe pour un projet et crée/réutilise le compte connecté du porteur
     def enable_stripe
@@ -368,6 +398,7 @@ module Neighborly::Admin
       render json: {
         profile_complete: user.payout_profile_complete?,
         missing_fields: user.payout_profile_missing_fields,
+        stripe: payout_profile_stripe_status(user),
         owner: {
           id: user.id,
           name: user.name,
@@ -427,6 +458,47 @@ module Neighborly::Admin
 
     def payout_profile_edit_unlock_cache_key(user)
       "payout_profile_edit_unlock:user:#{user.id}"
+    end
+
+    def payout_profile_stripe_status(user)
+      return { account_id: nil, error: 'Aucun compte Stripe Connect local.' } if user.stripe_connect_account_id.blank?
+
+      account = ::Stripe::Account.retrieve(user.stripe_connect_account_id)
+      requirements = account.requirements
+      future_requirements = account.future_requirements
+      {
+        account_id: account.id,
+        payouts_enabled: account.payouts_enabled,
+        charges_enabled: account.charges_enabled,
+        transfers: stripe_object_value(account.capabilities, :transfers),
+        currently_due: Array(stripe_object_value(requirements, :currently_due)),
+        past_due: Array(stripe_object_value(requirements, :past_due)),
+        eventually_due: Array(stripe_object_value(requirements, :eventually_due)),
+        pending_verification: Array(stripe_object_value(requirements, :pending_verification)),
+        disabled_reason: stripe_object_value(requirements, :disabled_reason),
+        future_currently_due: Array(stripe_object_value(future_requirements, :currently_due)),
+        future_past_due: Array(stripe_object_value(future_requirements, :past_due)),
+        errors: Array(stripe_object_value(requirements, :errors)).map { |error| payout_profile_requirement_error(error) }
+      }
+    rescue ::Stripe::StripeError => e
+      { account_id: user.stripe_connect_account_id, error: e.message }
+    end
+
+    def payout_profile_requirement_error(error)
+      {
+        requirement: stripe_object_value(error, :requirement),
+        code: stripe_object_value(error, :code),
+        reason: stripe_object_value(error, :reason)
+      }
+    end
+
+    def stripe_object_value(object, key)
+      return nil unless object
+      return object[key] if object.respond_to?(:[]) && object[key].present?
+      return object[key.to_s] if object.respond_to?(:[]) && object[key.to_s].present?
+      return object.public_send(key) if object.respond_to?(key)
+
+      nil
     end
 
     def collection

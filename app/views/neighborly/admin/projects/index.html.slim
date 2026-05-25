@@ -302,6 +302,10 @@
                             = link_to "javascript:openPayoutProfileModal('#{j(project.name)}', '#{payout_profile_url}', '#{payout_unlock_url}', '#{payout_edit_url}')" do
                               i.icon-et-vcard
                               = " 👤 Voir profil de retrait"
+                          li
+                            = link_to main_app.sync_payout_profile_to_stripe_project_path(project), method: :put, data: { confirm: "Synchroniser maintenant les informations locales du porteur vers Stripe ?" } do
+                              i.fa.fa-refresh
+                              = " Synchroniser profil vers Stripe"
 
                           - unless project.use_stripe?
                             /= Activer Stripe (crée ou réutilise le compte du porteur)

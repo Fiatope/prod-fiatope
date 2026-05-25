@@ -287,6 +287,15 @@
 
         .mt-3
           h6
+            i.fa.fa-credit-card.mr-1
+            | Verification Stripe
+          .alert#payoutStripeStatus.alert-light[style="border:1px solid #dee2e6;"]
+            | Chargement...
+          ul#payoutStripeRequirements.list-group
+            li.list-group-item.text-muted Chargement...
+
+        .mt-3
+          h6
             i.fa.fa-files-o.mr-1
             | Justificatifs
           ul#payoutKycList.list-group
@@ -617,6 +626,8 @@ javascript:
     $('#payoutBankAddress, #payoutBankCity, #payoutBankRegion, #payoutBankPostal, #payoutBankCountry, #payoutBankReferenceType, #payoutBankReferenceValue').text('—');
     $('#payoutKycList').html('<li class="list-group-item text-muted">Chargement...</li>');
     $('#payoutMissingList').html('<li class="list-group-item text-muted">Chargement...</li>');
+    $('#payoutStripeStatus').removeClass('alert-success alert-warning alert-danger').addClass('alert-light').html('Chargement...');
+    $('#payoutStripeRequirements').html('<li class="list-group-item text-muted">Chargement...</li>');
 
     $('#payoutProfileModal').modal('show');
 
@@ -624,6 +635,7 @@ javascript:
       .done(function(data) {
         var owner = data.owner || {};
         var bank = data.bank || {};
+        var stripe = data.stripe || {};
         var missingFields = data.missing_fields || [];
         var kycDocs = data.kyc_documents || [];
 
@@ -646,6 +658,7 @@ javascript:
         $('#payoutBankCountry').text(payoutValue(bank.other_country));
         $('#payoutBankReferenceType').text(payoutValue(bank.bank_reference_type));
         $('#payoutBankReferenceValue').text(payoutValue(bank.bank_reference_value));
+        updatePayoutStripeStatus(stripe);
 
         var kycList = $('#payoutKycList');
         kycList.empty();
@@ -699,7 +712,48 @@ javascript:
         $('#payoutProfileStatus').removeClass('alert-info alert-success alert-warning').addClass('alert-danger').html('<i class="fa fa-times-circle mr-2"></i>' + message);
         $('#payoutKycList').html('<li class="list-group-item text-muted">—</li>');
         $('#payoutMissingList').html('<li class="list-group-item text-muted">—</li>');
+        $('#payoutStripeStatus').removeClass('alert-light alert-success alert-warning').addClass('alert-danger').html('Impossible de charger le statut Stripe.');
+        $('#payoutStripeRequirements').html('<li class="list-group-item text-muted">—</li>');
       });
+  }
+
+  function updatePayoutStripeStatus(stripe) {
+    var status = $('#payoutStripeStatus');
+    var list = $('#payoutStripeRequirements');
+    var account = stripe.account_id || 'Aucun compte';
+    var transfers = stripe.transfers || 'inconnu';
+    var payoutsEnabled = stripe.payouts_enabled === true;
+    var requirements = []
+      .concat(stripe.currently_due || [])
+      .concat(stripe.past_due || [])
+      .concat(stripe.future_currently_due || [])
+      .concat(stripe.future_past_due || []);
+    var errors = stripe.errors || [];
+
+    status.removeClass('alert-light alert-success alert-warning alert-danger');
+    if (stripe.error) {
+      status.addClass('alert-danger').html('<strong>Erreur Stripe:</strong> ' + escapeHtml(stripe.error));
+    } else if (payoutsEnabled && transfers === 'active' && requirements.length === 0 && errors.length === 0) {
+      status.addClass('alert-success').html('<strong>Stripe OK.</strong> Compte ' + escapeHtml(account) + ' pret pour les virements.');
+    } else {
+      status.addClass('alert-warning').html('<strong>Stripe demande encore une verification.</strong> Compte ' + escapeHtml(account) + ', transfers=' + escapeHtml(transfers) + ', payouts_enabled=' + payoutsEnabled);
+    }
+
+    list.empty();
+    if (requirements.length === 0 && errors.length === 0 && !stripe.disabled_reason) {
+      list.html('<li class="list-group-item text-success">Aucune exigence Stripe bloquante retournee.</li>');
+      return;
+    }
+    if (stripe.disabled_reason) {
+      list.append('<li class="list-group-item text-danger"><strong>disabled_reason:</strong> ' + escapeHtml(stripe.disabled_reason) + '</li>');
+    }
+    requirements.forEach(function(item) {
+      list.append('<li class="list-group-item text-warning">' + escapeHtml(item) + '</li>');
+    });
+    errors.forEach(function(err) {
+      var text = [err.requirement, err.code, err.reason].filter(Boolean).join(' - ');
+      list.append('<li class="list-group-item text-danger">' + escapeHtml(text || 'Erreur Stripe sans detail') + '</li>');
+    });
   }
   
   // Calcule et formate le taux Stripe estimé
