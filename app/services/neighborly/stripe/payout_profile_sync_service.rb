@@ -77,13 +77,29 @@ module Neighborly
         account = stripe_account
         return if platform_managed_account?(account)
 
-        errors << "Compte Stripe #{account.id} incompatible avec le profil de retrait local: il doit etre de type Custom ou avoir requirement_collection=application. Deliez ce compte puis recreez le profil de retrait."
+        replace_incompatible_connect_account!(account)
       rescue ::Stripe::StripeError => e
         errors << "Verification du compte Stripe impossible: #{e.message}"
       end
 
       def platform_managed_account?(account)
         account.type == 'custom' || stripe_nested_value(account.controller, :requirement_collection) == 'application'
+      end
+
+      def replace_incompatible_connect_account!(account)
+        old_account_id = account.id
+        Rails.logger.warn "Payout profile sync: compte Connect #{old_account_id} incompatible pour user #{user.id}; creation d un compte gere par la plateforme."
+
+        user.create_stripe_connect_account!(force: true)
+        @stripe_account = nil
+        @representative_person = nil if defined?(@representative_person)
+
+        unless platform_managed_account?(stripe_account)
+          errors << "Le nouveau compte de retrait #{stripe_account.id} n est pas compatible avec la collecte locale des informations."
+          return
+        end
+
+        warnings << "Ancien compte Connect #{old_account_id} remplace par un compte gere par la plateforme."
       end
 
       def sync_account_identity!

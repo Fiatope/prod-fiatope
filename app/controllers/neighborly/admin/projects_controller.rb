@@ -205,6 +205,7 @@ module Neighborly::Admin
         flash[:alert] = "Synchronisation Stripe impossible avant transfert: #{sync_result.errors.join(', ')}"
         return redirect_back(fallback_location: projects_path)
       end
+      @project.reload
       
       payout_status = @project.stripe_payout_status.to_s
       if @project.stripe_settlement_type == 'transferred' && %w[paid pending in_transit].include?(payout_status)

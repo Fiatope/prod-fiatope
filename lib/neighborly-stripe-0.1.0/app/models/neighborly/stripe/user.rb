@@ -11,14 +11,22 @@ module Neighborly::Stripe::User
   def sync_stripe_account_to_all_projects
     return unless stripe_connect_account_id.present?
 
+    synced = 0
+    skipped = 0
     projects.find_each do |project|
+      if stripe_project_account_locked?(project)
+        skipped += 1
+        next
+      end
+
       project.update_columns(
         stripe_account_id: stripe_connect_account_id,
         use_stripe: true
       )
+      synced += 1
     end
 
-    Rails.logger.info "Stripe: Compte #{stripe_connect_account_id} synchronise sur #{projects.count} projets pour #{email}"
+    Rails.logger.info "Stripe: Compte #{stripe_connect_account_id} synchronise sur #{synced} projet(s) pour #{email}; #{skipped} conserve(s) car deja en reglement"
   end
 
   def stripe_customer
@@ -37,10 +45,19 @@ module Neighborly::Stripe::User
     @stripe_customer
   end
 
-  def create_stripe_connect_account!
-    return stripe_connect_account_id if stripe_connect_account_id.present?
+  def create_stripe_connect_account!(force: false)
+    return stripe_connect_account_id if stripe_connect_account_id.present? && !force
 
-    account = ::Stripe::Account.create(stripe_connect_account_create_params)
+    previous_account_id = stripe_connect_account_id
+    params = stripe_connect_account_create_params
+    if previous_account_id.present?
+      params[:metadata] = params.fetch(:metadata, {}).merge(
+        replaced_account_id: previous_account_id,
+        replaced_at: Time.current.iso8601
+      )
+    end
+
+    account = ::Stripe::Account.create(params)
 
     attrs = {
       stripe_connect_account_id: account.id,
@@ -53,6 +70,8 @@ module Neighborly::Stripe::User
     # Sauvegarder l'ID Stripe meme si une validation utilisateur non liee bloque update/save.
     update_columns(attrs)
     sync_stripe_account_to_all_projects
+
+    Rails.logger.warn "Stripe: Compte connecte #{previous_account_id} remplace par #{account.id} pour #{email}" if previous_account_id.present?
 
     account.id
   end
@@ -89,6 +108,16 @@ module Neighborly::Stripe::User
   end
 
   private
+
+  def stripe_project_account_locked?(project)
+    settlement_type = project.respond_to?(:stripe_settlement_type) ? project.stripe_settlement_type.to_s : ''
+    payout_status = project.respond_to?(:stripe_payout_status) ? project.stripe_payout_status.to_s : ''
+    payout_id = project.respond_to?(:stripe_payout_id) ? project.stripe_payout_id : nil
+
+    settlement_type == 'transferred' ||
+      payout_id.present? ||
+      %w[pending in_transit paid failed canceled].include?(payout_status)
+  end
 
   def stripe_connect_account_create_params
     {
