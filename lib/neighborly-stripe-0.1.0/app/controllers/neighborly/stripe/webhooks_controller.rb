@@ -34,9 +34,11 @@ module Neighborly
         when 'transfer.reversed'
           handle_transfer_reversed(@event.data.object)
         # === PAYOUTS (virement vers banque porteur) ===
+        when 'payout.created', 'payout.updated'
+          handle_payout_updated(@event.data.object)
         when 'payout.paid'
           handle_payout_paid(@event.data.object)
-        when 'payout.failed'
+        when 'payout.failed', 'payout.canceled'
           handle_payout_failed(@event.data.object)
         else
           Rails.logger.info "Unhandled Stripe event type: #{@event.type}"
@@ -181,9 +183,11 @@ module Neighborly
         user = ::User.find_by(stripe_connect_account_id: account.id)
         return unless user
         
-        if account.charges_enabled && account.payouts_enabled
-          user.update(stripe_onboarding_complete: true)
-          Rails.logger.info "Account updated: User #{user.id} onboarding complete"
+        ready_for_transfers = account_ready_for_transfers?(account)
+        user.update(stripe_onboarding_complete: ready_for_transfers)
+        Rails.logger.info "Account updated: User #{user.id} ready_for_transfers=#{ready_for_transfers}"
+
+        if ready_for_transfers
           
           # CRITIQUE: Synchroniser tous les projets du porteur
           # C'est ici que la magie opère - quand l'onboarding est complété,
@@ -210,6 +214,29 @@ module Neighborly
         Rails.logger.info "Webhook: Synchronisé #{synced_count} projet(s) pour #{user.email} avec compte #{user.stripe_connect_account_id}"
       end
       
+      def account_ready_for_transfers?(account)
+        account.payouts_enabled &&
+          stripe_value(account.capabilities, :transfers) == 'active' &&
+          account_requirements_due(account).empty?
+      end
+
+      def account_requirements_due(account)
+        requirements = account.requirements
+        (
+          Array(stripe_value(requirements, :currently_due)) +
+          Array(stripe_value(requirements, :past_due))
+        ).uniq
+      end
+
+      def stripe_value(object, key)
+        return nil unless object
+        return object[key] if object.respond_to?(:[]) && object[key].present?
+        return object[key.to_s] if object.respond_to?(:[]) && object[key.to_s].present?
+        return object.public_send(key) if object.respond_to?(key)
+
+        nil
+      end
+
       def handle_transfer_created(transfer)
         stripe_order = Order.find_by(stripe_payment_intent_id: transfer.source_transaction)
         return unless stripe_order
@@ -288,49 +315,174 @@ module Neighborly
         end
       end
       
-      # Payout réussi: argent arrivé sur le compte bancaire du porteur
-      # Déclenché sur le compte CONNECT (Express) du porteur, pas sur le compte plateforme
+      def handle_payout_updated(payout)
+        return handle_payout_paid(payout) if payout.status == 'paid'
+        return handle_payout_failed(payout) if %w[failed canceled].include?(payout.status)
+
+        project = find_project_for_payout(payout)
+        unless project
+          Rails.logger.warn "Webhook payout.#{payout.status}: projet introuvable pour payout #{payout.id}"
+          return
+        end
+
+        update_project_payout_from_stripe!(project, payout)
+        Rails.logger.info "Payout #{payout.id} mis a jour pour projet #{project.id}: #{payout.status}"
+      end
+
+      # Payout reussi: argent arrive sur le compte bancaire du porteur.
+      # C'est le seul moment ou le projet Stripe peut devenir paid.
       def handle_payout_paid(payout)
-        account_id = @event.account rescue nil
-        return unless account_id.present?
-        
-        user = ::User.find_by(stripe_connect_account_id: account_id)
-        return unless user
-        
-        amount = payout.amount / 100.0
-        Rails.logger.info "PAYOUT RÉUSSI: #{amount}€ vers compte bancaire de #{user.email} (#{account_id})"
-        
-        # Notifier le porteur que son argent est arrivé
-        # Note: notify_owner ne prend que des colonnes valides de la table notifications
-        # Le template calcule les montants depuis @notification.project directement
+        project = find_project_for_payout(payout)
+        unless project
+          Rails.logger.warn "Webhook payout.paid: projet introuvable pour payout #{payout.id}"
+          return
+        end
+
+        already_finalized = project.state == 'paid' && project.stripe_payout_paid_at.present?
+        account_id = connected_account_id.presence || project.stripe_account_id
+        all_paid = all_project_payouts_paid?(project, payout, account_id)
+        update_project_payout_from_stripe!(project, payout, status_override: (all_paid ? 'paid' : 'in_transit'))
+
+        unless all_paid
+          Rails.logger.info "Payout #{payout.id} paye, attente des autres payouts du projet #{project.id}"
+          return
+        end
+
+        project.reload
+        finalize_project_after_payout!(project)
+        project.update_columns(stripe_settled_at: project.stripe_payout_paid_at || Time.zone.now)
+
+        Rails.logger.info "PAYOUT PAID: projet #{project.id}, payout #{payout.id}, #{payout.amount / 100.0} #{payout.currency.to_s.upcase}"
+
         begin
-          user.projects.where(stripe_settlement_type: 'transferred').find_each do |project|
-            project.notify_owner(:stripe_payout_paid)
-          end
+          project.notify_owner(:stripe_payout_paid) unless already_finalized
         rescue => e
-          Rails.logger.warn "Impossible de notifier le porteur du payout: #{e.message}"
+          Rails.logger.warn "Webhook payout.paid: notification email echouee: #{e.message}"
         end
       end
-      
-      # Payout échoué: virement vers banque du porteur a échoué (IBAN invalide, compte bloqué, etc.)
+
+      # Payout echoue: le virement vers banque a echoue. Le projet reste en request_funds.
       def handle_payout_failed(payout)
-        account_id = @event.account rescue nil
-        return unless account_id.present?
-        
-        user = ::User.find_by(stripe_connect_account_id: account_id)
-        return unless user
-        
-        amount = payout.amount / 100.0
-        failure_message = payout.failure_message || payout.failure_code || 'raison inconnue'
-        
-        Rails.logger.error "PAYOUT ÉCHOUÉ: #{amount}€ pour #{user.email} (#{account_id}) - #{failure_message}"
-        
-        # Notifier l'admin - action manuelle requise
-        begin
-          AdminMailer.payout_failed_alert(user, amount, failure_message).deliver_later if defined?(AdminMailer)
-        rescue => e
-          Rails.logger.warn "Impossible d'envoyer alerte payout échoué: #{e.message}"
+        project = find_project_for_payout(payout)
+        unless project
+          Rails.logger.warn "Webhook payout.failed: projet introuvable pour payout #{payout.id}"
+          return
         end
+
+        update_project_payout_from_stripe!(project, payout)
+        amount = payout.amount.to_i / 100.0
+        failure_message = payout.failure_message.presence || payout.failure_code.presence || 'raison inconnue'
+        Rails.logger.error "PAYOUT FAILED: projet #{project.id}, #{amount} #{payout.currency.to_s.upcase} - #{failure_message}"
+
+        begin
+          AdminMailer.payout_failed_alert(project.user, amount, failure_message).deliver_later if defined?(AdminMailer)
+        rescue => e
+          Rails.logger.warn "Webhook payout.failed: alerte admin echouee: #{e.message}"
+        end
+      end
+
+      def connected_account_id
+        @event.respond_to?(:account) ? @event.account : nil
+      end
+
+      def find_project_for_payout(payout)
+        metadata_project_id = stripe_value(payout.metadata, :project_id)
+        project = ::Project.find_by(id: metadata_project_id) if metadata_project_id.present?
+        return project if project
+
+        project = ::Project.find_by(stripe_payout_id: payout.id)
+        return project if project
+
+        project = ::Project.where("stripe_payout_ids LIKE ?", "%#{payout.id}%").first
+        return project if project
+
+        account_id = connected_account_id
+        return nil unless account_id.present?
+
+        user = ::User.find_by(stripe_connect_account_id: account_id)
+        return nil unless user
+
+        candidates = user.projects.where(stripe_settlement_type: 'transferred').order(updated_at: :desc).to_a
+        candidates.reject! { |candidate| candidate.state == 'paid' && candidate.stripe_payout_status == 'paid' }
+        candidates += user.projects.where(state: 'request_funds').order(updated_at: :desc).to_a
+        candidates.uniq!
+        exact_match = candidates.find do |candidate|
+          stored_amount_matches = candidate.stripe_payout_amount_cents.to_i == payout.amount.to_i &&
+                                  candidate.stripe_payout_currency.to_s.downcase == payout.currency.to_s.downcase
+          expected_amount_matches = expected_project_payout_amount_cents(candidate, payout.currency).to_i == payout.amount.to_i
+          stored_amount_matches || expected_amount_matches
+        end
+        return exact_match if exact_match
+
+        Rails.logger.warn "Webhook payout #{payout.id}: metadata absente, fallback sur projet recent du compte #{account_id}" if candidates.size > 1
+        candidates.first
+      end
+
+      def update_project_payout_from_stripe!(project, payout, status_override: nil)
+        payout_ids = project.stripe_payout_ids.to_s.split(',').map(&:strip)
+        payout_ids << payout.id
+        payout_ids = payout_ids.reject(&:blank?).uniq
+        status = (status_override || payout.status).to_s
+        failed_status = %w[failed canceled].include?(status)
+        paid_status = status == 'paid'
+        paid_at = paid_status ? (payout_timestamp(payout.arrival_date) || Time.zone.now) : project.stripe_payout_paid_at
+
+        project.update_columns(
+          stripe_payout_id: payout.id,
+          stripe_payout_ids: payout_ids.join(','),
+          stripe_payout_status: status,
+          stripe_payout_source: stripe_value(payout.metadata, :source).presence || project.stripe_payout_source.presence || 'stripe_dashboard',
+          stripe_payout_amount_cents: payout.amount,
+          stripe_payout_currency: payout.currency,
+          stripe_payout_arrival_date: payout_timestamp(payout.arrival_date),
+          stripe_payout_paid_at: paid_at,
+          stripe_payout_failed_at: failed_status ? Time.zone.now : nil,
+          stripe_payout_failure_code: failed_status ? payout.failure_code : nil,
+          stripe_payout_failure_message: failed_status ? payout.failure_message : nil
+        )
+      end
+
+      def expected_project_payout_amount_cents(project, currency)
+        fee_pct = ENV.fetch('PLATFORM_FEE', '5.0').tr(',', '.').to_f / 100
+        expected_currency = currency.to_s.downcase
+        project.contributions.where(payment_method: 'Stripe', state: 'confirmed')
+               .where(stripe_refunded: [false, nil], stripe_transferred: true)
+               .to_a.sum do |contribution|
+          contribution_currency = contribution.stripe_transfer_currency.presence || project.currency.to_s.downcase.presence || 'eur'
+          next 0 unless contribution_currency.to_s.downcase == expected_currency
+
+          contribution.stripe_transfer_amount_cents.presence || (contribution.value.to_f * (1 - fee_pct) * 100).to_i
+        end
+      end
+
+      def all_project_payouts_paid?(project, current_payout, account_id)
+        payout_ids = project.stripe_payout_ids.to_s.split(',').map(&:strip)
+        payout_ids << current_payout.id
+        payout_ids = payout_ids.reject(&:blank?).uniq
+        return current_payout.status == 'paid' if payout_ids.size <= 1
+        return false unless account_id.present?
+
+        payout_ids.all? do |payout_id|
+          payout = payout_id == current_payout.id ? current_payout : ::Stripe::Payout.retrieve(payout_id, { stripe_account: account_id })
+          payout.status == 'paid'
+        end
+      rescue ::Stripe::StripeError => e
+        Rails.logger.warn "Verification payouts projet #{project.id} impossible: #{e.message}"
+        false
+      end
+
+      def finalize_project_after_payout!(project)
+        return if project.state == 'paid'
+
+        if project.respond_to?(:can_push_to_paid?) && project.can_push_to_paid?
+          project.push_to_paid!
+        else
+          Rails.logger.warn "Payout paid pour projet #{project.id}, mais transition paid impossible depuis state=#{project.state}"
+        end
+      end
+
+      def payout_timestamp(timestamp)
+        timestamp.present? ? Time.zone.at(timestamp) : nil
       end
       
       # Transfert inversé/annulé

@@ -3,7 +3,7 @@
 - gross = project.contributions.where(payment_method: 'Stripe', stripe_transferred: true).sum(:value).to_f
 - net = (gross * (1.0 - fee_pct)).round(2)
 - currency_sym = project.currency || 'EUR'
-- settled_at = project.stripe_settled_at
+- settled_at = project.stripe_payout_paid_at || project.stripe_settled_at
 
 |Chèr(e) #{project.user.display_name},
 br
@@ -19,7 +19,7 @@ table[style="border-collapse: collapse; width: 100%; max-width: 500px;"]
     td[style="padding: 10px; border: 1px solid #bbf7d0; font-weight: bold;"] Projet
     td[style="padding: 10px; border: 1px solid #bbf7d0;"] #{project.name}
   tr
-    td[style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;"] Montant reu
+    td[style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;"] Montant recu
     td[style="padding: 10px; border: 1px solid #e2e8f0; color: #16a34a; font-weight: bold;"]
       = number_to_currency(net, unit: currency_sym, format: '%n %u')
   - if settled_at.present?

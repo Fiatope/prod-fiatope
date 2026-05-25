@@ -155,8 +155,12 @@
         - can_request_payout = user_signed_in? && current_user == @project.user && @project.use_stripe?
         - payout_states = ['successful', 'waiting_funds', 'online', 'request_funds', 'paid']
         - if can_request_payout && payout_states.include?(@project.state)
-          - already_paid = @project.stripe_settlement_type == 'transferred' || @project.state == 'paid'
-          - payout_pending = @project.state == 'request_funds' && !already_paid
+          - payout_status = @project.stripe_payout_status.to_s
+          - already_paid = @project.state == 'paid'
+          - payout_processing = %w[pending in_transit].include?(payout_status)
+          - payout_failed = %w[failed canceled].include?(payout_status)
+          - transfer_done = @project.stripe_settlement_type == 'transferred' || @project.stripe_transfer_id.present?
+          - payout_pending = (@project.state == 'request_funds' || payout_processing || payout_failed || transfer_done) && !already_paid
           - payout_ready = @payout_profile_complete
           - stripe_contributions_scope = @project.contributions.where(payment_method: 'Stripe', state: 'confirmed')
           - stripe_contributions_exist = stripe_contributions_scope.any?
@@ -167,13 +171,23 @@
           - if already_paid
             .alert-box.success.radius[style="margin-top:10px;"]
               i.fa.fa-check-circle
-              strong |  Fonds virés ✓
-              p.small | Vos fonds ont été virés directement sur votre compte bancaire.
+              strong |  Fonds reçus
+              p.small | Stripe a confirme l arrivee du virement bancaire.
+          - elsif payout_processing
+            .alert-box[style="background:#2980b9;color:#fff;border-radius:5px;padding:10px;margin-top:10px;"]
+              i.fa.fa-clock-o
+              strong |  Virement bancaire en cours
+              p.small | Les fonds ne sont pas encore marques comme recus.
+          - elsif payout_failed
+            .alert-box[style="background:#f39c12;color:#fff;border-radius:5px;padding:10px;margin-top:10px;"]
+              i.fa.fa-exclamation-triangle
+              strong |  Virement a reprendre
+              p.small | Notre equipe verifie le dossier.
           - elsif payout_pending
             .alert-box[style="background:#f39c12;color:#fff;border-radius:5px;padding:10px;margin-top:10px;"]
               i.fa.fa-clock-o
               strong |  Demande en cours de traitement
-              p.small | Notre équipe traite votre demande de virement. Vous recevrez un email de confirmation.
+              p.small | Notre equipe traite votre demande. La confirmation arrivera apres payout.paid Stripe.
           - elsif !payout_amount_available
             .alert-box[style="background:#f8f9fa;color:#495057;border-radius:5px;padding:10px;margin-top:10px;"]
               i.fa.fa-info-circle

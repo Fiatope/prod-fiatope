@@ -111,11 +111,18 @@ namespace :stripe do
         status = []
         status << "charges" if stripe_account.charges_enabled
         status << "payouts" if stripe_account.payouts_enabled
+        requirements_due = (
+          Array(stripe_account.requirements&.currently_due) +
+          Array(stripe_account.requirements&.past_due)
+        ).uniq
+        ready_for_transfers = stripe_account.payouts_enabled &&
+                              stripe_account.capabilities&.transfers == 'active' &&
+                              requirements_due.empty?
         puts "  ✅ #{user.email}: #{status.join(', ') || 'restricted'}"
         verified += 1
         
         # Vérifier cohérence onboarding
-        if stripe_account.charges_enabled && stripe_account.payouts_enabled && !user.stripe_onboarding_complete?
+        if ready_for_transfers && !user.stripe_onboarding_complete?
           puts "     ⚠️  Onboarding devrait être marqué comme complet!"
           user.update_column(:stripe_onboarding_complete, true)
         end

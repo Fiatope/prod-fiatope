@@ -10,6 +10,11 @@ module Channels::Admin
     [:approve, :launch, :reject, :push_to_draft, :cancel, :push_to_request_funds, :push_to_fraud_suspiscion, :push_to_paid].each do |name|
       define_method name do
         @project    = channel.projects.find_by_permalink!(params[:id])
+        if name == :push_to_paid && @project.respond_to?(:use_stripe?) && @project.use_stripe? && @project.stripe_payout_status.to_s != 'paid'
+          flash[:alert] = "Projet Stripe: l'etat paye est autorise uniquement apres confirmation bancaire Stripe payout.paid."
+          return redirect_to :back
+        end
+
         @project.send("#{name.to_s}!")
         redirect_to :back
       end

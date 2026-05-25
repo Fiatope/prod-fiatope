@@ -1,30 +1,29 @@
 module Neighborly::Stripe::User
   extend ActiveSupport::Concern
-  
+
   included do
     has_many :stripe_orders, class_name: 'Neighborly::Stripe::Order', foreign_key: 'user_id'
-    
-    # Synchroniser le compte Stripe sur tous les projets quand il change
+
+    # Synchroniser le compte Stripe sur tous les projets quand il change.
     after_save :sync_stripe_account_to_all_projects, if: :saved_change_to_stripe_connect_account_id?
   end
-  
-  # Synchronise le compte Stripe connecté sur TOUS les projets du porteur
+
   def sync_stripe_account_to_all_projects
     return unless stripe_connect_account_id.present?
-    
+
     projects.find_each do |project|
       project.update_columns(
         stripe_account_id: stripe_connect_account_id,
         use_stripe: true
       )
     end
-    
-    Rails.logger.info "Stripe: Compte #{stripe_connect_account_id} synchronisé sur #{projects.count} projets pour #{email}"
+
+    Rails.logger.info "Stripe: Compte #{stripe_connect_account_id} synchronise sur #{projects.count} projets pour #{email}"
   end
-  
+
   def stripe_customer
     return @stripe_customer if @stripe_customer
-    
+
     if stripe_customer_id.present?
       begin
         @stripe_customer = ::Stripe::Customer.retrieve(stripe_customer_id)
@@ -34,67 +33,45 @@ module Neighborly::Stripe::User
     else
       @stripe_customer = create_stripe_customer
     end
-    
+
     @stripe_customer
   end
-  
+
   def create_stripe_connect_account!
     return stripe_connect_account_id if stripe_connect_account_id.present?
-    
-    account = ::Stripe::Account.create({
-      type: 'express',
-      country: 'FR',
-      email: self.email,
-      capabilities: {
-        card_payments: { requested: true },
-        transfers: { requested: true }
-      },
-      business_type: profile_type == 'organization' ? 'company' : 'individual',
-      metadata: {
-        user_id: self.id,
-        platform: 'fiatope'
-      }
-    })
-    
-    # IMPORTANT: Utiliser update() et non update_column() pour déclencher le callback
-    # qui synchronise le compte Stripe sur tous les projets du porteur
-    update(stripe_connect_account_id: account.id)
-    
-    # Double vérification: synchroniser explicitement au cas où
+
+    account = ::Stripe::Account.create(stripe_connect_account_create_params)
+
+    attrs = {
+      stripe_connect_account_id: account.id,
+      stripe_onboarding_complete: false
+    }
+    attrs[:stripe_account_type] = account.type if respond_to?(:stripe_account_type=)
+    attrs[:stripe_charges_enabled] = account.charges_enabled if respond_to?(:stripe_charges_enabled=)
+    attrs[:stripe_payouts_enabled] = account.payouts_enabled if respond_to?(:stripe_payouts_enabled=)
+
+    # Sauvegarder l'ID Stripe meme si une validation utilisateur non liee bloque update/save.
+    update_columns(attrs)
     sync_stripe_account_to_all_projects
-    
+
     account.id
   end
-  
+
   def stripe_account_onboarding_url(refresh_url:, return_url:)
     create_stripe_connect_account! if stripe_connect_account_id.blank?
-    
-    account_link = ::Stripe::AccountLink.create({
-      account: stripe_connect_account_id,
-      refresh_url: refresh_url,
-      return_url: return_url,
-      type: 'account_onboarding'
-    })
-    
-    account_link.url
+    nil
   end
-  
-  def stripe_onboarding_complete?
-    # Chemin rapide: la DB dit que c'est complet → pas d'appel API
-    # Cela évite N appels Stripe par page pour chaque porteur
-    return true if self[:stripe_onboarding_complete] == true
 
+  def stripe_onboarding_complete?
     return false unless stripe_connect_account_id.present?
 
     begin
       account = ::Stripe::Account.retrieve(stripe_connect_account_id)
-      complete = account.charges_enabled && account.payouts_enabled
-
-      # Mettre à jour le cache DB si le compte est maintenant complet
-      update_column(:stripe_onboarding_complete, true) if complete
-
-      complete
+      ready = stripe_account_ready_for_transfers?(account)
+      update_stripe_account_cache(account, ready)
+      ready
     rescue ::Stripe::InvalidRequestError
+      update_column(:stripe_onboarding_complete, false) if persisted?
       false
     rescue ::Stripe::StripeError => e
       Rails.logger.warn "stripe_onboarding_complete? API error for #{stripe_connect_account_id}: #{e.message}"
@@ -102,37 +79,92 @@ module Neighborly::Stripe::User
     end
   end
 
-  # Force la re-vérification depuis Stripe (ignore le cache DB)
   def stripe_onboarding_complete!(force_check: false)
-    if force_check
-      update_column(:stripe_onboarding_complete, false)
-    end
+    update_column(:stripe_onboarding_complete, false) if force_check && persisted?
     stripe_onboarding_complete?
   end
-  
+
   def stripe_dashboard_url
-    return nil unless stripe_connect_account_id.present?
-    
-    begin
-      login_link = ::Stripe::Account.create_login_link(stripe_connect_account_id)
-      login_link.url
-    rescue ::Stripe::InvalidRequestError
-      nil
+    nil
+  end
+
+  private
+
+  def stripe_connect_account_create_params
+    {
+      type: 'custom',
+      country: stripe_connect_country,
+      email: email,
+      capabilities: {
+        transfers: { requested: true }
+      },
+      business_type: profile_type == 'organization' ? 'company' : 'individual',
+      business_profile: {
+        name: stripe_connect_business_name,
+        product_description: 'Collecte de fonds via la plateforme Fiatope',
+        url: ENV['FIATOPE_PUBLIC_URL'].presence || ENV['APP_HOST'].presence || 'https://www.fiatope.com',
+        support_email: ENV['EMAIL_CONTACT'].presence || 'contact@fiatope.com',
+        support_phone: mobile_phone.to_s.presence
+      }.compact,
+      metadata: {
+        user_id: id.to_s,
+        platform: 'fiatope',
+        profile_type: profile_type.to_s
+      }
+    }
+  end
+
+  def stripe_connect_country
+    residence_country.to_s.upcase.presence || 'FR'
+  end
+
+  def stripe_connect_business_name
+    if profile_type == 'organization' && organization&.name.present?
+      organization.name.to_s.truncate(100)
+    else
+      name.to_s.truncate(100)
     end
   end
-  
-  private
-  
+
+  def stripe_account_ready_for_transfers?(account)
+    account.payouts_enabled &&
+      stripe_nested_value(account.capabilities, :transfers) == 'active' &&
+      stripe_account_requirements_due(account).empty?
+  end
+
+  def stripe_account_requirements_due(account)
+    requirements = account.requirements
+    (Array(stripe_nested_value(requirements, :currently_due)) + Array(stripe_nested_value(requirements, :past_due))).uniq
+  end
+
+  def stripe_nested_value(object, key)
+    return nil if object.blank?
+    return object.public_send(key) if object.respond_to?(key)
+    return object[key.to_s] if object.respond_to?(:[])
+
+    nil
+  rescue
+    nil
+  end
+
+  def update_stripe_account_cache(account, ready)
+    attrs = { stripe_onboarding_complete: ready }
+    attrs[:stripe_account_type] = account.type if respond_to?(:stripe_account_type=)
+    attrs[:stripe_charges_enabled] = account.charges_enabled if respond_to?(:stripe_charges_enabled=)
+    attrs[:stripe_payouts_enabled] = account.payouts_enabled if respond_to?(:stripe_payouts_enabled=)
+    update_columns(attrs) if persisted?
+  end
+
   def create_stripe_customer
-    customer = ::Stripe::Customer.create({
-      email: self.email,
-      name: self.name,
+    customer = ::Stripe::Customer.create(
+      email: email,
+      name: name,
       metadata: {
-        user_id: self.id,
+        user_id: id,
         platform: 'fiatope'
       }
-    })
-    
+    )
+
     update_column(:stripe_customer_id, customer.id)
     customer
   end

@@ -148,7 +148,11 @@ class ProjectsController < ApplicationController
                                         .order(created_at: :desc)
                                         .group_by(&:proof_type)
     @organization_name = current_user.organization&.name
+    @organization_registration_number = current_user.organization.respond_to?(:registration_number) ? current_user.organization&.registration_number : nil
     @payout_profile_complete = current_user.payout_profile_complete?
+    @stripe_payout_ready = @payout_profile_complete &&
+                           current_user.stripe_connect_account_id.present? &&
+                           current_user[:stripe_onboarding_complete] == true
     @payout_profile_missing_fields = current_user.payout_profile_missing_fields
   end
 
@@ -170,6 +174,7 @@ class ProjectsController < ApplicationController
         if current_user.profile_type == 'organization'
           organization = current_user.organization || current_user.build_organization
           organization.name = payout_profile_organization_name
+          organization.registration_number = payout_profile_organization_registration_number if organization.respond_to?(:registration_number=)
           organization.save!
         end
 
@@ -182,7 +187,12 @@ class ProjectsController < ApplicationController
 
       clear_payout_profile_edit_unlock!(current_user)
 
-      sync_result = Neighborly::Stripe::PayoutProfileSyncService.call(current_user)
+      sync_result = Neighborly::Stripe::PayoutProfileSyncService.call(
+        current_user,
+        request_ip: request.remote_ip,
+        user_agent: request.user_agent,
+        tos_accepted: payout_profile_tos_accepted?
+      )
       if sync_result.success?
         if sync_result.warnings.any?
           flash[:notice] = "Profil enregistre. Synchronisation Stripe partielle: #{sync_result.warnings.join(', ')}"
@@ -221,9 +231,19 @@ class ProjectsController < ApplicationController
       return redirect_to pay_project_path(@project)
     end
 
-    # Virement déjà effectué
+    payout_status = @project.stripe_payout_status.to_s
+    if @project.state == 'paid' || payout_status == 'paid'
+      flash[:notice] = "Vos fonds ont deja ete confirmes comme recus sur votre compte bancaire."
+      return redirect_to pay_project_path(@project)
+    end
+
+    if %w[pending in_transit].include?(payout_status)
+      flash[:notice] = "Votre virement bancaire Stripe est en cours. Vous recevrez une confirmation quand Stripe confirmera l'arrivee des fonds."
+      return redirect_to pay_project_path(@project)
+    end
+
     if @project.stripe_settlement_type == 'transferred' || @project.stripe_transfer_id.present?
-      flash[:notice] = "Vos fonds ont déjà été virés sur votre compte bancaire."
+      flash[:notice] = "Le transfert interne a deja ete traite. Notre equipe finalise ou reprend le virement bancaire Stripe."
       return redirect_to pay_project_path(@project)
     end
 
@@ -243,7 +263,11 @@ class ProjectsController < ApplicationController
     end
 
     # Synchroniser les informations locales vers Stripe avant de soumettre la demande.
-    sync_result = Neighborly::Stripe::PayoutProfileSyncService.call(current_user)
+    sync_result = Neighborly::Stripe::PayoutProfileSyncService.call(
+      current_user,
+      request_ip: request.remote_ip,
+      user_agent: request.user_agent
+    )
     unless sync_result.success?
       flash[:alert] = "Impossible de synchroniser le profil de retrait vers Stripe: #{sync_result.errors.join(', ')}"
       return redirect_to pay_project_path(@project)
@@ -269,7 +293,7 @@ class ProjectsController < ApplicationController
           Rails.logger.warn "request_payout: notification admin échouée - #{notify_err.message}"
         end
 
-        flash[:success] = "✅ Demande de virement de #{net}€ envoyée ! Notre équipe va vérifier et virer les fonds directement sur votre compte bancaire. Vous recevrez une confirmation par email."
+        flash[:success] = "Demande de virement de #{net} EUR envoyee. Notre equipe va verifier le dossier; les fonds seront confirmes comme recus uniquement apres confirmation bancaire Stripe."
       else
         flash[:alert] = "Impossible de soumettre la demande depuis l'état actuel du projet (#{@project.state})."
       end
@@ -447,11 +471,15 @@ class ProjectsController < ApplicationController
   end
 
   def payout_profile_bank_params
-    params.permit(:owner_address, :owner_city, :owner_region, :owner_postal_code, :other_country, :bank_reference_type, :bank_reference_value)
+    params.permit(:owner_address, :owner_city, :owner_region, :owner_postal_code, :other_country, :bic, :bank_reference_type, :bank_reference_value)
   end
 
   def payout_profile_organization_name
     params[:organization_name].to_s.strip
+  end
+
+  def payout_profile_organization_registration_number
+    params[:organization_registration_number].to_s.strip.upcase
   end
 
   def payout_profile_kyc_types_for(user)
@@ -459,20 +487,22 @@ class ProjectsController < ApplicationController
   end
 
   def payout_profile_bank_reference_type(user)
-    user.bank_information&.payout_bank_reference_type || 'iban'
+    'iban'
   end
 
   def payout_profile_bank_reference_value(user)
-    user.bank_information&.payout_bank_reference_value
+    user.bank_information&.iban
   end
 
   def apply_payout_bank_reference!(bank_information, bank_params)
     attrs = bank_params.to_h.symbolize_keys
-    reference_type = attrs.delete(:bank_reference_type)
+    attrs.delete(:bank_reference_type)
     reference_value = attrs.delete(:bank_reference_value)
+    bic = attrs.delete(:bic)
 
     bank_information.assign_attributes(attrs)
-    bank_information.apply_payout_bank_reference(type: reference_type, value: reference_value)
+    bank_information.apply_payout_bank_reference(type: 'iban', value: reference_value)
+    bank_information.bic = bic.to_s.upcase.gsub(/\s+/, '') if bank_information.respond_to?(:bic=)
   end
 
   def payout_profile_type_for_platform
@@ -481,6 +511,10 @@ class ProjectsController < ApplicationController
 
   def payout_profile_kyc_labels
     User::PAYOUT_KYC_LABELS
+  end
+
+  def payout_profile_tos_accepted?
+    params[:stripe_tos_acceptance].to_s == '1'
   end
 
   def payout_profile_edit_unlock_cache_key(user)

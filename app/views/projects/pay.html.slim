@@ -22,9 +22,16 @@
           |  #{flash[:notice]}
 
       /= Données pré-calculées
-      - payout_ready = @payout_profile_complete
-      - already_paid  = @project.stripe_settlement_type == 'transferred' || @project.state == 'paid'
-      - payout_pending = @project.state == 'request_funds' && !already_paid
+      - payout_ready = @stripe_payout_ready
+      - stripe_waiting = @payout_profile_complete && !payout_ready && !@payout_profile_edit_unlocked
+      - payout_status = @project.stripe_payout_status.to_s
+      - payout_paid = @project.state == 'paid'
+      - payout_processing = %w[pending in_transit].include?(payout_status)
+      - payout_failed = %w[failed canceled].include?(payout_status)
+      - transfer_done = @project.stripe_settlement_type == 'transferred' || @project.stripe_transfer_id.present?
+      - payout_requires_action = transfer_done && !payout_paid && !payout_processing && !payout_failed
+      - already_paid  = payout_paid
+      - payout_pending = (@project.state == 'request_funds' || payout_processing || payout_failed || payout_requires_action) && !already_paid
       - stripe_contribs = @project.contributions.where(payment_method: 'Stripe', state: 'confirmed')
       - total_collected = stripe_contribs.sum(:value)
       - contribs_count = stripe_contribs.count
@@ -89,16 +96,38 @@
         .panel.radius[style="background:#d5f5e3;border:2px solid #27ae60;padding:20px;margin-bottom:25px;"]
           h4[style="color:#27ae60;"]
             i.fa.fa-check-circle
-            |  Fonds virés avec succès !
-          p | Vos fonds ont été transférés et sont en route vers votre compte bancaire.
-          - if @project.stripe_settled_at.present?
+            |  Fonds reçus sur votre compte bancaire
+          p
+            | Stripe a confirme que le virement bancaire est arrive sur votre compte.
+          - paid_date = @project.stripe_payout_paid_at || @project.stripe_settled_at
+          - if paid_date.present?
             p
               i.fa.fa-calendar
-              strong |  Date du virement : 
-              = l(@project.stripe_settled_at, format: :long)
-          p.small
+              strong |  Date de confirmation :
+              = l(paid_date, format: :long)
+
+      - elsif payout_processing && !@payout_profile_edit_unlocked
+        .panel.radius[style="background:#eef5ff;border:1px solid #7aa7e0;padding:20px;margin-bottom:25px;"]
+          h4[style="color:#2f6fb2;"]
             i.fa.fa-clock-o
-            |  Délai bancaire habituel : 2-7 jours ouvrés. Vous recevrez un email de confirmation.
+            |  Virement bancaire en cours
+          p
+            | Stripe a cree le virement bancaire vers votre compte. Vos fonds ne sont pas encore marques comme recus.
+          - if @project.stripe_payout_arrival_date.present?
+            p.small
+              i.fa.fa-calendar
+              |  Date estimee d'arrivee : #{l(@project.stripe_payout_arrival_date.to_date, format: :long)}
+
+      - elsif payout_failed && !@payout_profile_edit_unlocked
+        .panel.radius[style="background:#fff7e6;border:1px solid #f0c36d;padding:20px;margin-bottom:25px;"]
+          h4[style="color:#8a6d3b;"]
+            i.fa.fa-exclamation-triangle
+            |  Virement bancaire a reprendre
+          p
+            | Stripe n'a pas pu finaliser le virement bancaire. Notre equipe va verifier le dossier et vous recontactera si une correction est necessaire.
+          - if @project.stripe_payout_failure_message.present?
+            p.small
+              | Motif Stripe : #{@project.stripe_payout_failure_message}
 
       - elsif payout_pending && !@payout_profile_edit_unlocked
         .panel.radius[style="background:#eef5ff;border:1px solid #7aa7e0;padding:20px;margin-bottom:25px;"]
@@ -109,7 +138,8 @@
             | Votre demande de virement de 
             strong #{number_to_currency(net_to_receive, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')}
             |  est entre les mains de notre équipe.
-          p | Nous vérifions votre dossier et procédons au virement. Vous recevrez un email de confirmation.
+          p
+            | Nous verifions votre dossier. Les fonds seront marques comme recus uniquement apres confirmation bancaire Stripe.
           p.small
             i.fa.fa-shield
             |  Sécurité : les fonds sont traités via un système certifié PCI DSS, conforme aux normes bancaires européennes.
@@ -118,11 +148,18 @@
         .panel.radius[style="background:#fffdf7;border:1px solid #f0d8a8;padding:20px;margin-bottom:25px;"]
           h4[style="color:#b9770e;"]
             i.fa.fa-id-card
-            - if @payout_profile_edit_unlocked
+            - if stripe_waiting
+              |  Validation Stripe en attente
+            - elsif @payout_profile_edit_unlocked
               |  Modifiez votre profil de retrait
             - else
               |  Completez votre profil de retrait
-          p | Pour retirer vos fonds sans quitter Fiatope, renseignez votre profil organisation (association, entreprise ou organisation), vos informations bancaires et vos justificatifs.
+          - if stripe_waiting
+            p
+              | Votre profil est complet dans Fiatope, mais Stripe n a pas encore active les virements. Verifiez les messages de synchronisation, corrigez les champs demandes puis enregistrez a nouveau si besoin.
+          - else
+            p
+              | Pour retirer vos fonds sans quitter Fiatope, renseignez votre profil organisation (association, entreprise ou organisation), vos informations bancaires et vos justificatifs.
           p.small[style="margin-top:8px;color:#6c757d;"]
             i.fa.fa-info-circle
             |  Profil applique automatiquement: organisation.
@@ -172,6 +209,12 @@
                   = text_field_tag :mobile_phone, current_user.mobile_phone, class: 'form-control'
 
             .row
+              .col-md-12
+                .form-group
+                  label for="organization_registration_number" Numero SIREN, SIRET ou RNA
+                  = text_field_tag :organization_registration_number, @organization_registration_number, class: 'form-control', placeholder: 'Ex: 123456789 ou W123456789', required: true
+
+            .row
               .col-md-6
                 .form-group
                   label for="owner_address" Adresse du titulaire du compte
@@ -194,14 +237,17 @@
                 .form-group
                   label for="other_country" Pays du compte bancaire
                   = text_field_tag :other_country, @bank_information.other_country.presence || current_user.residence_country, class: 'form-control', placeholder: 'FR'
-              .col-md-2
+              .col-md-3
                 .form-group
-                  label for="bank_reference_type" Reference
-                  = select_tag :bank_reference_type, options_for_select([['RIB', 'rib'], ['IBAN', 'iban'], ['BIC', 'bic']], @bank_reference_type), class: 'form-control'
-              .col-md-4
+                  = hidden_field_tag :bank_reference_type, 'iban'
+                  label for="bank_reference_value" IBAN
+                  = text_field_tag :bank_reference_value, @bank_reference_value, class: 'form-control', required: true, placeholder: 'FR76...'
+                  p.small.text-muted[style="margin-top:5px;"]
+                    | Stripe exige un IBAN pour le virement bancaire automatique.
+              .col-md-3
                 .form-group
-                  label for="bank_reference_value" Valeur
-                  = text_field_tag :bank_reference_value, @bank_reference_value, class: 'form-control', required: true, placeholder: 'Saisissez votre RIB, IBAN ou BIC'
+                  label for="bic" BIC
+                  = text_field_tag :bic, @bank_information.bic, class: 'form-control', required: true, placeholder: 'AGRIFRPP'
 
             .panel.radius[style="background:#fff;margin-top:15px;padding:15px;"]
               h5
@@ -210,11 +256,13 @@
               - required_kyc_types.each do |proof_type|
                 - existing_docs = Array(existing_kyc_docs[proof_type])
                 - label = required_kyc_labels[proof_type] || proof_type.humanize
+                - accepted_formats = proof_type == 'IDENTITY_PROOF' ? '.jpg,.jpeg,.png' : '.jpg,.jpeg,.png,.pdf'
+                - accepted_formats_label = proof_type == 'IDENTITY_PROOF' ? 'JPG, JPEG, PNG' : 'JPG, JPEG, PNG, PDF'
                 .form-group
                   label = label
-                  = file_field_tag "kyc_files[#{proof_type}][]", class: 'form-control', multiple: true, accept: '.jpg,.jpeg,.png,.gif,.pdf'
+                  = file_field_tag "kyc_files[#{proof_type}][]", class: 'form-control', multiple: true, accept: accepted_formats
                   p.small.text-muted[style="margin-top:5px;"]
-                    | Formats acceptes: JPG, JPEG, PNG, GIF, PDF. Vous pouvez envoyer plusieurs fichiers (ex: recto/verso).
+                    | Formats acceptes: #{accepted_formats_label}. Vous pouvez envoyer plusieurs fichiers (ex: recto/verso).
                   - if existing_docs.any?
                     p.small.text-muted[style="margin-top:8px;margin-bottom:6px;"]
                       | Documents deja enregistres:
@@ -235,6 +283,10 @@
                           = link_to doc_name, doc_url, target: '_blank', class: 'btn btn-sm btn-outline-secondary mr-2 mb-2'
 
             .text-center[style="margin-top:20px;"]
+              .form-group.text-left[style="max-width:760px;margin:0 auto 15px;"]
+                label[style="font-weight:normal;"]
+                  = check_box_tag :stripe_tos_acceptance, '1', false, required: true
+                  |  J atteste etre autorise a representer cette structure et j accepte que ces informations soient transmises a Stripe pour verifier et effectuer le virement.
               button.btn.btn-lg.btn-warning[type="submit" style="padding:12px 40px;font-size:1.1em;"]
                 i.fa.fa-save
                 |  Enregistrer mon profil de retrait
@@ -298,7 +350,7 @@
           .col-md-6
             p
               strong | Quand vais-je recevoir mes fonds ?
-            p.small | Après votre demande, notre équipe traite le virement sous 24-48h. Les fonds arrivent sur votre compte bancaire en 2-7 jours ouvrés supplémentaires.
+            p.small | Apres votre demande, notre equipe verifie le dossier et declenche le virement bancaire. Les fonds sont marques comme recus uniquement lorsque Stripe confirme leur arrivee sur le compte bancaire.
             p
               strong | Que couvrent les frais ?
             p.small | La commission de #{fee_pct}% couvre le traitement sécurisé des cartes bancaires et les frais de service Fiatope (support, hébergement, maintenance).

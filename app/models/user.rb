@@ -103,7 +103,7 @@ class User < ActiveRecord::Base
 
   PAYOUT_REQUIRED_KYC_TYPES = {
     'personal' => %w[IDENTITY_PROOF ADDRESS_PROOF],
-    'organization' => %w[REGISTRATION_PROOF ARTICLES_OF_ASSOCIATION]
+    'organization' => %w[IDENTITY_PROOF ADDRESS_PROOF REGISTRATION_PROOF ARTICLES_OF_ASSOCIATION]
   }.freeze
 
   PAYOUT_KYC_LABELS = {
@@ -223,6 +223,9 @@ class User < ActiveRecord::Base
 
     if profile_type == 'organization'
       missing << 'Raison sociale de l entreprise' if organization.blank? || organization.name.blank?
+      if organization.present? && organization.respond_to?(:registration_number) && organization.registration_number.blank?
+        missing << 'Numero SIREN, SIRET ou RNA'
+      end
     end
 
     info = bank_information
@@ -231,13 +234,14 @@ class User < ActiveRecord::Base
       missing << 'Ville du titulaire du compte'
       missing << 'Region du titulaire du compte'
       missing << 'Code postal du titulaire du compte'
-      missing << 'Reference bancaire (RIB, IBAN ou BIC)'
+      missing << 'IBAN du compte bancaire'
     else
       missing << 'Adresse du titulaire du compte' if info.owner_address.blank?
       missing << 'Ville du titulaire du compte' if info.owner_city.blank?
       missing << 'Region du titulaire du compte' if info.owner_region.blank?
       missing << 'Code postal du titulaire du compte' if info.owner_postal_code.blank?
-      missing << 'Reference bancaire (RIB, IBAN ou BIC)' if info.payout_bank_reference_value.blank?
+      missing << 'IBAN du compte bancaire' if info.iban.blank?
+      missing << 'BIC du compte bancaire' if info.respond_to?(:bic) && info.bic.blank?
     end
 
     required_docs = payout_profile_required_kyc_types

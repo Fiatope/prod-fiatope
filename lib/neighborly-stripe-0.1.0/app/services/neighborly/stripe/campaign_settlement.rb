@@ -4,11 +4,12 @@ module Neighborly
     # - Transfert: envoie les fonds collectés au porteur (peu importe si objectif atteint)
     # - Remboursement: rembourse les contributeurs (problèmes avec porteur, annulation)
     class CampaignSettlement
-      attr_reader :project, :errors
+      attr_reader :project, :errors, :payouts
       
       def initialize(project)
         @project = project
         @errors = []
+        @payouts = []
       end
       
       # Traite le transfert au porteur (appelé quand on veut payer le porteur)
@@ -16,7 +17,11 @@ module Neighborly
       # @return [Boolean] true si le traitement a réussi
       def process!
         return false unless valid_for_transfer?
-        transfer_to_owner!
+        if transferable_contributions.any?
+          transfer_to_owner!
+        else
+          create_bank_payout_for_transferred_funds!
+        end
       end
       
       # Rembourse les contributeurs sélectionnés (ou tous si aucun ID spécifié)
@@ -34,9 +39,7 @@ module Neighborly
       def transfer_to_owner!
         return false unless project.stripe_account_id.present?
         
-        contributions = stripe_contributions.where(state: 'confirmed')
-                                           .where(stripe_refunded: [false, nil])
-                                           .where(stripe_transferred: [false, nil])
+        contributions = transferable_contributions
         return add_error("Aucune contribution à transférer") if contributions.empty?
         
         # Calcul des totaux
@@ -74,18 +77,21 @@ module Neighborly
           end
         end
         
-        # Marquer le projet comme réglé si au moins un transfert a réussi
         if success_count > 0
           project.update(
-            stripe_transfer_id: transfer_ids.first, # Premier transfert comme référence
-            stripe_settled_at: Time.current,
-            stripe_settlement_type: 'transferred'
+            stripe_transfer_id: transfer_ids.first,
+            stripe_transfer_created_at: Time.current,
+            stripe_settled_at: nil,
+            stripe_settlement_type: 'transferred',
+            stripe_payout_status: project.stripe_payout_status.presence || 'requires_payout',
+            stripe_payout_failure_code: nil,
+            stripe_payout_failure_message: nil,
+            stripe_payout_failed_at: nil
           )
           
           Rails.logger.info "CampaignSettlement: #{success_count}/#{contributions.count} transferts réussis"
-          
-          # Notifier le porteur
-          notify_owner_transfer_complete(nil, total_to_transfer)
+
+          notify_owner_transfer_complete(nil, total_to_transfer) if create_bank_payout_for_transferred_funds!
         else
           # Aucun transfert réussi
           @errors << "Aucun transfert n'a pu être effectué" if @errors.empty?
@@ -96,7 +102,7 @@ module Neighborly
           Rails.logger.error "CampaignSettlement: Erreurs - #{failed_contributions.inspect}"
         end
         
-        # Succès si au moins un transfert a réussi (le projet est marqué comme transféré)
+        # Succès si au moins un transfert interne a réussi
         success_count > 0
       end
       
@@ -213,7 +219,9 @@ module Neighborly
           # Marquer la contribution comme transférée
           contribution.update(
             stripe_transferred: true,
-            stripe_transfer_id: transfer.id
+            stripe_transfer_id: transfer.id,
+            stripe_transfer_amount_cents: amount_to_transfer,
+            stripe_transfer_currency: transfer_currency
           )
           
           Rails.logger.info "CampaignSettlement: Contribution #{contribution.id} transférée (#{amount_to_transfer/100.0}€) - Transfer #{transfer.id}"
@@ -390,6 +398,119 @@ module Neighborly
         @errors << message
         false
       end
+
+      def transferable_contributions
+        stripe_contributions.where(state: 'confirmed')
+                            .where(stripe_refunded: [false, nil])
+                            .where(stripe_transferred: [false, nil])
+      end
+
+      def transferred_contributions
+        stripe_contributions.where(state: 'confirmed')
+                            .where(stripe_refunded: [false, nil])
+                            .where(stripe_transferred: true)
+      end
+
+      def create_bank_payout_for_transferred_funds!
+        return add_error("Le virement bancaire Stripe est déjà confirmé") if project.stripe_payout_status == 'paid'
+        return add_error("Un virement bancaire Stripe est déjà en cours") if %w[pending in_transit].include?(project.stripe_payout_status)
+
+        amounts_by_currency = transferred_amounts_by_currency
+        subtract_existing_active_payouts!(amounts_by_currency)
+        amounts_by_currency.reject! { |_currency, amount_cents| amount_cents.to_i <= 0 }
+        return add_error("Aucun montant transféré disponible pour créer le virement bancaire") if amounts_by_currency.empty?
+
+        balance = ::Stripe::Balance.retrieve({}, { stripe_account: project.stripe_account_id })
+        created_count = 0
+
+        amounts_by_currency.each do |currency, amount_cents|
+          next if amount_cents.to_i <= 0
+
+          available_cents = available_balance_cents(balance, currency)
+          if available_cents < amount_cents
+            @errors << "Solde Connect disponible insuffisant pour #{currency.upcase}: #{available_cents / 100.0} disponible, #{amount_cents / 100.0} requis. Créez le virement depuis le Dashboard Stripe quand les fonds seront disponibles."
+            next
+          end
+
+          payout = ::Stripe::Payout.create(
+            {
+              amount: amount_cents,
+              currency: currency,
+              description: "Virement bancaire projet ##{project.id} - #{project.name.to_s.truncate(80)}",
+              metadata: {
+                project_id: project.id,
+                user_id: project.user_id,
+                platform: 'fiatope',
+                source: 'admin_platform'
+              }
+            },
+            { stripe_account: project.stripe_account_id }
+          )
+
+          @payouts << payout
+          remember_project_payout!(payout, 'platform')
+          created_count += 1
+          Rails.logger.info "CampaignSettlement: Payout #{payout.id} créé pour projet #{project.id} (#{amount_cents / 100.0} #{currency.upcase})"
+        end
+
+        created_count > 0
+      rescue ::Stripe::StripeError => e
+        add_error("Création du virement bancaire Stripe impossible: #{e.message}")
+      end
+
+      def transferred_amounts_by_currency
+        fee_pct = ENV.fetch('PLATFORM_FEE', '5.0').tr(',', '.').to_f / 100
+        transferred_contributions.each_with_object(Hash.new(0)) do |contribution, amounts|
+          currency = contribution.stripe_transfer_currency.presence || project.currency.to_s.downcase.presence || 'eur'
+          amount_cents = contribution.stripe_transfer_amount_cents.presence
+          amount_cents ||= (contribution.value.to_f * (1 - fee_pct) * 100).to_i
+          amounts[currency] += amount_cents.to_i
+        end
+      end
+
+      def available_balance_cents(balance, currency)
+        entry = Array(balance.available).find { |item| item.currency == currency }
+        entry ? entry.amount.to_i : 0
+      end
+
+      def subtract_existing_active_payouts!(amounts_by_currency)
+        payout_ids = project.stripe_payout_ids.to_s.split(',').map(&:strip).reject(&:blank?).uniq
+        payout_ids.each do |payout_id|
+          begin
+            payout = ::Stripe::Payout.retrieve(payout_id, { stripe_account: project.stripe_account_id })
+          rescue ::Stripe::StripeError => e
+            Rails.logger.warn "CampaignSettlement: impossible de verifier payout #{payout_id} pour projet #{project.id}: #{e.message}"
+            next
+          end
+
+          next unless %w[paid pending in_transit].include?(payout.status)
+          currency = payout.currency.to_s.downcase
+          amounts_by_currency[currency] -= payout.amount.to_i
+        end
+      end
+
+      def remember_project_payout!(payout, source)
+        payout_ids = project.stripe_payout_ids.to_s.split(',').map(&:strip)
+        payout_ids << payout.id
+        payout_ids = payout_ids.reject(&:blank?).uniq
+
+        project.update(
+          stripe_payout_id: payout.id,
+          stripe_payout_ids: payout_ids.join(','),
+          stripe_payout_status: payout.status,
+          stripe_payout_source: source,
+          stripe_payout_amount_cents: payout.amount,
+          stripe_payout_currency: payout.currency,
+          stripe_payout_arrival_date: payout_timestamp(payout.arrival_date),
+          stripe_payout_failure_code: nil,
+          stripe_payout_failure_message: nil,
+          stripe_payout_failed_at: nil
+        )
+      end
+
+      def payout_timestamp(timestamp)
+        timestamp.present? ? Time.zone.at(timestamp) : nil
+      end
       
       # Validation pour le transfert au porteur
       def valid_for_transfer?
@@ -417,15 +538,20 @@ module Neighborly
           return add_error("Le porteur n'a pas complété son profil Stripe")
         end
         
-        # Vérifier s'il reste des contributions NON transférées
-        # IMPORTANT: On ne bloque PAS sur stripe_settlement_type == 'transferred'
-        # car de nouvelles contributions peuvent arriver après un premier transfert
-        contributions = stripe_contributions.where(state: 'confirmed').where(stripe_refunded: [false, nil]).where(stripe_transferred: [false, nil])
+        if project.stripe_payout_status == 'paid'
+          return add_error("Le virement bancaire Stripe est déjà confirmé")
+        end
+
+        if %w[pending in_transit].include?(project.stripe_payout_status)
+          return add_error("Un virement bancaire Stripe est déjà en cours")
+        end
+
+        contributions = transferable_contributions
         if contributions.empty?
           already_transferred = stripe_contributions.where(stripe_transferred: true).count
           already_refunded = stripe_contributions.where(stripe_refunded: true).count
           if already_transferred > 0
-            return add_error("Toutes les contributions (#{already_transferred}) ont déjà été transférées au porteur")
+            return true
           elsif already_refunded > 0
             return add_error("Toutes les contributions (#{already_refunded}) ont déjà été remboursées")
           else

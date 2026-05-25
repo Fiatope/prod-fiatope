@@ -12,6 +12,11 @@ module Neighborly::Admin
     [:launch, :reject, :push_to_draft, :push_to_request_funds, :push_to_fraud_suspiscion, :push_to_paid, :approve].each do |name|
       define_method name do
         @project = Project.find_by_permalink params[:id]
+        if name == :push_to_paid && @project.respond_to?(:use_stripe?) && @project.use_stripe? && @project.stripe_payout_status.to_s != 'paid'
+          flash[:alert] = "Projet Stripe: l'etat paye est autorise uniquement apres confirmation bancaire Stripe payout.paid."
+          return redirect_back(fallback_location: root_path)
+        end
+
         @project.send("#{name.to_s}!")
         redirect_back(fallback_location: root_path)
       end
@@ -171,8 +176,13 @@ module Neighborly::Admin
         return redirect_back(fallback_location: projects_path)
       end
       
-      if @project.stripe_settlement_type == 'transferred'
-        flash[:notice] = "Les fonds ont déjà été transférés au porteur."
+      payout_status = @project.stripe_payout_status.to_s
+      if @project.stripe_settlement_type == 'transferred' && %w[paid pending in_transit].include?(payout_status)
+        flash[:notice] = if payout_status == 'paid'
+                           "Le virement bancaire Stripe a deja ete confirme."
+                         else
+                           "Un virement bancaire Stripe est deja en cours. Le projet passera en paye apres confirmation bancaire Stripe."
+                         end
         return redirect_back(fallback_location: projects_path)
       end
       
@@ -183,22 +193,27 @@ module Neighborly::Admin
         flash[:alert] = "Aucune contribution Stripe à transférer."
         return redirect_back(fallback_location: projects_path)
       end
+      was_already_transferred = @project.stripe_settlement_type == 'transferred'
       
       begin
         settlement = Neighborly::Stripe::CampaignSettlement.new(@project)
         
         if settlement.process!
-          # Auto-transition vers 'paid' si possible
-          if @project.reload.can_push_to_paid?
-            @project.push_to_paid!
-            Rails.logger.info "[Admin] Projet #{@project.id} passé en état 'paid' après transfert"
-          end
+          @project.reload
           total = contributions.sum(:value)
-          # Afficher avertissement si certains transferts ont échoué
+          payout_status = @project.stripe_payout_status.to_s
           if settlement.errors.any?
-            flash[:success] = "✅ Transfert effectué avec avertissements: #{settlement.errors.join(', ').truncate(200)}"
+            flash[:notice] = "Transfert Stripe traite avec avertissements: #{settlement.errors.join(', ').truncate(200)}. Le projet reste en demande jusqu'a confirmation bancaire Stripe."
+          elsif settlement.payouts.any?
+            flash[:success] = if was_already_transferred
+                                "Virement bancaire Stripe cree ou repris. Le projet passera en paye uniquement apres le webhook payout.paid."
+                              else
+                                "Transfert interne de #{total} EUR traite et virement bancaire Stripe cree. Le projet passera en paye uniquement apres le webhook payout.paid."
+                              end
+          elsif %w[pending in_transit].include?(payout_status)
+            flash[:notice] = "Un virement bancaire Stripe est en cours. Le projet passera en paye uniquement apres confirmation bancaire Stripe."
           else
-            flash[:success] = "✅ Transfert de #{total}€ effectué! Les fonds ont été envoyés au porteur #{@project.user.name}."
+            flash[:notice] = "Transfert interne traite. Creez ou validez le virement bancaire Stripe; le projet passera en paye uniquement apres payout.paid."
           end
         else
           error_msg = settlement.errors.any? ? settlement.errors.join(', ').truncate(200) : "Une erreur inconnue s'est produite"

@@ -21,7 +21,7 @@ module StripeProject
 
     begin
       account = Stripe::Account.retrieve(stripe_account_id)
-      account.charges_enabled && account.capabilities&.transfers == 'active'
+      stripe_account_ready_for_transfers?(account)
     rescue Stripe::StripeError
       false
     end
@@ -71,7 +71,7 @@ module StripeProject
     
     begin
       account = Stripe::Account.retrieve(stripe_account_id)
-      if account.charges_enabled && account.payouts_enabled
+      if stripe_account_ready_for_transfers?(account)
         :active
       elsif account.charges_enabled
         :charges_only
@@ -88,6 +88,29 @@ module StripeProject
   # === WALLET VIRTUEL (équivalent MangoPay Wallet) ===
   # Toutes les méthodes stripe_wallet_* calculent depuis la DB uniquement (pas d'appel API).
   # Pour vérifier avec Stripe API, utiliser verify_stripe_wallet.
+
+  def stripe_account_ready_for_transfers?(account)
+    account.payouts_enabled &&
+      stripe_account_value(account.capabilities, :transfers) == 'active' &&
+      stripe_account_requirements_due(account).empty?
+  end
+
+  def stripe_account_requirements_due(account)
+    requirements = account.requirements
+    (
+      Array(stripe_account_value(requirements, :currently_due)) +
+      Array(stripe_account_value(requirements, :past_due))
+    ).uniq
+  end
+
+  def stripe_account_value(object, key)
+    return nil unless object
+    return object[key] if object.respond_to?(:[]) && object[key].present?
+    return object[key.to_s] if object.respond_to?(:[]) && object[key.to_s].present?
+    return object.public_send(key) if object.respond_to?(key)
+
+    nil
+  end
 
   def stripe_contributions
     contributions.where(payment_method: 'Stripe')

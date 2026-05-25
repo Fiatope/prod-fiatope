@@ -192,9 +192,19 @@
                           span.label.label-success title="Compte: #{stripe_account}\nProfil de retrait complet" ✅ Profil retrait OK
                         - else
                           span.label.label-warning title="Compte: #{stripe_account}\nLe porteur doit completer son profil de retrait" ⚠️ Profil incomplet
-                        - if project.stripe_settlement_type == 'transferred'
+                        - payout_status = project.stripe_payout_status.to_s
+                        - if payout_status == 'paid' || project.state == 'paid'
                           br
-                          span.label.label-info title="Transféré le #{project.stripe_settled_at&.strftime('%d/%m/%Y %H:%M')}" 💰 Transféré
+                          span.label.label-success title="Confirme le #{project.stripe_payout_paid_at&.strftime('%d/%m/%Y %H:%M') || project.stripe_settled_at&.strftime('%d/%m/%Y %H:%M')}" Virement bancaire confirme
+                        - elsif %w[pending in_transit].include?(payout_status)
+                          br
+                          span.label.label-info title="Payout Stripe #{project.stripe_payout_id}" Virement bancaire en cours
+                        - elsif %w[failed canceled].include?(payout_status)
+                          br
+                          span.label.label-alert title="#{project.stripe_payout_failure_message || project.stripe_payout_failure_code}" Virement bancaire echoue
+                        - elsif project.stripe_settlement_type == 'transferred'
+                          br
+                          span.label.label-warning title="Transfert Connect effectue; payout bancaire a finaliser" Transfert Connect fait
                         - elsif project.stripe_settlement_type == 'refunded'
                           br
                           span.label.label-alert title="Remboursé le #{project.stripe_settled_at&.strftime('%d/%m/%Y %H:%M')}" ↩️ Remboursé
@@ -303,6 +313,8 @@
                             /= Contributions Stripe NON TRAITÉES (ni transférées, ni remboursées)
                             - stripe_contribs_pending = project.contributions.where(payment_method: 'Stripe', state: 'confirmed').where(stripe_refunded: [false, nil]).where(stripe_transferred: [false, nil])
                             - has_pending_contributions = stripe_contribs_pending.any?
+                            - payout_status = project.stripe_payout_status.to_s
+                            - needs_bank_payout = project.stripe_settlement_type == 'transferred' && !%w[paid pending in_transit].include?(payout_status)
                             - total_brut = stripe_contribs_pending.sum(:value)
                             /= Commission plateforme configurable via ENV ou 5% par défaut
                             - platform_fee_pct = ENV.fetch('PLATFORM_FEE', '5').tr(',', '.').to_f
@@ -318,16 +330,21 @@
                             - build_contrib_data = lambda { |c| status = c.stripe_transferred ? 'transferred' : (c.stripe_refunded ? 'refunded' : 'pending'); { id: c.id, user_id: c.user_id, name: c.user&.name || 'Anonyme', email: c.user&.email || '', amount: c.value.to_f, charge_id: c.stripe_charge_id, date: (c.confirmed_at || c.created_at)&.strftime('%d/%m/%Y %H:%M'), stripe_fee: (c.value.to_f * 0.029 + 0.25).round(2), status: status, transfer_id: c.stripe_transfer_id, refund_id: c.stripe_refund_id } }
                             
                             /= TRANSFERT: si contributions EN ATTENTE + profil de retrait local complet
-                            - can_transfer = has_pending_contributions && project.user.payout_profile_complete?
+                            - can_transfer = (has_pending_contributions || needs_bank_payout) && project.user.payout_profile_complete?
                             - if can_transfer
                               li
                                 - transfer_url = main_app.process_stripe_transfer_project_path(project)
                                 - stripe_acct = project.stripe_account_id.presence || project.user.stripe_connect_account_id
                                 - transfer_contribs_list = all_stripe_contribs.map(&build_contrib_data)
                                 - transfer_contribs_json = transfer_contribs_list.to_json.gsub("'", "\\\\'")
-                                = link_to "javascript:openTransferModal('#{j(project.name)}', '#{j(project.user.name)}', '#{stripe_acct}', '#{sprintf('%.2f', total_brut)}', '#{sprintf('%.2f', stripe_fees_estimate)}', '#{sprintf('%.2f', fiatope_commission)}', '#{platform_fee_pct}', '#{sprintf('%.2f', net_to_owner)}', '#{transfer_url}', #{transfer_contribs_json})" do
-                                  i.icon-et-money
-                                  = " 💰 Transférer (~#{number_to_currency(net_to_owner, unit: '€', format: '%n %u')} net)"
+                                - if needs_bank_payout && !has_pending_contributions
+                                  = link_to transfer_url, method: :put, data: { confirm: "Creer ou reessayer le virement bancaire Stripe pour #{project.name} ?" } do
+                                    i.icon-et-money
+                                    = " Creer / reessayer le virement bancaire"
+                                - else
+                                  = link_to "javascript:openTransferModal('#{j(project.name)}', '#{j(project.user.name)}', '#{stripe_acct}', '#{sprintf('%.2f', total_brut)}', '#{sprintf('%.2f', stripe_fees_estimate)}', '#{sprintf('%.2f', fiatope_commission)}', '#{platform_fee_pct}', '#{sprintf('%.2f', net_to_owner)}', '#{transfer_url}', #{transfer_contribs_json})" do
+                                    i.icon-et-money
+                                    = " 💰 Transférer (~#{number_to_currency(net_to_owner, unit: '€', format: '%n %u')} net)"
                             
                             /= REMBOURSEMENT: si contributions EN ATTENTE (non encore remboursées/transférées)
                             - can_refund = has_pending_contributions

@@ -3,7 +3,7 @@
 - gross = project.contributions.where(payment_method: 'Stripe', stripe_transferred: true).sum(:value).to_f
 - net = (gross * (1.0 - fee_pct)).round(2)
 - currency_sym = project.currency || 'EUR'
-- settled_at = project.stripe_settled_at
+- settled_at = project.stripe_payout_paid_at || project.stripe_settled_at
 
 |Dear #{project.user.display_name},
 br

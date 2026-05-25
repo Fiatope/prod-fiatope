@@ -29,7 +29,7 @@ module Neighborly
           if @project.stripe_account_id.present?
             begin
               account = ::Stripe::Account.retrieve(@project.stripe_account_id)
-              connect_ready = account.charges_enabled && account.capabilities&.transfers == 'active'
+              connect_ready = account_ready_for_transfers?(account)
             rescue ::Stripe::StripeError
               connect_ready = false
             end
@@ -182,7 +182,7 @@ module Neighborly
           if @project.stripe_account_id.present?
             begin
               account = ::Stripe::Account.retrieve(@project.stripe_account_id)
-              connect_ready_create = account.charges_enabled && account.capabilities&.transfers == 'active'
+              connect_ready_create = account_ready_for_transfers?(account)
             rescue ::Stripe::StripeError
               connect_ready_create = false
             end
@@ -381,6 +381,29 @@ module Neighborly
         (amount * 0.014 + 0.25).round(2)
       end
       
+      def account_ready_for_transfers?(account)
+        account.payouts_enabled &&
+          stripe_value(account.capabilities, :transfers) == 'active' &&
+          account_requirements_due(account).empty?
+      end
+
+      def account_requirements_due(account)
+        requirements = account.requirements
+        (
+          Array(stripe_value(requirements, :currently_due)) +
+          Array(stripe_value(requirements, :past_due))
+        ).uniq
+      end
+
+      def stripe_value(object, key)
+        return nil unless object
+        return object[key] if object.respond_to?(:[]) && object[key].present?
+        return object[key.to_s] if object.respond_to?(:[]) && object[key.to_s].present?
+        return object.public_send(key) if object.respond_to?(key)
+
+        nil
+      end
+
       def create_stripe_order(session, contribution, amount)
         return unless contribution
         
