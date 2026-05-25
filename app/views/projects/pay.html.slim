@@ -38,7 +38,7 @@
       - fee_pct = ENV.fetch('PLATFORM_FEE', '5.0').tr(',', '.').to_f
       - platform_fee_amount = (total_collected * fee_pct / 100).round(2)
       - net_to_receive = (total_collected - platform_fee_amount).round(2)
-      /= Frais Stripe (info interne - inclus dans la commission, PAS soustrait en plus)
+      /= Frais de paiement (info interne - inclus dans la commission, PAS soustrait en plus)
       - stripe_fees_estimate = (contribs_count * 0.25 + total_collected * 0.029).round(2)
       - current_step = already_paid ? 4 : (payout_pending ? 3 : (payout_ready ? 2 : 1))
       - required_kyc_types = @required_kyc_types || []
@@ -98,7 +98,7 @@
             i.fa.fa-check-circle
             |  Fonds reçus sur votre compte bancaire
           p
-            | Stripe a confirme que le virement bancaire est arrive sur votre compte.
+            | Le virement bancaire a ete confirme sur votre compte.
           - paid_date = @project.stripe_payout_paid_at || @project.stripe_settled_at
           - if paid_date.present?
             p
@@ -112,7 +112,7 @@
             i.fa.fa-clock-o
             |  Virement bancaire en cours
           p
-            | Stripe a cree le virement bancaire vers votre compte. Vos fonds ne sont pas encore marques comme recus.
+            | Le virement bancaire vers votre compte est en cours. Vos fonds ne sont pas encore marques comme recus.
           - if @project.stripe_payout_arrival_date.present?
             p.small
               i.fa.fa-calendar
@@ -124,10 +124,7 @@
             i.fa.fa-exclamation-triangle
             |  Virement bancaire a reprendre
           p
-            | Stripe n'a pas pu finaliser le virement bancaire. Notre equipe va verifier le dossier et vous recontactera si une correction est necessaire.
-          - if @project.stripe_payout_failure_message.present?
-            p.small
-              | Motif Stripe : #{@project.stripe_payout_failure_message}
+            | Le virement bancaire n'a pas pu etre finalise. Notre equipe va verifier le dossier et vous recontactera si une correction est necessaire.
 
       - elsif payout_pending && !@payout_profile_edit_unlocked
         .panel.radius[style="background:#eef5ff;border:1px solid #7aa7e0;padding:20px;margin-bottom:25px;"]
@@ -139,7 +136,7 @@
             strong #{number_to_currency(net_to_receive, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')}
             |  est entre les mains de notre équipe.
           p
-            | Nous verifions votre dossier. Les fonds seront marques comme recus uniquement apres confirmation bancaire Stripe.
+            | Nous verifions votre dossier. Les fonds seront marques comme recus uniquement apres confirmation bancaire finale.
           p.small
             i.fa.fa-shield
             |  Sécurité : les fonds sont traités via un système certifié PCI DSS, conforme aux normes bancaires européennes.
@@ -149,14 +146,14 @@
           h4[style="color:#b9770e;"]
             i.fa.fa-id-card
             - if stripe_waiting
-              |  Validation Stripe en attente
+              |  Verification en cours
             - elsif @payout_profile_edit_unlocked
               |  Modifiez votre profil de retrait
             - else
               |  Completez votre profil de retrait
           - if stripe_waiting
             p
-              | Votre profil est complet dans Fiatope, mais Stripe n a pas encore active les virements. Verifiez les messages de synchronisation, corrigez les champs demandes puis enregistrez a nouveau si besoin.
+              | Votre profil est complet dans Fiatope. La verification bancaire est encore en cours; notre equipe vous contactera si une correction est necessaire.
           - else
             p
               | Pour retirer vos fonds sans quitter Fiatope, renseignez votre profil organisation (association, entreprise ou organisation), vos informations bancaires et vos justificatifs.
@@ -225,8 +222,8 @@
                   = text_field_tag :owner_city, @bank_information.owner_city, class: 'form-control', required: true
               .col-md-3
                 .form-group
-                  label for="owner_region" Region
-                  = text_field_tag :owner_region, @bank_information.owner_region, class: 'form-control', required: true
+                  label for="owner_region" Region / Etat si applicable
+                  = text_field_tag :owner_region, @bank_information.owner_region, class: 'form-control'
 
             .row
               .col-md-3
@@ -237,17 +234,13 @@
                 .form-group
                   label for="other_country" Pays du compte bancaire
                   = text_field_tag :other_country, @bank_information.other_country.presence || current_user.residence_country, class: 'form-control', placeholder: 'FR'
-              .col-md-3
+              .col-md-6
                 .form-group
                   = hidden_field_tag :bank_reference_type, 'iban'
                   label for="bank_reference_value" IBAN
                   = text_field_tag :bank_reference_value, @bank_reference_value, class: 'form-control', required: true, placeholder: 'FR76...'
                   p.small.text-muted[style="margin-top:5px;"]
-                    | Stripe exige un IBAN pour le virement bancaire automatique.
-              .col-md-3
-                .form-group
-                  label for="bic" BIC
-                  = text_field_tag :bic, @bank_information.bic, class: 'form-control', required: true, placeholder: 'AGRIFRPP'
+                    | Un IBAN est necessaire pour effectuer le virement bancaire.
 
             .panel.radius[style="background:#fff;margin-top:15px;padding:15px;"]
               h5
@@ -286,7 +279,7 @@
               .form-group.text-left[style="max-width:760px;margin:0 auto 15px;"]
                 label[style="font-weight:normal;"]
                   = check_box_tag :stripe_tos_acceptance, '1', false, required: true
-                  |  J atteste etre autorise a representer cette structure et j accepte que ces informations soient transmises a Stripe pour verifier et effectuer le virement.
+                  |  J atteste etre autorise a representer cette structure et j accepte que ces informations soient utilisees pour verifier le dossier et effectuer le virement.
               button.btn.btn-lg.btn-warning[type="submit" style="padding:12px 40px;font-size:1.1em;"]
                 i.fa.fa-save
                 |  Enregistrer mon profil de retrait
@@ -350,7 +343,7 @@
           .col-md-6
             p
               strong | Quand vais-je recevoir mes fonds ?
-            p.small | Apres votre demande, notre equipe verifie le dossier et declenche le virement bancaire. Les fonds sont marques comme recus uniquement lorsque Stripe confirme leur arrivee sur le compte bancaire.
+            p.small | Apres votre demande, notre equipe verifie le dossier et declenche le virement bancaire. Les fonds sont marques comme recus uniquement apres confirmation bancaire finale.
             p
               strong | Que couvrent les frais ?
             p.small | La commission de #{fee_pct}% couvre le traitement sécurisé des cartes bancaires et les frais de service Fiatope (support, hébergement, maintenance).

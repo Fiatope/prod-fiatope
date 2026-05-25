@@ -172,7 +172,7 @@
             .alert-box.success.radius[style="margin-top:10px;"]
               i.fa.fa-check-circle
               strong |  Fonds reçus
-              p.small | Stripe a confirme l arrivee du virement bancaire.
+              p.small | Le virement bancaire est confirme.
           - elsif payout_processing
             .alert-box[style="background:#2980b9;color:#fff;border-radius:5px;padding:10px;margin-top:10px;"]
               i.fa.fa-clock-o
@@ -187,7 +187,7 @@
             .alert-box[style="background:#f39c12;color:#fff;border-radius:5px;padding:10px;margin-top:10px;"]
               i.fa.fa-clock-o
               strong |  Demande en cours de traitement
-              p.small | Notre equipe traite votre demande. La confirmation arrivera apres payout.paid Stripe.
+              p.small | Notre equipe traite votre demande. La confirmation arrivera apres validation bancaire finale.
           - elsif !payout_amount_available
             .alert-box[style="background:#f8f9fa;color:#495057;border-radius:5px;padding:10px;margin-top:10px;"]
               i.fa.fa-info-circle

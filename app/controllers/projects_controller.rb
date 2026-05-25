@@ -195,12 +195,14 @@ class ProjectsController < ApplicationController
       )
       if sync_result.success?
         if sync_result.warnings.any?
-          flash[:notice] = "Profil enregistre. Synchronisation Stripe partielle: #{sync_result.warnings.join(', ')}"
+          Rails.logger.warn "Payout profile sync warnings for user #{current_user.id}: #{sync_result.warnings.join(', ')}"
+          flash[:notice] = 'Votre profil de retrait a ete enregistre. Certaines verifications restent en cours; notre equipe vous contactera si une correction est necessaire.'
         else
           flash[:success] = 'Votre profil de retrait a ete enregistre avec succes.'
         end
       else
-        flash[:alert] = "Profil enregistre localement, mais la synchronisation Stripe a echoue: #{sync_result.errors.join(', ')}"
+        Rails.logger.warn "Payout profile sync failed for user #{current_user.id}: #{sync_result.errors.join(', ')}"
+        flash[:alert] = 'Votre profil de retrait a ete enregistre, mais la verification automatique n a pas encore abouti. Notre equipe va verifier le dossier et vous recontactera si besoin.'
       end
     rescue ActiveRecord::RecordInvalid => e
       flash[:alert] = e.record.errors.full_messages.to_sentence
@@ -238,12 +240,12 @@ class ProjectsController < ApplicationController
     end
 
     if %w[pending in_transit].include?(payout_status)
-      flash[:notice] = "Votre virement bancaire Stripe est en cours. Vous recevrez une confirmation quand Stripe confirmera l'arrivee des fonds."
+      flash[:notice] = "Votre virement bancaire est en cours. Vous recevrez une confirmation des que les fonds seront confirmes comme recus."
       return redirect_to pay_project_path(@project)
     end
 
     if @project.stripe_settlement_type == 'transferred' || @project.stripe_transfer_id.present?
-      flash[:notice] = "Le transfert interne a deja ete traite. Notre equipe finalise ou reprend le virement bancaire Stripe."
+      flash[:notice] = "Votre dossier a deja ete traite par notre equipe. Le virement bancaire est en cours de finalisation ou de reprise."
       return redirect_to pay_project_path(@project)
     end
 
@@ -262,14 +264,15 @@ class ProjectsController < ApplicationController
       return redirect_to pay_project_path(@project)
     end
 
-    # Synchroniser les informations locales vers Stripe avant de soumettre la demande.
+    # Synchroniser les informations locales avant de soumettre la demande.
     sync_result = Neighborly::Stripe::PayoutProfileSyncService.call(
       current_user,
       request_ip: request.remote_ip,
       user_agent: request.user_agent
     )
     unless sync_result.success?
-      flash[:alert] = "Impossible de synchroniser le profil de retrait vers Stripe: #{sync_result.errors.join(', ')}"
+      Rails.logger.warn "Payout request profile sync failed for user #{current_user.id}: #{sync_result.errors.join(', ')}"
+      flash[:alert] = 'Votre profil de retrait doit encore etre verifie avant la demande de virement. Notre equipe va verifier le dossier et vous recontactera si une correction est necessaire.'
       return redirect_to pay_project_path(@project)
     end
 
@@ -277,7 +280,7 @@ class ProjectsController < ApplicationController
       # FLUX CROWDFUNDING CORRECT:
       # 1. Porteur initie → projet passe en request_funds + admin notifié
       # 2. Admin décide de payer → process_stripe_transfer (panel admin)
-      # 3. CampaignSettlement effectue le Stripe Transfer → auto-payout vers banque porteur
+      # 3. CampaignSettlement effectue le transfert et le virement vers banque porteur
       if @project.can_push_to_request_funds?
         @project.push_to_request_funds!
         clear_payout_profile_edit_unlock!(current_user)
@@ -293,7 +296,7 @@ class ProjectsController < ApplicationController
           Rails.logger.warn "request_payout: notification admin échouée - #{notify_err.message}"
         end
 
-        flash[:success] = "Demande de virement de #{net} EUR envoyee. Notre equipe va verifier le dossier; les fonds seront confirmes comme recus uniquement apres confirmation bancaire Stripe."
+        flash[:success] = "Demande de virement de #{net} EUR envoyee. Notre equipe va verifier le dossier; les fonds seront confirmes comme recus uniquement apres confirmation bancaire finale."
       else
         flash[:alert] = "Impossible de soumettre la demande depuis l'état actuel du projet (#{@project.state})."
       end
@@ -471,7 +474,7 @@ class ProjectsController < ApplicationController
   end
 
   def payout_profile_bank_params
-    params.permit(:owner_address, :owner_city, :owner_region, :owner_postal_code, :other_country, :bic, :bank_reference_type, :bank_reference_value)
+    params.permit(:owner_address, :owner_city, :owner_region, :owner_postal_code, :other_country, :bank_reference_type, :bank_reference_value)
   end
 
   def payout_profile_organization_name
@@ -498,11 +501,9 @@ class ProjectsController < ApplicationController
     attrs = bank_params.to_h.symbolize_keys
     attrs.delete(:bank_reference_type)
     reference_value = attrs.delete(:bank_reference_value)
-    bic = attrs.delete(:bic)
 
     bank_information.assign_attributes(attrs)
     bank_information.apply_payout_bank_reference(type: 'iban', value: reference_value)
-    bank_information.bic = bic.to_s.upcase.gsub(/\s+/, '') if bank_information.respond_to?(:bic=)
   end
 
   def payout_profile_type_for_platform
