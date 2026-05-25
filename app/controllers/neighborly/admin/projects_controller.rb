@@ -377,9 +377,12 @@ module Neighborly::Admin
         expires_in: 14.days
       )
 
+      notification_sent = notify_payout_profile_update_required(@project)
+      notification_message = notification_sent ? ' Un email a ete envoye au porteur.' : ' Attention: email porteur non envoye, voir les logs.'
+
       render json: {
         success: true,
-        message: reopened_request ? 'Autorisation enregistree. La demande a ete reouverte pour une nouvelle soumission.' : 'Le porteur peut modifier et soumettre a nouveau son profil de retrait pendant 14 jours.'
+        message: (reopened_request ? 'Autorisation enregistree. La demande a ete reouverte pour une nouvelle soumission.' : 'Le porteur peut modifier et soumettre a nouveau son profil de retrait pendant 14 jours.') + notification_message
       }
     rescue => e
       Rails.logger.error "unlock_payout_profile_edit failed: #{e.message}"
@@ -458,6 +461,19 @@ module Neighborly::Admin
 
     def payout_profile_edit_unlock_cache_key(user)
       "payout_profile_edit_unlock:user:#{user.id}"
+    end
+
+    def notify_payout_profile_update_required(project)
+      Notification.notify_once(
+        :payout_profile_update_required,
+        project.user,
+        nil,
+        project: project
+      )
+      true
+    rescue => e
+      Rails.logger.error "payout_profile_update_required notification failed: #{e.message}"
+      false
     end
 
     def payout_profile_stripe_status(user)
