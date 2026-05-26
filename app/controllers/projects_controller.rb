@@ -202,7 +202,7 @@ class ProjectsController < ApplicationController
         end
       else
         Rails.logger.warn "Payout profile sync failed for user #{current_user.id}: #{sync_result.errors.join(', ')}"
-        flash[:alert] = 'Votre profil de retrait a ete enregistre, mais la verification automatique n a pas encore abouti. Notre equipe va verifier le dossier et vous recontactera si besoin.'
+        flash[:alert] = payout_profile_sync_failure_message(sync_result.errors)
       end
     rescue ActiveRecord::RecordInvalid => e
       flash[:alert] = e.record.errors.full_messages.to_sentence
@@ -522,6 +522,36 @@ class ProjectsController < ApplicationController
 
   def payout_profile_tos_accepted?
     params[:stripe_tos_acceptance].to_s == '1'
+  end
+
+  def payout_profile_sync_failure_message(errors)
+    details = Array(errors).join(' ')
+
+    if details.match?(/valid phone number|phone/i)
+      return 'Votre profil a ete enregistre, mais le numero de telephone doit etre au format international. Exemple: +237654770064.'
+    end
+
+    if details.match?(/postal|zip/i)
+      return 'Votre profil a ete enregistre, mais le code postal semble invalide. Verifiez le code postal du titulaire du compte.'
+    end
+
+    if details.match?(/iban|bank account|account_number|routing/i)
+      return 'Votre profil a ete enregistre, mais les informations bancaires semblent invalides. Verifiez l IBAN et le pays du compte bancaire.'
+    end
+
+    if details.match?(/date of birth|dob|birthday/i)
+      return 'Votre profil a ete enregistre, mais la date de naissance semble invalide. Verifiez le champ date de naissance.'
+    end
+
+    if details.match?(/address|city|country|line1/i)
+      return 'Votre profil a ete enregistre, mais l adresse du titulaire semble incomplete ou invalide. Verifiez l adresse, la ville, le pays et le code postal.'
+    end
+
+    if details.match?(/document|file|upload/i)
+      return 'Votre profil a ete enregistre, mais un justificatif n a pas pu etre verifie. Verifiez les fichiers envoyes et reessayez.'
+    end
+
+    'Votre profil de retrait a ete enregistre, mais la verification automatique n a pas encore abouti. Notre equipe va verifier le dossier et vous recontactera si besoin.'
   end
 
   def payout_profile_edit_unlock_cache_key(user)

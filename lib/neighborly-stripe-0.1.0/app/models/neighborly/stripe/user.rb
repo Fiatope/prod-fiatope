@@ -147,6 +147,21 @@ module Neighborly::Stripe::User
     nil
   end
 
+  def stripe_connect_account_token_for_payout_sync(country: nil, tos_accepted: false)
+    stripe_connect_account_token_id((country.presence || stripe_connect_country), tos_accepted: tos_accepted)
+  end
+
+  def stripe_connect_person_token_for_payout_sync(country: nil)
+    api_key = stripe_connect_account_token_api_key
+    return nil if api_key.blank?
+
+    token = ::Stripe::Token.create(
+      { person: stripe_connect_person_token_payload(country.presence || stripe_connect_country) },
+      { api_key: api_key }
+    )
+    token.id
+  end
+
   private
 
   def stripe_project_account_locked?(project)
@@ -210,9 +225,9 @@ module Neighborly::Stripe::User
 
   def stripe_connect_account_token_payload(country, tos_accepted:)
     payload = {
-      business_type: stripe_connect_business_type,
-      tos_shown_and_accepted: tos_accepted
+      business_type: stripe_connect_business_type
     }
+    payload[:tos_shown_and_accepted] = true if tos_accepted
 
     if stripe_connect_business_type == 'company'
       payload[:company] = stripe_connect_company_payload(country)
@@ -255,6 +270,10 @@ module Neighborly::Stripe::User
       address: stripe_connect_address_payload(country),
       dob: stripe_connect_dob_payload
     }.compact
+  end
+
+  def stripe_connect_person_token_payload(country)
+    stripe_connect_individual_payload(country)
   end
 
   def stripe_connect_address_payload(country)

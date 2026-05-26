@@ -107,7 +107,6 @@ module Neighborly
 
         name_parts = split_name(user.name)
         account_params = {
-          business_type: business_type,
           email: user.email,
           business_profile: business_profile_payload,
           settings: {
@@ -125,10 +124,16 @@ module Neighborly
           }
         }
 
-        if business_type == 'company'
-          account_params[:company] = company_payload
+        identity_token = account_identity_token
+        if identity_token.present?
+          account_params[:account_token] = identity_token
         else
-          account_params[:individual] = individual_payload(name_parts)
+          account_params[:business_type] = business_type
+          if business_type == 'company'
+            account_params[:company] = company_payload
+          else
+            account_params[:individual] = individual_payload(name_parts)
+          end
         end
 
         tos_payload = tos_acceptance_payload
@@ -141,15 +146,25 @@ module Neighborly
       end
 
       def sync_representative_person!(name_parts)
-        payload = individual_payload(name_parts).merge(
-          email: user.email,
-          phone: stripe_phone_number,
+        payload = {
           relationship: {
             representative: true,
             executive: true,
             title: 'Representant legal'
           }
-        ).compact
+        }
+
+        person_token = representative_person_token
+        if person_token.present?
+          payload[:person_token] = person_token
+        else
+          payload.merge!(
+            individual_payload(name_parts).merge(
+              email: user.email,
+              phone: stripe_phone_number
+            )
+          )
+        end
 
         if representative_person.present?
           @representative_person = ::Stripe::Account.update_person(
@@ -167,6 +182,21 @@ module Neighborly
 
         people = ::Stripe::Account.list_persons(user.stripe_connect_account_id, limit: 100)
         @representative_person = people.data.find { |person| stripe_nested_value(person.relationship, :representative) == true }
+      end
+
+      def account_identity_token
+        return nil unless user.respond_to?(:stripe_connect_account_token_for_payout_sync)
+
+        user.stripe_connect_account_token_for_payout_sync(
+          country: stripe_account_country,
+          tos_accepted: @tos_accepted
+        )
+      end
+
+      def representative_person_token
+        return nil unless user.respond_to?(:stripe_connect_person_token_for_payout_sync)
+
+        user.stripe_connect_person_token_for_payout_sync(country: stripe_account_country)
       end
 
       def sync_bank_account!
