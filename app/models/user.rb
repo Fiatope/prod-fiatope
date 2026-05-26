@@ -102,9 +102,18 @@ class User < ActiveRecord::Base
   end
 
   PAYOUT_REQUIRED_KYC_TYPES = {
-    'personal' => %w[IDENTITY_PROOF ADDRESS_PROOF],
-    'organization' => %w[IDENTITY_PROOF ADDRESS_PROOF REGISTRATION_PROOF ARTICLES_OF_ASSOCIATION]
+    'personal' => %w[IDENTITY_PROOF],
+    'organization' => %w[IDENTITY_PROOF REGISTRATION_PROOF]
   }.freeze
+
+  PAYOUT_REQUIREMENT_KYC_TYPES = [
+    [/(individual|representative|person).*verification\.additional_document/i, 'ADDRESS_PROOF'],
+    [/(individual|representative|person).*verification\.document/i, 'IDENTITY_PROOF'],
+    [/company\.verification\.document/i, 'REGISTRATION_PROOF'],
+    [/company\.verification\.additional_document/i, 'ARTICLES_OF_ASSOCIATION'],
+    [/documents\.company_registration_verification/i, 'REGISTRATION_PROOF'],
+    [/documents\.company_memorandum_of_association/i, 'ARTICLES_OF_ASSOCIATION']
+  ].freeze
 
   PAYOUT_KYC_LABELS = {
     'IDENTITY_PROOF' => 'Piece d identite',
@@ -205,11 +214,29 @@ class User < ActiveRecord::Base
 
   def payout_profile_required_kyc_types
     key = profile_type == 'organization' ? 'organization' : 'personal'
-    PAYOUT_REQUIRED_KYC_TYPES.fetch(key)
+    (PAYOUT_REQUIRED_KYC_TYPES.fetch(key) + payout_profile_extra_required_kyc_types).uniq
   end
 
   def payout_kyc_label(proof_type)
     PAYOUT_KYC_LABELS[proof_type.to_s] || proof_type.to_s.humanize
+  end
+
+  def remember_payout_required_kyc_types_from_requirements(requirements)
+    types = payout_kyc_types_for_requirements(requirements)
+    if types.any?
+      Rails.cache.write(payout_profile_required_kyc_cache_key, types, expires_in: 14.days)
+    else
+      clear_payout_required_kyc_types!
+    end
+    types
+  rescue
+    []
+  end
+
+  def clear_payout_required_kyc_types!
+    Rails.cache.delete(payout_profile_required_kyc_cache_key)
+  rescue
+    nil
   end
 
   def payout_profile_missing_fields
@@ -252,5 +279,26 @@ class User < ActiveRecord::Base
 
   def payout_profile_complete?
     payout_profile_missing_fields.empty?
+  end
+
+  private
+
+  def payout_profile_extra_required_kyc_types
+    Array(Rails.cache.read(payout_profile_required_kyc_cache_key)).map(&:to_s)
+  rescue
+    []
+  end
+
+  def payout_profile_required_kyc_cache_key
+    "payout_profile_required_kyc_types:user:#{id}"
+  end
+
+  def payout_kyc_types_for_requirements(requirements)
+    Array(requirements).flat_map do |requirement|
+      requirement = requirement.to_s
+      PAYOUT_REQUIREMENT_KYC_TYPES.each_with_object([]) do |(pattern, proof_type), types|
+        types << proof_type if requirement.match?(pattern)
+      end
+    end.uniq
   end
 end

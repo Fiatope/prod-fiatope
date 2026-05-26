@@ -147,16 +147,21 @@ module Neighborly::Stripe::User
     nil
   end
 
-  def stripe_connect_account_token_for_payout_sync(country: nil, tos_accepted: false)
-    stripe_connect_account_token_id((country.presence || stripe_connect_country), tos_accepted: tos_accepted)
+  def stripe_connect_account_token_for_payout_sync(country: nil, tos_accepted: false, individual_verification: nil, company_verification: nil)
+    stripe_connect_account_token_id(
+      (country.presence || stripe_connect_country),
+      tos_accepted: tos_accepted,
+      individual_verification: individual_verification,
+      company_verification: company_verification
+    )
   end
 
-  def stripe_connect_person_token_for_payout_sync(country: nil)
+  def stripe_connect_person_token_for_payout_sync(country: nil, verification: nil)
     api_key = stripe_connect_account_token_api_key
     return nil if api_key.blank?
 
     token = ::Stripe::Token.create(
-      { person: stripe_connect_person_token_payload(country.presence || stripe_connect_country) },
+      { person: stripe_connect_person_token_payload(country.presence || stripe_connect_country, verification: verification) },
       { api_key: api_key }
     )
     token.id
@@ -208,12 +213,19 @@ module Neighborly::Stripe::User
     params
   end
 
-  def stripe_connect_account_token_id(country, tos_accepted:)
+  def stripe_connect_account_token_id(country, tos_accepted:, individual_verification: nil, company_verification: nil)
     api_key = stripe_connect_account_token_api_key
     return nil if api_key.blank?
 
     token = ::Stripe::Token.create(
-      { account: stripe_connect_account_token_payload(country, tos_accepted: tos_accepted) },
+      {
+        account: stripe_connect_account_token_payload(
+          country,
+          tos_accepted: tos_accepted,
+          individual_verification: individual_verification,
+          company_verification: company_verification
+        )
+      },
       { api_key: api_key }
     )
     token.id
@@ -223,16 +235,20 @@ module Neighborly::Stripe::User
     ENV['STRIPE_PUBLISHABLE_KEY'].presence || ENV['STRIPE_SECRET_KEY'].presence
   end
 
-  def stripe_connect_account_token_payload(country, tos_accepted:)
+  def stripe_connect_account_token_payload(country, tos_accepted:, individual_verification: nil, company_verification: nil)
     payload = {
       business_type: stripe_connect_business_type
     }
     payload[:tos_shown_and_accepted] = true if tos_accepted
 
     if stripe_connect_business_type == 'company'
-      payload[:company] = stripe_connect_company_payload(country)
+      company_payload = stripe_connect_company_payload(country)
+      company_payload[:verification] = company_verification if company_verification.present?
+      payload[:company] = company_payload
     else
-      payload[:individual] = stripe_connect_individual_payload(country)
+      individual_payload = stripe_connect_individual_payload(country)
+      individual_payload[:verification] = individual_verification if individual_verification.present?
+      payload[:individual] = individual_payload
     end
 
     payload.compact
@@ -272,8 +288,10 @@ module Neighborly::Stripe::User
     }.compact
   end
 
-  def stripe_connect_person_token_payload(country)
-    stripe_connect_individual_payload(country)
+  def stripe_connect_person_token_payload(country, verification: nil)
+    payload = stripe_connect_individual_payload(country)
+    payload[:verification] = verification if verification.present?
+    payload
   end
 
   def stripe_connect_address_payload(country)
@@ -377,7 +395,13 @@ module Neighborly::Stripe::User
 
   def stripe_account_requirements_due(account)
     requirements = account.requirements
-    (Array(stripe_nested_value(requirements, :currently_due)) + Array(stripe_nested_value(requirements, :past_due))).uniq
+    future_requirements = stripe_nested_value(account, :future_requirements)
+    (
+      Array(stripe_nested_value(requirements, :currently_due)) +
+      Array(stripe_nested_value(requirements, :past_due)) +
+      Array(stripe_nested_value(future_requirements, :currently_due)) +
+      Array(stripe_nested_value(future_requirements, :past_due))
+    ).uniq
   end
 
   def stripe_nested_value(object, key)

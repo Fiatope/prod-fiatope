@@ -97,9 +97,12 @@ module StripeProject
 
   def stripe_account_requirements_due(account)
     requirements = account.requirements
+    future_requirements = stripe_account_value(account, :future_requirements)
     (
       Array(stripe_account_value(requirements, :currently_due)) +
-      Array(stripe_account_value(requirements, :past_due))
+      Array(stripe_account_value(requirements, :past_due)) +
+      Array(stripe_account_value(future_requirements, :currently_due)) +
+      Array(stripe_account_value(future_requirements, :past_due))
     ).uniq
   end
 

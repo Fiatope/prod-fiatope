@@ -222,9 +222,12 @@ module Neighborly
 
       def account_requirements_due(account)
         requirements = account.requirements
+        future_requirements = stripe_value(account, :future_requirements)
         (
           Array(stripe_value(requirements, :currently_due)) +
-          Array(stripe_value(requirements, :past_due))
+          Array(stripe_value(requirements, :past_due)) +
+          Array(stripe_value(future_requirements, :currently_due)) +
+          Array(stripe_value(future_requirements, :past_due))
         ).uniq
       end
 
@@ -388,7 +391,11 @@ module Neighborly
       def find_project_for_payout(payout)
         metadata_project_id = stripe_value(payout.metadata, :project_id)
         project = ::Project.find_by(id: metadata_project_id) if metadata_project_id.present?
-        return project if project
+        return project if project && payout_project_matches_connected_account?(project)
+
+        description_project_id = project_id_from_payout_description(payout)
+        project = ::Project.find_by(id: description_project_id) if description_project_id.present?
+        return project if project && payout_project_matches_connected_account?(project)
 
         project = ::Project.find_by(stripe_payout_id: payout.id)
         return project if project
@@ -418,6 +425,19 @@ module Neighborly
         candidates.first
       end
 
+      def project_id_from_payout_description(payout)
+        description = payout.respond_to?(:description) ? payout.description.to_s : ''
+        description[/\b(?:project|projet)\s*#?\s*(\d+)\b/i, 1]
+      end
+
+      def payout_project_matches_connected_account?(project)
+        account_id = connected_account_id
+        return true if account_id.blank?
+
+        project.stripe_account_id.to_s == account_id.to_s ||
+          project.user&.stripe_connect_account_id.to_s == account_id.to_s
+      end
+
       def update_project_payout_from_stripe!(project, payout, status_override: nil)
         payout_ids = project.stripe_payout_ids.to_s.split(',').map(&:strip)
         payout_ids << payout.id
@@ -426,12 +446,13 @@ module Neighborly
         failed_status = %w[failed canceled].include?(status)
         paid_status = status == 'paid'
         paid_at = paid_status ? (payout_timestamp(payout.arrival_date) || Time.zone.now) : project.stripe_payout_paid_at
+        payout_source = stripe_value(payout.metadata, :source).presence || project.stripe_payout_source.presence || 'stripe_dashboard'
 
         project.update_columns(
           stripe_payout_id: payout.id,
           stripe_payout_ids: payout_ids.join(','),
           stripe_payout_status: status,
-          stripe_payout_source: stripe_value(payout.metadata, :source).presence || project.stripe_payout_source.presence || 'stripe_dashboard',
+          stripe_payout_source: payout_source,
           stripe_payout_amount_cents: payout.amount,
           stripe_payout_currency: payout.currency,
           stripe_payout_arrival_date: payout_timestamp(payout.arrival_date),
@@ -440,19 +461,59 @@ module Neighborly
           stripe_payout_failure_code: failed_status ? payout.failure_code : nil,
           stripe_payout_failure_message: failed_status ? payout.failure_message : nil
         )
+
+        mark_dashboard_payout_transfer_if_needed!(project, payout, payout_source)
       end
 
       def expected_project_payout_amount_cents(project, currency)
-        fee_pct = ENV.fetch('PLATFORM_FEE', '5.0').tr(',', '.').to_f / 100
-        expected_currency = currency.to_s.downcase
-        project.contributions.where(payment_method: 'Stripe', state: 'confirmed')
-               .where(stripe_refunded: [false, nil], stripe_transferred: true)
-               .to_a.sum do |contribution|
-          contribution_currency = contribution.stripe_transfer_currency.presence || project.currency.to_s.downcase.presence || 'eur'
-          next 0 unless contribution_currency.to_s.downcase == expected_currency
-
-          contribution.stripe_transfer_amount_cents.presence || (contribution.value.to_f * (1 - fee_pct) * 100).to_i
+        payout_candidate_contributions(project, currency).sum do |contribution|
+          estimated_contribution_payout_amount_cents(contribution)
         end
+      end
+
+      def payout_candidate_contributions(project, currency)
+        expected_currency = currency.to_s.downcase
+        confirmed = project.contributions.where(payment_method: 'Stripe', state: 'confirmed')
+                           .where(stripe_refunded: [false, nil])
+        transferred = confirmed.where(stripe_transferred: true)
+        source = transferred.exists? ? transferred : confirmed
+
+        source.to_a.select do |contribution|
+          contribution_currency = contribution.stripe_transfer_currency.presence || project.currency.to_s.downcase.presence || 'eur'
+          contribution_currency.to_s.downcase == expected_currency
+        end
+      end
+
+      def estimated_contribution_payout_amount_cents(contribution)
+        fee_pct = ENV.fetch('PLATFORM_FEE', '5.0').tr(',', '.').to_f / 100
+        contribution.stripe_transfer_amount_cents.presence || (contribution.value.to_f * (1 - fee_pct) * 100).to_i
+      end
+
+      def mark_dashboard_payout_transfer_if_needed!(project, payout, payout_source)
+        return unless payout_source == 'stripe_dashboard'
+        return if project.stripe_settlement_type == 'transferred'
+
+        contributions = payout_candidate_contributions(project, payout.currency)
+        return if contributions.empty?
+
+        expected_amount = contributions.sum { |contribution| estimated_contribution_payout_amount_cents(contribution) }
+        tolerance_cents = [contributions.size, 2].max
+        return unless expected_amount.positive? && (expected_amount - payout.amount.to_i).abs <= tolerance_cents
+
+        contributions.each do |contribution|
+          contribution.update_columns(
+            stripe_transferred: true,
+            stripe_transfer_amount_cents: estimated_contribution_payout_amount_cents(contribution),
+            stripe_transfer_currency: payout.currency.to_s.downcase
+          )
+        end
+
+        project.update_columns(
+          stripe_settlement_type: 'transferred',
+          stripe_transfer_created_at: project.stripe_transfer_created_at || Time.zone.now,
+          stripe_settled_at: nil
+        )
+        Rails.logger.info "Payout #{payout.id}: reglement dashboard rattache au projet #{project.id} (#{contributions.size} contribution(s))"
       end
 
       def all_project_payouts_paid?(project, current_payout, account_id)

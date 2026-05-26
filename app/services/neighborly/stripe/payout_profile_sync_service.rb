@@ -177,18 +177,27 @@ module Neighborly
       end
 
       def account_identity_token
+        account_identity_token_with_verification
+      end
+
+      def account_identity_token_with_verification(individual_verification: nil, company_verification: nil)
         return nil unless user.respond_to?(:stripe_connect_account_token_for_payout_sync)
 
         user.stripe_connect_account_token_for_payout_sync(
           country: stripe_account_country,
-          tos_accepted: @tos_accepted
+          tos_accepted: @tos_accepted,
+          individual_verification: individual_verification,
+          company_verification: company_verification
         )
       end
 
-      def representative_person_token
+      def representative_person_token(verification: nil)
         return nil unless user.respond_to?(:stripe_connect_person_token_for_payout_sync)
 
-        user.stripe_connect_person_token_for_payout_sync(country: stripe_account_country)
+        user.stripe_connect_person_token_for_payout_sync(
+          country: stripe_account_country,
+          verification: verification
+        )
       end
 
       def sync_bank_account!
@@ -230,16 +239,27 @@ module Neighborly
       end
 
       def sync_individual_documents!
-        attach_individual_verification_document('IDENTITY_PROOF', :document)
-        attach_individual_verification_document('ADDRESS_PROOF', :additional_document)
+        verification = verification_payload_for(
+          ['IDENTITY_PROOF', :document],
+          ['ADDRESS_PROOF', :additional_document]
+        )
+        return if verification.empty? || errors.any?
+
+        attach_account_verification_document(individual_verification: verification, label: 'Documents particulier')
       end
 
       def sync_representative_documents!
-        attach_person_verification_document('IDENTITY_PROOF', :document)
-        attach_person_verification_document('ADDRESS_PROOF', :additional_document)
+        verification = verification_payload_for(
+          ['IDENTITY_PROOF', :document],
+          ['ADDRESS_PROOF', :additional_document]
+        )
+        return if verification.empty? || errors.any?
+
+        attach_person_verification_document(verification)
       end
 
       def sync_company_documents!
+        company_verification = {}
         registration_file_ids = upload_documents_for('REGISTRATION_PROOF', 'account_requirement')
         if registration_file_ids.any?
           ::Stripe::Account.update(
@@ -252,7 +272,7 @@ module Neighborly
           )
 
           verification_ids = upload_documents_for('REGISTRATION_PROOF', 'additional_verification', limit: 2)
-          attach_company_verification_document(verification_ids) if verification_ids.any?
+          company_verification[:document] = verification_file_payload(verification_ids) if verification_ids.any?
         end
 
         articles_file_ids = upload_documents_for('ARTICLES_OF_ASSOCIATION', 'account_requirement')
@@ -265,53 +285,65 @@ module Neighborly
               }
             }
           )
+
+          verification_ids = upload_documents_for('ARTICLES_OF_ASSOCIATION', 'additional_verification', limit: 2)
+          company_verification[:additional_document] = verification_file_payload(verification_ids) if verification_ids.any?
         end
+
+        attach_company_verification_document(company_verification) if company_verification.any? && errors.empty?
       end
 
-      def attach_individual_verification_document(proof_type, verification_key)
-        file_ids = upload_documents_for(proof_type, 'identity_document', limit: 2)
-        return if file_ids.empty?
-
-        ::Stripe::Account.update(
-          user.stripe_connect_account_id,
-          individual: {
-            verification: {
-              verification_key => verification_file_payload(file_ids)
-            }
-          }
+      def attach_account_verification_document(individual_verification: nil, company_verification: nil, label:)
+        token = account_identity_token_with_verification(
+          individual_verification: individual_verification,
+          company_verification: company_verification
         )
+        unless token.present?
+          errors << "#{label} non synchronises: jeton securise indisponible."
+          return
+        end
+
+        ::Stripe::Account.update(user.stripe_connect_account_id, account_token: token)
       rescue ::Stripe::StripeError => e
-        warnings << "Document #{proof_type} non synchronise vers Stripe: #{e.message}"
+        errors << "#{label} non synchronises: #{e.message}"
       end
 
-      def attach_person_verification_document(proof_type, verification_key)
+      def attach_person_verification_document(verification)
         return if representative_person.blank?
 
-        file_ids = upload_documents_for(proof_type, 'identity_document', limit: 2)
-        return if file_ids.empty?
+        token = representative_person_token(verification: verification)
+        unless token.present?
+          errors << 'Documents representant non synchronises: jeton securise indisponible.'
+          return
+        end
 
         @representative_person = ::Stripe::Account.update_person(
           user.stripe_connect_account_id,
           representative_person.id,
-          verification: {
-            verification_key => verification_file_payload(file_ids)
-          }
+          person_token: token
         )
       rescue ::Stripe::StripeError => e
-        warnings << "Document representant #{proof_type} non synchronise vers Stripe: #{e.message}"
+        errors << "Documents representant non synchronises: #{e.message}"
       end
 
-      def attach_company_verification_document(file_ids)
-        ::Stripe::Account.update(
-          user.stripe_connect_account_id,
-          company: {
-            verification: {
-              document: verification_file_payload(file_ids)
-            }
-          }
+      def attach_company_verification_document(company_verification)
+        attach_account_verification_document(
+          company_verification: company_verification,
+          label: 'Document entreprise'
         )
-      rescue ::Stripe::StripeError => e
-        warnings << "Document entreprise non synchronise vers Stripe: #{e.message}"
+      end
+
+      def verification_payload_for(*definitions)
+        definitions.each_with_object({}) do |definition, payload|
+          proof_type, verification_key = definition
+          file_ids = upload_documents_for(proof_type, 'identity_document', limit: 2)
+
+          if file_ids.any?
+            payload[verification_key] = verification_file_payload(file_ids)
+          elsif documents_for_type(proof_type).any?
+            errors << "Document #{proof_type} impossible a transmettre pour verification."
+          end
+        end
       end
 
       def upload_documents_for(proof_type, purpose, limit: 10)
@@ -385,9 +417,13 @@ module Neighborly
         return if errors.any?
 
         account = ::Stripe::Account.retrieve(user.stripe_connect_account_id)
-        return if account_ready_for_transfers?(account)
+        if account_ready_for_transfers?(account)
+          user.clear_payout_required_kyc_types! if user.respond_to?(:clear_payout_required_kyc_types!)
+          return
+        end
 
         due = account_requirements_due(account)
+        user.remember_payout_required_kyc_types_from_requirements(due) if user.respond_to?(:remember_payout_required_kyc_types_from_requirements)
         disabled_reason = stripe_nested_value(account.requirements, :disabled_reason)
         details = []
         details << "exigences Stripe restantes: #{due.join(', ')}" if due.any?
@@ -412,7 +448,13 @@ module Neighborly
 
       def account_requirements_due(account)
         requirements = account.requirements
-        (Array(stripe_nested_value(requirements, :currently_due)) + Array(stripe_nested_value(requirements, :past_due))).uniq
+        future_requirements = stripe_nested_value(account, :future_requirements)
+        (
+          Array(stripe_nested_value(requirements, :currently_due)) +
+          Array(stripe_nested_value(requirements, :past_due)) +
+          Array(stripe_nested_value(future_requirements, :currently_due)) +
+          Array(stripe_nested_value(future_requirements, :past_due))
+        ).uniq
       end
 
       def stripe_capability(account, capability)

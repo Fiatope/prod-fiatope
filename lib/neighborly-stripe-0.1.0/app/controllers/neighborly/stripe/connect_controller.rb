@@ -253,7 +253,13 @@ module Neighborly
 
       def account_requirements_due(account)
         requirements = account.requirements
-        (Array(stripe_nested_value(requirements, :currently_due)) + Array(stripe_nested_value(requirements, :past_due))).uniq
+        future_requirements = stripe_nested_value(account, :future_requirements)
+        (
+          Array(stripe_nested_value(requirements, :currently_due)) +
+          Array(stripe_nested_value(requirements, :past_due)) +
+          Array(stripe_nested_value(future_requirements, :currently_due)) +
+          Array(stripe_nested_value(future_requirements, :past_due))
+        ).uniq
       end
 
       def stripe_nested_value(object, key)

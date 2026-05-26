@@ -389,9 +389,12 @@ module Neighborly
 
       def account_requirements_due(account)
         requirements = account.requirements
+        future_requirements = stripe_value(account, :future_requirements)
         (
           Array(stripe_value(requirements, :currently_due)) +
-          Array(stripe_value(requirements, :past_due))
+          Array(stripe_value(requirements, :past_due)) +
+          Array(stripe_value(future_requirements, :currently_due)) +
+          Array(stripe_value(future_requirements, :past_due))
         ).uniq
       end
 
