@@ -551,6 +551,10 @@ class ProjectsController < ApplicationController
       return 'Votre profil a ete enregistre, mais un justificatif n a pas pu etre verifie. Verifiez les fichiers envoyes et reessayez.'
     end
 
+    if details.match?(/account token|business_type|jeton securise|configuration|api key/i)
+      return 'Votre profil a ete enregistre, mais une verification technique interne est encore en cours. Notre equipe va finaliser le dossier et vous recontactera si besoin.'
+    end
+
     'Votre profil de retrait a ete enregistre, mais la verification automatique n a pas encore abouti. Notre equipe va verifier le dossier et vous recontactera si besoin.'
   end
 

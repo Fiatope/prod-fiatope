@@ -125,16 +125,12 @@ module Neighborly
         }
 
         identity_token = account_identity_token
-        if identity_token.present?
-          account_params[:account_token] = identity_token
-        else
-          account_params[:business_type] = business_type
-          if business_type == 'company'
-            account_params[:company] = company_payload
-          else
-            account_params[:individual] = individual_payload(name_parts)
-          end
+        unless identity_token.present?
+          errors << 'Jeton securise du profil de retrait indisponible: la synchronisation automatique ne peut pas mettre a jour les champs d identite.'
+          return
         end
+
+        account_params[:account_token] = identity_token
 
         tos_payload = tos_acceptance_payload
         account_params[:tos_acceptance] = tos_payload if tos_payload.present?
@@ -155,16 +151,12 @@ module Neighborly
         }
 
         person_token = representative_person_token
-        if person_token.present?
-          payload[:person_token] = person_token
-        else
-          payload.merge!(
-            individual_payload(name_parts).merge(
-              email: user.email,
-              phone: stripe_phone_number
-            )
-          )
+        unless person_token.present?
+          errors << 'Jeton securise du representant indisponible: la synchronisation automatique ne peut pas mettre a jour les champs d identite.'
+          return
         end
+
+        payload[:person_token] = person_token
 
         if representative_person.present?
           @representative_person = ::Stripe::Account.update_person(
