@@ -1,6 +1,20 @@
 module Neighborly::Stripe::User
   extend ActiveSupport::Concern
 
+  STRIPE_PHONE_COUNTRY_CALLING_CODES = {
+    'FR' => '33', 'CM' => '237', 'CI' => '225', 'SN' => '221',
+    'BJ' => '229', 'TG' => '228', 'BF' => '226', 'ML' => '223',
+    'NE' => '227', 'GN' => '224', 'GA' => '241', 'CG' => '242',
+    'CD' => '243', 'TD' => '235', 'CF' => '236', 'RW' => '250',
+    'BI' => '257', 'MA' => '212', 'DZ' => '213', 'TN' => '216',
+    'MG' => '261', 'MU' => '230', 'SC' => '248', 'KM' => '269',
+    'DJ' => '253', 'ET' => '251', 'KE' => '254', 'UG' => '256',
+    'TZ' => '255', 'GH' => '233', 'NG' => '234', 'ZA' => '27',
+    'BE' => '32', 'CH' => '41', 'LU' => '352', 'DE' => '49',
+    'ES' => '34', 'IT' => '39', 'GB' => '44', 'NL' => '31',
+    'PT' => '351', 'US' => '1', 'CA' => '1'
+  }.freeze
+
   included do
     has_many :stripe_orders, class_name: 'Neighborly::Stripe::Order', foreign_key: 'user_id'
 
@@ -106,6 +120,33 @@ module Neighborly::Stripe::User
     nil
   end
 
+  def stripe_connect_phone_number
+    raw_phone = mobile_phone.to_s.strip
+    return nil if raw_phone.blank?
+
+    normalized = raw_phone.gsub(/[^\d+]/, '')
+    normalized = "+#{normalized[2..]}" if normalized.start_with?('00')
+    return normalized if stripe_connect_e164_phone?(normalized)
+    return nil if normalized.start_with?('+')
+
+    digits = normalized.gsub(/\D/, '')
+    return nil if digits.blank?
+
+    stripe_connect_phone_country_candidates.each do |country|
+      calling_code = STRIPE_PHONE_COUNTRY_CALLING_CODES[country]
+      next if calling_code.blank?
+
+      local_digits = digits.sub(/\A0+/, '')
+      with_existing_code = "+#{digits}"
+      return with_existing_code if digits.start_with?(calling_code) && stripe_connect_e164_phone?(with_existing_code)
+
+      with_country_code = "+#{calling_code}#{local_digits}"
+      return with_country_code if stripe_connect_e164_phone?(with_country_code)
+    end
+
+    nil
+  end
+
   private
 
   def stripe_project_account_locked?(project)
@@ -132,7 +173,7 @@ module Neighborly::Stripe::User
         product_description: 'Collecte de fonds via la plateforme Fiatope',
         url: ENV['FIATOPE_PUBLIC_URL'].presence || ENV['APP_HOST'].presence || 'https://www.fiatope.com',
         support_email: ENV['EMAIL_CONTACT'].presence || 'contact@fiatope.com',
-        support_phone: mobile_phone.to_s.presence
+        support_phone: stripe_connect_phone_number
       }.compact,
       metadata: {
         user_id: id.to_s,
@@ -189,7 +230,7 @@ module Neighborly::Stripe::User
   def stripe_connect_company_payload(country)
     payload = {
       name: stripe_connect_business_name,
-      phone: mobile_phone.to_s.presence,
+      phone: stripe_connect_phone_number,
       address: stripe_connect_address_payload(country)
     }
 
@@ -209,7 +250,7 @@ module Neighborly::Stripe::User
       first_name: name_parts[:first_name],
       last_name: name_parts[:last_name],
       email: email,
-      phone: mobile_phone.to_s.presence,
+      phone: stripe_connect_phone_number,
       nationality: nationality.to_s.upcase.presence,
       address: stripe_connect_address_payload(country),
       dob: stripe_connect_dob_payload
@@ -248,6 +289,23 @@ module Neighborly::Stripe::User
       first_name: first_name,
       last_name: last_name
     }
+  end
+
+  def stripe_connect_phone_country_candidates
+    [
+      residence_country,
+      nationality,
+      bank_information&.other_country,
+      stripe_iban_country(bank_information&.iban),
+      ENV['STRIPE_CONNECT_DEFAULT_COUNTRY'],
+      'FR'
+    ].map { |country| country.to_s.upcase.strip }
+     .select { |country| country.match?(/\A[A-Z]{2}\z/) }
+     .uniq
+  end
+
+  def stripe_connect_e164_phone?(phone)
+    phone.to_s.match?(/\A\+[1-9]\d{6,14}\z/)
   end
 
   def stripe_connect_country

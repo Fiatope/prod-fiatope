@@ -143,7 +143,7 @@ module Neighborly
       def sync_representative_person!(name_parts)
         payload = individual_payload(name_parts).merge(
           email: user.email,
-          phone: user.mobile_phone.to_s.presence,
+          phone: stripe_phone_number,
           relationship: {
             representative: true,
             executive: true,
@@ -430,14 +430,14 @@ module Neighborly
           product_description: 'Collecte de fonds via la plateforme Fiatope',
           url: ENV['FIATOPE_PUBLIC_URL'].presence || ENV['APP_HOST'].presence || PLATFORM_URL,
           support_email: ENV['EMAIL_CONTACT'].presence || 'contact@fiatope.com',
-          support_phone: user.mobile_phone.to_s.presence
+          support_phone: stripe_phone_number
         }.compact
       end
 
       def company_payload
         payload = {
           name: user.organization&.name,
-          phone: user.mobile_phone.to_s.presence,
+          phone: stripe_phone_number,
           address: stripe_address_payload
         }
 
@@ -526,7 +526,7 @@ module Neighborly
           first_name: name_parts[:first_name],
           last_name: name_parts[:last_name],
           email: user.email,
-          phone: user.mobile_phone.to_s.presence,
+          phone: stripe_phone_number,
           nationality: user.nationality.to_s.upcase.presence,
           address: stripe_address_payload,
           dob: stripe_dob_payload
@@ -556,6 +556,12 @@ module Neighborly
           month: user.birthday.month,
           year: user.birthday.year
         }
+      end
+
+      def stripe_phone_number
+        return user.stripe_connect_phone_number if user.respond_to?(:stripe_connect_phone_number)
+
+        user.mobile_phone.to_s.presence
       end
 
       def proof_type_for(document)
