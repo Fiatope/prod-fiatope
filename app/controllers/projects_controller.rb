@@ -501,9 +501,15 @@ class ProjectsController < ApplicationController
     attrs = bank_params.to_h.symbolize_keys
     attrs.delete(:bank_reference_type)
     reference_value = attrs.delete(:bank_reference_value)
+    iban_country = payout_profile_iban_country(reference_value)
+    attrs[:other_country] = iban_country if iban_country.present?
 
     bank_information.assign_attributes(attrs)
     bank_information.apply_payout_bank_reference(type: 'iban', value: reference_value)
+  end
+
+  def payout_profile_iban_country(value)
+    value.to_s.upcase.gsub(/\s+/, '')[/\A[A-Z]{2}/]
   end
 
   def payout_profile_type_for_platform

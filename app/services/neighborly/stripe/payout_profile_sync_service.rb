@@ -457,8 +457,15 @@ module Neighborly
       end
 
       def bank_country(bank_information)
-        requested_country = bank_information.other_country.presence || user.residence_country.presence || 'FR'
+        requested_country = iban_country(bank_information.iban).presence ||
+                            bank_information.other_country.presence ||
+                            user.residence_country.presence ||
+                            'FR'
         country_aligned_with_connect_account(requested_country)
+      end
+
+      def iban_country(iban)
+        iban.to_s.upcase.gsub(/\s+/, '')[/\A[A-Z]{2}/]
       end
 
       def stripe_account_country

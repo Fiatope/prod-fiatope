@@ -144,7 +144,37 @@ module Neighborly::Stripe::User
   end
 
   def stripe_connect_country
-    residence_country.to_s.upcase.presence || 'FR'
+    stripe_connect_country_candidates.each do |country|
+      return country if stripe_country_spec_available?(country)
+    end
+
+    'FR'
+  end
+
+  def stripe_connect_country_candidates
+    [
+      stripe_iban_country(bank_information&.iban),
+      bank_information&.other_country,
+      residence_country,
+      ENV['STRIPE_CONNECT_DEFAULT_COUNTRY'],
+      'FR'
+    ].map { |country| country.to_s.upcase.strip }
+     .select { |country| country.match?(/\A[A-Z]{2}\z/) }
+     .uniq
+  end
+
+  def stripe_iban_country(iban)
+    iban.to_s.upcase.gsub(/\s+/, '')[/\A[A-Z]{2}/]
+  end
+
+  def stripe_country_spec_available?(country)
+    Rails.cache.fetch("stripe_country_spec_available:#{country}", expires_in: 12.hours) do
+      ::Stripe::CountrySpec.retrieve(country)
+      true
+    rescue ::Stripe::StripeError => e
+      Rails.logger.warn "Stripe: pays Connect #{country} ignore pour #{email}: #{e.message}"
+      false
+    end
   end
 
   def stripe_connect_business_name
