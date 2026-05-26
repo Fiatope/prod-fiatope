@@ -161,8 +161,12 @@ module Neighborly::Admin
         end
       else
         begin
-          # enable_stripe! réutilise le compte existant ou en crée un nouveau
-          @project.enable_stripe!
+          # Activer les paiements sans creer de compte de retrait avant la soumission du profil local.
+          @project.update_columns(use_stripe: true)
+
+          if @project.user.stripe_connect_account_id.present?
+            @project.update_column(:stripe_account_id, @project.user.stripe_connect_account_id)
+          end
           
           if @project.user.payout_profile_complete?
             flash[:success] = "Stripe active! Le porteur peut soumettre sa demande de retrait depuis la plateforme."

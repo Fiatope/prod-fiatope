@@ -9,10 +9,8 @@ module Neighborly
       def create_account
         session[:stripe_return_to] = params[:return_to].presence
 
-        current_user.create_stripe_connect_account! if current_user.stripe_connect_account_id.blank?
-        sync_user_projects_on_return
-
-        flash[:notice] = "Compte de paiement cree. Completez le profil de retrait depuis la page de votre projet pour activer les virements."
+        sync_user_projects_on_return if current_user.stripe_connect_account_id.present?
+        flash[:notice] = "Completez le profil de retrait depuis la page de votre projet pour activer les virements."
         redirect_to local_return_path
       end
 

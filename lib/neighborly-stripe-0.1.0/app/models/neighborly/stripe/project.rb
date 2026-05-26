@@ -6,9 +6,10 @@ module Neighborly::Stripe::Project
   end
   
   def setup_stripe_account!
-    return if stripe_account_id.present?
+    return stripe_account_id if stripe_account_id.present?
+    return nil if user.stripe_connect_account_id.blank?
     
-    account_id = user.create_stripe_connect_account!
+    account_id = user.stripe_connect_account_id
     update_column(:stripe_account_id, account_id)
     account_id
   end
@@ -26,8 +27,7 @@ module Neighborly::Stripe::Project
         use_stripe: true
       )
     else
-      setup_stripe_account!
-      update_column(:use_stripe, true)
+      update_columns(use_stripe: true)
     end
     
     reload

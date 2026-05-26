@@ -66,7 +66,7 @@ module Neighborly
         return if errors.any?
         return if user.stripe_connect_account_id.present?
 
-        user.create_stripe_connect_account!
+        user.create_stripe_connect_account!(tos_accepted: @tos_accepted)
       rescue ::Stripe::StripeError => e
         errors << "Creation du compte Stripe impossible: #{e.message}"
       end
@@ -90,7 +90,7 @@ module Neighborly
         old_account_id = account.id
         Rails.logger.warn "Payout profile sync: compte Connect #{old_account_id} incompatible pour user #{user.id}; creation d un compte gere par la plateforme."
 
-        user.create_stripe_connect_account!(force: true)
+        user.create_stripe_connect_account!(force: true, tos_accepted: @tos_accepted)
         @stripe_account = nil
         @representative_person = nil if defined?(@representative_person)
 

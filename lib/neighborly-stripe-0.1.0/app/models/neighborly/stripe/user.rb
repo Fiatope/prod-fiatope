@@ -45,11 +45,11 @@ module Neighborly::Stripe::User
     @stripe_customer
   end
 
-  def create_stripe_connect_account!(force: false)
+  def create_stripe_connect_account!(force: false, tos_accepted: false)
     return stripe_connect_account_id if stripe_connect_account_id.present? && !force
 
     previous_account_id = stripe_connect_account_id
-    params = stripe_connect_account_create_params
+    params = stripe_connect_account_create_params(tos_accepted: tos_accepted)
     if previous_account_id.present?
       params[:metadata] = params.fetch(:metadata, {}).merge(
         replaced_account_id: previous_account_id,
@@ -77,7 +77,6 @@ module Neighborly::Stripe::User
   end
 
   def stripe_account_onboarding_url(refresh_url:, return_url:)
-    create_stripe_connect_account! if stripe_connect_account_id.blank?
     nil
   end
 
@@ -119,15 +118,15 @@ module Neighborly::Stripe::User
       %w[pending in_transit paid failed canceled].include?(payout_status)
   end
 
-  def stripe_connect_account_create_params
-    {
+  def stripe_connect_account_create_params(tos_accepted: false)
+    params = {
       type: 'custom',
       country: stripe_connect_country,
       email: email,
       capabilities: {
         transfers: { requested: true }
       },
-      business_type: profile_type == 'organization' ? 'company' : 'individual',
+      business_type: stripe_connect_business_type,
       business_profile: {
         name: stripe_connect_business_name,
         product_description: 'Collecte de fonds via la plateforme Fiatope',
@@ -140,6 +139,114 @@ module Neighborly::Stripe::User
         platform: 'fiatope',
         profile_type: profile_type.to_s
       }
+    }
+
+    if tos_accepted
+      account_token_id = stripe_connect_account_token_id(params[:country], tos_accepted: tos_accepted)
+      if account_token_id.present?
+        params[:account_token] = account_token_id
+        params.delete(:business_type)
+      end
+    end
+
+    params
+  end
+
+  def stripe_connect_account_token_id(country, tos_accepted:)
+    api_key = stripe_connect_account_token_api_key
+    return nil if api_key.blank?
+
+    token = ::Stripe::Token.create(
+      { account: stripe_connect_account_token_payload(country, tos_accepted: tos_accepted) },
+      { api_key: api_key }
+    )
+    token.id
+  end
+
+  def stripe_connect_account_token_api_key
+    ENV['STRIPE_PUBLISHABLE_KEY'].presence || ENV['STRIPE_SECRET_KEY'].presence
+  end
+
+  def stripe_connect_account_token_payload(country, tos_accepted:)
+    payload = {
+      business_type: stripe_connect_business_type,
+      tos_shown_and_accepted: tos_accepted
+    }
+
+    if stripe_connect_business_type == 'company'
+      payload[:company] = stripe_connect_company_payload(country)
+    else
+      payload[:individual] = stripe_connect_individual_payload(country)
+    end
+
+    payload.compact
+  end
+
+  def stripe_connect_business_type
+    profile_type == 'organization' ? 'company' : 'individual'
+  end
+
+  def stripe_connect_company_payload(country)
+    payload = {
+      name: stripe_connect_business_name,
+      phone: mobile_phone.to_s.presence,
+      address: stripe_connect_address_payload(country)
+    }
+
+    if organization.respond_to?(:registration_number) && organization.registration_number.present?
+      registration_number = organization.registration_number.to_s.strip.upcase
+      payload[:registration_number] = registration_number
+      payload[:tax_id] = registration_number if registration_number.match?(/\A\d{9}(\d{5})?\z/)
+    end
+
+    payload.compact
+  end
+
+  def stripe_connect_individual_payload(country)
+    name_parts = stripe_connect_name_parts
+
+    {
+      first_name: name_parts[:first_name],
+      last_name: name_parts[:last_name],
+      email: email,
+      phone: mobile_phone.to_s.presence,
+      nationality: nationality.to_s.upcase.presence,
+      address: stripe_connect_address_payload(country),
+      dob: stripe_connect_dob_payload
+    }.compact
+  end
+
+  def stripe_connect_address_payload(country)
+    info = bank_information
+    return nil if info.blank?
+
+    {
+      line1: info.owner_address.to_s.presence,
+      city: info.owner_city.to_s.presence,
+      state: info.owner_region.to_s.presence,
+      postal_code: info.owner_postal_code.to_s.presence,
+      country: country.to_s.upcase.presence || stripe_connect_country
+    }.compact
+  end
+
+  def stripe_connect_dob_payload
+    return nil if birthday.blank?
+
+    {
+      day: birthday.day,
+      month: birthday.month,
+      year: birthday.year
+    }
+  end
+
+  def stripe_connect_name_parts
+    parts = name.to_s.strip.split(/\s+/)
+    first_name = parts.first.presence || email.to_s.split('@').first.presence || 'Utilisateur'
+    last_name = (parts[1..] || []).join(' ').presence || first_name
+
+    {
+      first_name: first_name,
+      last_name: last_name
     }
   end
 
