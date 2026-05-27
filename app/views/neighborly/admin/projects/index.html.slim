@@ -193,7 +193,7 @@
                         - else
                           span.label.label-warning title="Compte: #{stripe_account}\nLe porteur doit completer son profil de retrait" ⚠️ Profil incomplet
                         - payout_status = project.stripe_payout_status.to_s
-                        - if payout_status == 'paid' || project.state == 'paid'
+                        - if (payout_status == 'paid' || project.state == 'paid') && !%w[failed canceled].include?(payout_status)
                           br
                           span.label.label-success title="Confirme le #{project.stripe_payout_paid_at&.strftime('%d/%m/%Y %H:%M') || project.stripe_settled_at&.strftime('%d/%m/%Y %H:%M')}" Virement bancaire confirme
                         - elsif %w[pending in_transit].include?(payout_status)

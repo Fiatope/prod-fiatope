@@ -30,7 +30,7 @@
       - payout_failed = %w[failed canceled].include?(payout_status)
       - transfer_done = @project.stripe_settlement_type == 'transferred' || @project.stripe_transfer_id.present?
       - payout_requires_action = transfer_done && !payout_paid && !payout_processing && !payout_failed
-      - already_paid  = payout_paid
+      - already_paid  = payout_paid && !payout_failed
       - payout_pending = (@project.state == 'request_funds' || payout_processing || payout_failed || payout_requires_action) && !already_paid
       - stripe_contribs = @project.contributions.where(payment_method: 'Stripe', state: 'confirmed')
       - total_collected = stripe_contribs.sum(:value)
@@ -303,7 +303,7 @@
                   |  Retirer mes fonds
               p.small[style="color:#95a5a6;margin-top:12px;"]
                 i.fa.fa-shield
-                |  Paiement sécurisé. Fonds versés sous 2-7 jours ouvrés.
+                |  Apres validation par notre equipe, le virement bancaire est generalement traite sous 2-7 jours ouvres.
 
       / ===== DÉTAIL DES CONTRIBUTIONS =====
       - if contribs_count > 0

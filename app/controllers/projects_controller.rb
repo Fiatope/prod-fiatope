@@ -185,8 +185,6 @@ class ProjectsController < ApplicationController
         update_or_create_kyc_documents!(current_user)
       end
 
-      clear_payout_profile_edit_unlock!(current_user)
-
       sync_result = Neighborly::Stripe::PayoutProfileSyncService.call(
         current_user,
         request_ip: request.remote_ip,
@@ -194,6 +192,7 @@ class ProjectsController < ApplicationController
         tos_accepted: payout_profile_tos_accepted?
       )
       if sync_result.success?
+        clear_payout_profile_edit_unlock!(current_user)
         if sync_result.warnings.any?
           Rails.logger.warn "Payout profile sync warnings for user #{current_user.id}: #{sync_result.warnings.join(', ')}"
           flash[:notice] = 'Votre profil de retrait a ete enregistre. Certaines verifications restent en cours; notre equipe vous contactera si une correction est necessaire.'
@@ -202,6 +201,7 @@ class ProjectsController < ApplicationController
         end
       else
         Rails.logger.warn "Payout profile sync failed for user #{current_user.id}: #{sync_result.errors.join(', ')}"
+        unlock_payout_profile_edit_for_retry!(current_user)
         flash[:alert] = payout_profile_sync_failure_message(sync_result.errors)
       end
     rescue ActiveRecord::RecordInvalid => e
@@ -272,6 +272,7 @@ class ProjectsController < ApplicationController
     )
     unless sync_result.success?
       Rails.logger.warn "Payout request profile sync failed for user #{current_user.id}: #{sync_result.errors.join(', ')}"
+      unlock_payout_profile_edit_for_retry!(current_user)
       flash[:alert] = 'Votre profil de retrait doit encore etre verifie avant la demande de virement. Notre equipe va verifier le dossier et vous recontactera si une correction est necessaire.'
       return redirect_to pay_project_path(@project)
     end
@@ -531,6 +532,10 @@ class ProjectsController < ApplicationController
       return 'Votre profil a ete enregistre, mais le numero de telephone doit etre au format international. Exemple: +237654770064.'
     end
 
+    if details.match?(/not currently supported|not supported/i)
+      return 'Votre profil a ete enregistre, mais le pays choisi pour le compte de reception n est pas pris en charge pour ce virement. Utilisez un compte bancaire IBAN dans un pays pris en charge ou contactez notre equipe.'
+    end
+
     if details.match?(/postal|zip/i)
       return 'Votre profil a ete enregistre, mais le code postal semble invalide. Verifiez le code postal du titulaire du compte.'
     end
@@ -551,6 +556,10 @@ class ProjectsController < ApplicationController
       return 'Votre profil a ete enregistre, mais un justificatif n a pas pu etre verifie. Verifiez les fichiers envoyes et reessayez.'
     end
 
+    if details.match?(/conditions de paiement|accepter les conditions|conditions/i)
+      return 'Votre profil a ete enregistre, mais vous devez cocher l attestation avant de soumettre le formulaire.'
+    end
+
     if details.match?(/account token|business_type|jeton securise|configuration|api key/i)
       return 'Votre profil a ete enregistre, mais une verification technique interne est encore en cours. Notre equipe va finaliser le dossier et vous recontactera si besoin.'
     end
@@ -568,6 +577,14 @@ class ProjectsController < ApplicationController
 
   def clear_payout_profile_edit_unlock!(user)
     Rails.cache.delete(payout_profile_edit_unlock_cache_key(user))
+  end
+
+  def unlock_payout_profile_edit_for_retry!(user)
+    Rails.cache.write(
+      payout_profile_edit_unlock_cache_key(user),
+      { unlocked_at: Time.current.to_i, reason: 'sync_failed' },
+      expires_in: 14.days
+    )
   end
 
   def update_or_create_kyc_documents!(user)

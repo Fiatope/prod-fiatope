@@ -60,83 +60,19 @@ module Neighborly
       end
 
       def dashboard
-        flash[:notice] = I18n.t('stripe.dashboard.unavailable', default: 'Le retrait est suivi directement sur Fiatope. Vous n avez pas besoin d ouvrir Stripe.')
+        flash[:notice] = I18n.t('stripe.dashboard.unavailable', default: 'Le retrait est suivi directement sur Fiatope. Vous n avez pas besoin de quitter la plateforme.')
         redirect_to local_return_path
       end
 
       def link_existing_account
-        if current_user.stripe_connect_account_id.present?
-          flash[:notice] = "Vous avez deja un compte de paiement lie."
-          redirect_to user_settings_path and return
-        end
-
-        account_id = params[:stripe_account_id].to_s.strip
-        unless account_id.start_with?('acct_')
-          flash[:alert] = "Format d ID invalide. L ID doit commencer par acct_."
-          redirect_to user_settings_path and return
-        end
-
-        begin
-          account = ::Stripe::Account.retrieve(account_id)
-          unless platform_managed_account?(account)
-            flash[:alert] = "Ce compte Stripe n est pas compatible avec le profil de retrait local. Utilisez un compte Custom gere par la plateforme."
-            redirect_to user_settings_path and return
-          end
-
-          ready_for_transfers = account_ready_for_transfers?(account)
-          update_attrs = {
-            stripe_connect_account_id: account.id,
-            stripe_onboarding_complete: ready_for_transfers
-          }
-          update_attrs[:stripe_account_type] = account.type if current_user.respond_to?(:stripe_account_type=)
-          update_attrs[:stripe_charges_enabled] = account.charges_enabled if current_user.respond_to?(:stripe_charges_enabled=)
-          update_attrs[:stripe_payouts_enabled] = account.payouts_enabled if current_user.respond_to?(:stripe_payouts_enabled=)
-
-          current_user.update!(update_attrs)
-          sync_user_projects_on_return
-
-          Rails.logger.info "[Connect] Compte existant #{account.id} lie pour #{current_user.email}"
-
-          if ready_for_transfers
-            flash[:notice] = "Compte de paiement lie avec succes."
-          else
-            flash[:notice] = "Compte lie. Completez le profil de retrait pour activer les virements."
-          end
-        rescue ::Stripe::InvalidRequestError
-          flash[:alert] = "Compte non trouve. Verifiez l identifiant."
-        rescue ::Stripe::StripeError => e
-          flash[:alert] = "Erreur de connexion: #{e.message}"
-        rescue => e
-          Rails.logger.error "Link existing error: #{e.message}"
-          flash[:alert] = "Erreur: #{e.message}"
-        end
-
+        Rails.logger.info "[Connect] Liaison manuelle refusee pour #{current_user.email}"
+        flash[:alert] = "Cette action n est plus disponible. Completez le profil de retrait depuis la page de votre projet."
         redirect_to user_settings_path
       end
 
       def find_existing_account
-        account_id = params[:account_id].to_s.strip
-        unless account_id.start_with?('acct_')
-          render json: { error: "Format invalide" }, status: :unprocessable_entity and return
-        end
-
-        begin
-          account = ::Stripe::Account.retrieve(account_id)
-          render json: {
-            found: true,
-            account_id: account.id,
-            type: account.type,
-            charges_enabled: account.charges_enabled,
-            payouts_enabled: account.payouts_enabled,
-            managed_by_platform: platform_managed_account?(account),
-            ready_for_transfers: account_ready_for_transfers?(account),
-            country: account.country
-          }
-        rescue ::Stripe::InvalidRequestError
-          render json: { found: false, error: "Compte non trouve" }
-        rescue ::Stripe::StripeError => e
-          render json: { error: e.message }, status: :unprocessable_entity
-        end
+        Rails.logger.info "[Connect] Recherche de compte manuelle refusee pour #{current_user.email}"
+        render json: { error: "Action indisponible" }, status: :forbidden
       end
 
       def sync_account
@@ -149,16 +85,14 @@ module Neighborly
           service = SyncService.new(current_user)
           if service.sync_all!
             n_proj = service.results[:projects].count
-            n_cont = service.results[:contributions].count
-            flash[:notice] = "Synchronisation OK: #{n_proj} projet(s), #{n_cont} contribution(s)."
+            flash[:notice] = "La verification du compte de paiement a ete relancee pour #{n_proj} projet(s)."
           else
-            err = service.errors.first.to_s.truncate(100)
-            flash[:alert] = "Erreur sync: #{err}"
             Rails.logger.error "[Sync] #{service.errors.join(' | ')}"
+            flash[:alert] = "La verification n a pas abouti. Veuillez reessayer plus tard ou contacter l equipe support."
           end
         rescue => e
-          flash[:alert] = "Erreur: #{e.message.truncate(80)}"
           Rails.logger.error "[Sync] #{e.class}: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
+          flash[:alert] = "La verification n a pas abouti. Veuillez reessayer plus tard ou contacter l equipe support."
         end
 
         redirect_to user_settings_path
@@ -181,6 +115,12 @@ module Neighborly
 
         if pending_transfers > 0
           flash[:alert] = "Impossible: #{pending_transfers} projet(s) ont des paiements non transferes."
+          return redirect_to user_settings_path
+        end
+
+        locked_projects = current_user.projects.where(stripe_account_id: account_id).to_a.select { |project| stripe_project_account_locked?(project) }
+        if locked_projects.any?
+          flash[:alert] = "Impossible: #{locked_projects.count} projet(s) ont un retrait en cours ou deja confirme. Contactez l equipe support."
           return redirect_to user_settings_path
         end
 
@@ -228,7 +168,13 @@ module Neighborly
         return unless current_user.stripe_connect_account_id.present?
 
         synced = 0
+        skipped = 0
         current_user.projects.find_each do |project|
+          if stripe_project_account_locked?(project)
+            skipped += 1
+            next
+          end
+
           if project.stripe_account_id != current_user.stripe_connect_account_id
             project.update_columns(
               stripe_account_id: current_user.stripe_connect_account_id,
@@ -238,7 +184,17 @@ module Neighborly
           end
         end
 
-        Rails.logger.info "Connect Return: Synchronise #{synced} projet(s) pour #{current_user.email}"
+        Rails.logger.info "Connect Return: Synchronise #{synced} projet(s) pour #{current_user.email}; #{skipped} projet(s) deja en reglement ignores"
+      end
+
+      def stripe_project_account_locked?(project)
+        settlement_type = project.respond_to?(:stripe_settlement_type) ? project.stripe_settlement_type.to_s : ''
+        payout_status = project.respond_to?(:stripe_payout_status) ? project.stripe_payout_status.to_s : ''
+        payout_id = project.respond_to?(:stripe_payout_id) ? project.stripe_payout_id : nil
+
+        settlement_type == 'transferred' ||
+          payout_id.present? ||
+          %w[pending in_transit paid failed canceled].include?(payout_status)
       end
 
       def platform_managed_account?(account)

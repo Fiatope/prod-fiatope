@@ -66,6 +66,11 @@ module Neighborly
         return if errors.any?
         return if user.stripe_connect_account_id.present?
 
+        unless @tos_accepted
+          errors << 'Le porteur doit soumettre le formulaire de retrait et accepter les conditions de paiement avant la creation du compte de retrait.'
+          return
+        end
+
         user.create_stripe_connect_account!(tos_accepted: @tos_accepted)
       rescue ::Stripe::StripeError => e
         errors << "Creation du compte Stripe impossible: #{e.message}"
@@ -89,6 +94,11 @@ module Neighborly
       def replace_incompatible_connect_account!(account)
         old_account_id = account.id
         Rails.logger.warn "Payout profile sync: compte Connect #{old_account_id} incompatible pour user #{user.id}; creation d un compte gere par la plateforme."
+
+        unless @tos_accepted
+          errors << 'Le compte de retrait existant doit etre recree. Demandez au porteur de soumettre a nouveau le formulaire de retrait depuis la plateforme.'
+          return
+        end
 
         user.create_stripe_connect_account!(force: true, tos_accepted: @tos_accepted)
         @stripe_account = nil
@@ -239,20 +249,14 @@ module Neighborly
       end
 
       def sync_individual_documents!
-        verification = verification_payload_for(
-          ['IDENTITY_PROOF', :document],
-          ['ADDRESS_PROOF', :additional_document]
-        )
+        verification = verification_payload_for(*representative_verification_definitions)
         return if verification.empty? || errors.any?
 
         attach_account_verification_document(individual_verification: verification, label: 'Documents particulier')
       end
 
       def sync_representative_documents!
-        verification = verification_payload_for(
-          ['IDENTITY_PROOF', :document],
-          ['ADDRESS_PROOF', :additional_document]
-        )
+        verification = verification_payload_for(*representative_verification_definitions)
         return if verification.empty? || errors.any?
 
         attach_person_verification_document(verification)
@@ -260,37 +264,73 @@ module Neighborly
 
       def sync_company_documents!
         company_verification = {}
-        registration_file_ids = upload_documents_for('REGISTRATION_PROOF', 'account_requirement')
-        if registration_file_ids.any?
-          ::Stripe::Account.update(
-            user.stripe_connect_account_id,
-            documents: {
-              company_registration_verification: {
-                files: registration_file_ids
-              }
-            }
-          )
+        if payout_kyc_type_required?('REGISTRATION_PROOF')
+          registration_file_ids = upload_documents_for('REGISTRATION_PROOF', 'account_requirement')
+          if registration_file_ids.any?
+            sync_company_account_documents(
+              {
+                company_registration_verification: {
+                  files: registration_file_ids
+                }
+              },
+              'Extrait d immatriculation'
+            )
 
-          verification_ids = upload_documents_for('REGISTRATION_PROOF', 'additional_verification', limit: 2)
-          company_verification[:document] = verification_file_payload(verification_ids) if verification_ids.any?
+            verification_ids = upload_documents_for('REGISTRATION_PROOF', 'additional_verification', limit: 2)
+            company_verification[:document] = verification_file_payload(verification_ids) if verification_ids.any?
+          end
         end
 
-        articles_file_ids = upload_documents_for('ARTICLES_OF_ASSOCIATION', 'account_requirement')
-        if articles_file_ids.any?
-          ::Stripe::Account.update(
-            user.stripe_connect_account_id,
-            documents: {
-              company_memorandum_of_association: {
-                files: articles_file_ids
-              }
-            }
-          )
+        if payout_kyc_type_required?('ARTICLES_OF_ASSOCIATION')
+          articles_file_ids = upload_documents_for('ARTICLES_OF_ASSOCIATION', 'account_requirement')
+          if articles_file_ids.any?
+            sync_company_account_documents(
+              {
+                company_memorandum_of_association: {
+                  files: articles_file_ids
+                }
+              },
+              'Statuts de l entreprise'
+            )
 
-          verification_ids = upload_documents_for('ARTICLES_OF_ASSOCIATION', 'additional_verification', limit: 2)
-          company_verification[:additional_document] = verification_file_payload(verification_ids) if verification_ids.any?
+            verification_ids = upload_documents_for('ARTICLES_OF_ASSOCIATION', 'additional_verification', limit: 2)
+            company_verification[:additional_document] = verification_file_payload(verification_ids) if verification_ids.any?
+          end
         end
 
         attach_company_verification_document(company_verification) if company_verification.any? && errors.empty?
+      end
+
+      def sync_company_account_documents(documents_payload, label)
+        ::Stripe::Account.update(
+          user.stripe_connect_account_id,
+          documents: documents_payload
+        )
+      rescue ::Stripe::StripeError => e
+        warnings << "#{label} non synchronise comme document entreprise: #{e.message}"
+      end
+
+      def representative_verification_definitions
+        definitions = []
+        definitions << ['IDENTITY_PROOF', :document] if payout_kyc_type_required?('IDENTITY_PROOF')
+        definitions << ['ADDRESS_PROOF', :additional_document] if payout_kyc_type_required?('ADDRESS_PROOF')
+        definitions
+      end
+
+      def payout_kyc_type_required?(proof_type)
+        required_payout_kyc_types.include?(proof_type.to_s)
+      end
+
+      def required_payout_kyc_types
+        @required_payout_kyc_types ||= begin
+          if user.respond_to?(:payout_profile_required_kyc_types)
+            user.payout_profile_required_kyc_types.map(&:to_s)
+          elsif business_type == 'company'
+            %w[IDENTITY_PROOF REGISTRATION_PROOF]
+          else
+            %w[IDENTITY_PROOF]
+          end
+        end
       end
 
       def attach_account_verification_document(individual_verification: nil, company_verification: nil, label:)

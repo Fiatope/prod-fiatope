@@ -154,8 +154,12 @@ module Neighborly::Admin
       if @project.use_stripe?
         # Forcer la synchronisation même si Stripe est déjà activé
         if @project.user.stripe_connect_account_id.present?
-          synced = @project.sync_all_user_projects!
-          flash[:notice] = "Compte Stripe synchronisé (#{synced} projet(s) mis à jour)."
+          if stripe_project_account_locked?(@project)
+            flash[:notice] = "Synchronisation ignoree: un retrait est deja en cours ou historise pour ce projet."
+          else
+            @project.update_column(:stripe_account_id, @project.user.stripe_connect_account_id)
+            flash[:notice] = "Compte Stripe synchronise."
+          end
         else
           flash[:notice] = "Stripe est déjà activé pour ce projet."
         end
@@ -164,7 +168,7 @@ module Neighborly::Admin
           # Activer les paiements sans creer de compte de retrait avant la soumission du profil local.
           @project.update_columns(use_stripe: true)
 
-          if @project.user.stripe_connect_account_id.present?
+          if @project.user.stripe_connect_account_id.present? && !stripe_project_account_locked?(@project)
             @project.update_column(:stripe_account_id, @project.user.stripe_connect_account_id)
           end
           
@@ -174,11 +178,25 @@ module Neighborly::Admin
             flash[:success] = "Stripe active! Le porteur doit completer son profil de retrait local (identite, banque, justificatifs)."
           end
         rescue => e
-          flash[:alert] = "Erreur lors de l'activation de Stripe: #{e.message}"
+          flash[:alert] = "Erreur lors de l'activation de Stripe: #{e.message.truncate(200)}"
         end
       end
       
       redirect_back(fallback_location: projects_path)
+    end
+
+    def stripe_project_account_locked?(project)
+      if project.respond_to?(:stripe_account_locked_for_payout?)
+        return project.stripe_account_locked_for_payout?
+      end
+
+      settlement_type = project.respond_to?(:stripe_settlement_type) ? project.stripe_settlement_type.to_s : ''
+      payout_status = project.respond_to?(:stripe_payout_status) ? project.stripe_payout_status.to_s : ''
+      payout_id = project.respond_to?(:stripe_payout_id) ? project.stripe_payout_id : nil
+
+      settlement_type == 'transferred' ||
+        payout_id.present? ||
+        %w[pending in_transit paid failed canceled].include?(payout_status)
     end
     
     # Action desactivee: plus de generation de lien d'onboarding externe.

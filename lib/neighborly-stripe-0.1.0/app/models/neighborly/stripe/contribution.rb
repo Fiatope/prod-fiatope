@@ -19,6 +19,7 @@ module Neighborly::Stripe::Contribution
   end
   
   def stripe_refund
+    return { success: true, already_refunded: true } if respond_to?(:stripe_refunded?) && stripe_refunded?
     return { success: false, error: 'No Stripe order found' } unless stripe_order.present?
     return { success: false, error: 'Payment intent not found' } unless stripe_order.stripe_payment_intent_id.present?
     

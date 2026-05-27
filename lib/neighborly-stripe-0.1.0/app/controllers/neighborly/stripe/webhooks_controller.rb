@@ -124,59 +124,75 @@ module Neighborly
       
       def handle_payment_succeeded(payment_intent)
         stripe_order = Order.find_by(stripe_payment_intent_id: payment_intent.id)
-        return unless stripe_order
-        
-        stripe_order.mark_as_completed!(
-          charge_id: payment_intent.charges.data.first&.id,
-          transfer_id: payment_intent.transfer
+        contribution = ::Contribution.find_by(payment_id: payment_intent.id)
+        contribution ||= stripe_order&.contribution
+        return unless contribution || stripe_order
+        charge_id = payment_intent_charge_id(payment_intent)
+        stripe_order&.mark_as_completed!(
+          charge_id: charge_id,
+          transfer_id: stripe_value(payment_intent, :transfer)
         )
+        contribution.update_column(:stripe_charge_id, charge_id) if contribution && charge_id.present?
         
-        if stripe_order.contribution && stripe_order.contribution.state != 'confirmed'
+        if contribution && contribution.state != 'confirmed'
           begin
-            stripe_order.contribution.confirm!
-            Rails.logger.info "Webhook: Contribution #{stripe_order.contribution.id} confirmée"
+            contribution.confirm!
+            Rails.logger.info "Webhook: Contribution #{contribution.id} confirmee"
           rescue => e
             Rails.logger.warn "Webhook: Impossible de confirmer contribution: #{e.message}"
           end
         end
         
-        Rails.logger.info "Payment succeeded: Order #{stripe_order.id} marked as completed"
+        Rails.logger.info "Payment succeeded: PaymentIntent #{payment_intent.id} processed"
       end
       
       def handle_payment_failed(payment_intent)
         stripe_order = Order.find_by(stripe_payment_intent_id: payment_intent.id)
-        return unless stripe_order
+        contribution = ::Contribution.find_by(payment_id: payment_intent.id)
+        contribution ||= stripe_order&.contribution
+        return unless contribution || stripe_order
+
+        stripe_order&.mark_as_failed!
         
-        stripe_order.mark_as_failed!
-        
-        if stripe_order.contribution && stripe_order.contribution.state == 'pending'
+        if contribution && contribution.state == 'pending'
           begin
-            stripe_order.contribution.cancel!
-            Rails.logger.info "Webhook: Contribution #{stripe_order.contribution.id} annulée"
+            contribution.cancel!
+            Rails.logger.info "Webhook: Contribution #{contribution.id} annulee"
           rescue => e
             Rails.logger.warn "Webhook: Impossible d'annuler contribution: #{e.message}"
           end
         end
         
-        Rails.logger.info "Payment failed: Order #{stripe_order.id} marked as failed"
+        Rails.logger.info "Payment failed: PaymentIntent #{payment_intent.id} processed"
       end
       
       def handle_charge_refunded(charge)
         stripe_order = Order.find_by(stripe_charge_id: charge.id)
-        return unless stripe_order
+        contribution = ::Contribution.find_by(stripe_charge_id: charge.id)
+        contribution ||= ::Contribution.find_by(payment_id: stripe_value(charge, :payment_intent))
+        contribution ||= stripe_order&.contribution
+        return unless contribution || stripe_order
+
+        stripe_order&.update(status: 'refunded')
         
-        stripe_order.update(status: 'refunded')
-        
-        if stripe_order.contribution && stripe_order.contribution.state == 'confirmed'
+        if contribution
+          refund = stripe_refund_from_charge(charge)
+          updates = { stripe_refunded: true }
+          updates[:stripe_refund_id] = refund.id if refund.respond_to?(:id) && refund.id.present?
+          updates[:stripe_refund_amount] = refund.amount.to_i / 100.0 if refund.respond_to?(:amount) && contribution.respond_to?(:stripe_refund_amount=)
+          contribution.update_columns(updates)
+        end
+
+        if contribution && contribution.state == 'confirmed'
           begin
-            stripe_order.contribution.refund!
-            Rails.logger.info "Webhook: Contribution #{stripe_order.contribution.id} remboursée"
+            contribution.refund!
+            Rails.logger.info "Webhook: Contribution #{contribution.id} remboursee"
           rescue => e
             Rails.logger.warn "Webhook: Impossible de rembourser contribution: #{e.message}"
           end
         end
         
-        Rails.logger.info "Charge refunded: Order #{stripe_order.id} marked as refunded"
+        Rails.logger.info "Charge refunded: Charge #{charge.id} processed"
       end
       
       def handle_account_updated(account)
@@ -184,15 +200,20 @@ module Neighborly
         return unless user
         
         ready_for_transfers = account_ready_for_transfers?(account)
-        user.update(stripe_onboarding_complete: ready_for_transfers)
+        cache_stripe_account_status!(user, account, ready_for_transfers)
         Rails.logger.info "Account updated: User #{user.id} ready_for_transfers=#{ready_for_transfers}"
 
         if ready_for_transfers
+          user.clear_payout_required_kyc_types! if user.respond_to?(:clear_payout_required_kyc_types!)
           
           # CRITIQUE: Synchroniser tous les projets du porteur
           # C'est ici que la magie opère - quand l'onboarding est complété,
           # on s'assure que tous les projets ont le bon stripe_account_id
           sync_user_projects(user)
+        else
+          due = account_requirements_due(account)
+          user.remember_payout_required_kyc_types_from_requirements(due) if user.respond_to?(:remember_payout_required_kyc_types_from_requirements)
+          unlock_payout_profiles_for_required_updates(user, account, due)
         end
       end
       
@@ -201,7 +222,13 @@ module Neighborly
         return unless user.stripe_connect_account_id.present?
         
         synced_count = 0
+        skipped_count = 0
         user.projects.find_each do |project|
+          if stripe_project_account_locked?(project)
+            skipped_count += 1
+            next
+          end
+
           if project.stripe_account_id != user.stripe_connect_account_id
             project.update_columns(
               stripe_account_id: user.stripe_connect_account_id,
@@ -211,9 +238,89 @@ module Neighborly
           end
         end
         
-        Rails.logger.info "Webhook: Synchronisé #{synced_count} projet(s) pour #{user.email} avec compte #{user.stripe_connect_account_id}"
+        Rails.logger.info "Webhook: Synchronise #{synced_count} projet(s) pour #{user.email} avec compte #{user.stripe_connect_account_id}; #{skipped_count} projet(s) deja en reglement ignores"
       end
       
+      def cache_stripe_account_status!(user, account, ready_for_transfers)
+        attrs = { stripe_onboarding_complete: ready_for_transfers }
+        attrs[:stripe_account_type] = account.type if user.respond_to?(:stripe_account_type=)
+        attrs[:stripe_charges_enabled] = account.charges_enabled if user.respond_to?(:stripe_charges_enabled=)
+        attrs[:stripe_payouts_enabled] = account.payouts_enabled if user.respond_to?(:stripe_payouts_enabled=)
+        user.update_columns(attrs)
+      end
+
+      def unlock_payout_profiles_for_required_updates(user, account, due)
+        return unless account_needs_payout_profile_update?(account, due)
+
+        projects = user.projects.where(state: 'request_funds').to_a
+        if ::Project.column_names.include?('stripe_payout_status')
+          projects += user.projects.where(stripe_payout_status: %w[failed canceled]).to_a
+        end
+        projects.uniq!
+        return if projects.empty?
+
+        Rails.cache.write(
+          payout_profile_edit_unlock_cache_key(user),
+          { unlocked_at: Time.current.to_i, source: 'account.updated' },
+          expires_in: 14.days
+        )
+
+        projects.each do |project|
+          project.update_column(:state, 'waiting_funds') if project.state == 'request_funds'
+          notify_payout_profile_update_required(project)
+        end
+      rescue => e
+        Rails.logger.warn "Webhook account.updated: impossible d ouvrir la correction du profil de retrait pour user #{user.id}: #{e.message}"
+      end
+
+      def account_needs_payout_profile_update?(account, due)
+        due.any? ||
+          Array(stripe_value(account.requirements, :errors)).any? ||
+          stripe_value(account.requirements, :disabled_reason).present?
+      end
+
+      def payout_profile_edit_unlock_cache_key(user)
+        "payout_profile_edit_unlock:user:#{user.id}"
+      end
+
+      def notify_payout_profile_update_required(project)
+        cache_key = "payout_profile_update_required:auto:project:#{project.id}"
+        return false if Rails.cache.read(cache_key).present?
+
+        ::Notification.notify_once(
+          :payout_profile_update_required,
+          project.user,
+          { project_id: project.id },
+          project: project
+        )
+        Rails.cache.write(cache_key, true, expires_in: 14.days)
+        true
+      rescue => e
+        Rails.logger.warn "Webhook account.updated: notification correction profil retrait echouee pour project #{project.id}: #{e.message}"
+        false
+      end
+
+      def unlock_payout_profile_after_payout_failure(project)
+        Rails.cache.write(
+          payout_profile_edit_unlock_cache_key(project.user),
+          { unlocked_at: Time.current.to_i, source: 'payout.failed' },
+          expires_in: 14.days
+        )
+        notify_payout_profile_update_required(project)
+      rescue => e
+        Rails.logger.warn "Webhook payout.failed: impossible d ouvrir la correction du profil de retrait pour project #{project.id}: #{e.message}"
+      end
+
+      def stripe_project_account_locked?(project)
+        settlement_type = project.respond_to?(:stripe_settlement_type) ? project.stripe_settlement_type.to_s : ''
+        payout_status = project.respond_to?(:stripe_payout_status) ? project.stripe_payout_status.to_s : ''
+        payout_id = project.respond_to?(:stripe_payout_id) ? project.stripe_payout_id : nil
+
+        settlement_type == 'transferred' ||
+          payout_id.present? ||
+          %w[pending in_transit paid failed canceled].include?(payout_status)
+      end
+
       def account_ready_for_transfers?(account)
         account.payouts_enabled &&
           stripe_value(account.capabilities, :transfers) == 'active' &&
@@ -240,12 +347,34 @@ module Neighborly
         nil
       end
 
+      def payment_intent_charge_id(payment_intent)
+        latest_charge = stripe_value(payment_intent, :latest_charge)
+        return latest_charge.id if latest_charge.respond_to?(:id)
+        return latest_charge if latest_charge.present?
+
+        charges = stripe_value(payment_intent, :charges)
+        charge = charges.data.first if charges.respond_to?(:data) && charges.data.respond_to?(:first)
+        charge.respond_to?(:id) ? charge.id : charge
+      end
+
+      def stripe_refund_from_charge(charge)
+        refunds = stripe_value(charge, :refunds)
+        return unless refunds.respond_to?(:data)
+
+        refunds.data.first
+      end
+
       def handle_transfer_created(transfer)
-        stripe_order = Order.find_by(stripe_payment_intent_id: transfer.source_transaction)
-        return unless stripe_order
-        
-        stripe_order.update(stripe_transfer_id: transfer.id)
-        Rails.logger.info "Transfer created: Order #{stripe_order.id} transfer #{transfer.id}"
+        contribution = ::Contribution.find_by(stripe_charge_id: transfer.source_transaction)
+        stripe_order = Order.find_by(stripe_charge_id: transfer.source_transaction)
+        stripe_order ||= contribution&.stripe_order if contribution.respond_to?(:stripe_order)
+        return unless contribution || stripe_order
+        contribution&.update_columns(
+          stripe_transferred: true,
+          stripe_transfer_id: transfer.id
+        )
+        stripe_order&.update(stripe_transfer_id: transfer.id)
+        Rails.logger.info "Transfer created: #{transfer.id} for contribution #{contribution&.id || 'unknown'}"
       end
       
       # Paiement asynchrone réussi (SEPA, etc.)
@@ -299,17 +428,39 @@ module Neighborly
         charge_id = dispute.charge
         return unless charge_id.present?
         
-        # Trouver la contribution via le stripe_order
-        stripe_order = Order.find_by(stripe_charge_id: charge_id)
-        return unless stripe_order
-        
-        contribution = stripe_order.contribution
+        contribution = ::Contribution.find_by(stripe_charge_id: charge_id)
+        contribution ||= Order.find_by(stripe_charge_id: charge_id)&.contribution
         return unless contribution
         
         # Logger l'alerte - les litiges doivent être traités manuellement
         Rails.logger.error "DISPUTE CRÉÉ: Contribution #{contribution.id}, Projet #{contribution.project.name}, Montant #{contribution.value}€"
         Rails.logger.error "Dispute ID: #{dispute.id}, Raison: #{dispute.reason}"
         
+        if contribution.stripe_transferred && contribution.stripe_transfer_id.present?
+          begin
+            ::Stripe::Transfer.create_reversal(
+              contribution.stripe_transfer_id,
+              {
+                metadata: {
+                  contribution_id: contribution.id,
+                  dispute_id: dispute.id,
+                  reason: 'dispute_created'
+                }
+              }
+            )
+
+            update_attrs = { stripe_transferred: false }
+            update_attrs[:stripe_dispute_id] = dispute.id if contribution.respond_to?(:stripe_dispute_id=)
+            contribution.update_columns(update_attrs)
+
+            Rails.logger.error "Transfert #{contribution.stripe_transfer_id} reverse suite au litige"
+          rescue ::Stripe::StripeError => e
+            Rails.logger.error "Impossible de reverser le transfert #{contribution.stripe_transfer_id}: #{e.message}"
+          end
+        elsif contribution.respond_to?(:stripe_dispute_id=)
+          contribution.update_column(:stripe_dispute_id, dispute.id)
+        end
+
         # Notifier l'admin (si méthode existe)
         begin
           AdminMailer.dispute_alert(contribution, dispute).deliver_later if defined?(AdminMailer)
@@ -373,6 +524,8 @@ module Neighborly
         end
 
         update_project_payout_from_stripe!(project, payout)
+        reopen_project_after_payout_failure!(project)
+        unlock_payout_profile_after_payout_failure(project)
         amount = payout.amount.to_i / 100.0
         failure_message = payout.failure_message.presence || payout.failure_code.presence || 'raison inconnue'
         Rails.logger.error "PAYOUT FAILED: projet #{project.id}, #{amount} #{payout.currency.to_s.upcase} - #{failure_message}"
@@ -421,13 +574,15 @@ module Neighborly
         end
         return exact_match if exact_match
 
-        Rails.logger.warn "Webhook payout #{payout.id}: metadata absente, fallback sur projet recent du compte #{account_id}" if candidates.size > 1
-        candidates.first
+        return candidates.first if candidates.size == 1
+
+        Rails.logger.warn "Webhook payout #{payout.id}: rattachement refuse pour compte #{account_id}. Ajoutez l'identifiant du projet dans la description du payout."
+        nil
       end
 
       def project_id_from_payout_description(payout)
         description = payout.respond_to?(:description) ? payout.description.to_s : ''
-        description[/\b(?:project|projet)\s*#?\s*(\d+)\b/i, 1]
+        description[/\b(?:project|projet|cagnotte|campagne)\s*#?\s*(\d+)\b/i, 1]
       end
 
       def payout_project_matches_connected_account?(project)
@@ -463,6 +618,16 @@ module Neighborly
         )
 
         mark_dashboard_payout_transfer_if_needed!(project, payout, payout_source)
+      end
+
+      def reopen_project_after_payout_failure!(project)
+        attrs = {
+          stripe_payout_paid_at: nil,
+          stripe_settled_at: nil
+        }
+        attrs[:state] = 'request_funds' if project.state == 'paid'
+
+        project.update_columns(attrs)
       end
 
       def expected_project_payout_amount_cents(project, currency)

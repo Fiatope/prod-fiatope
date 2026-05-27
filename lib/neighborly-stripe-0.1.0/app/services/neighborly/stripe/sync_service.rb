@@ -102,6 +102,17 @@ module Neighborly
       end
 
       def sync_project!(project)
+        if stripe_project_account_locked?(project)
+          @results[:projects] << {
+            id: project.id,
+            name: project.name,
+            updated: false,
+            skipped: true,
+            reason: 'withdrawal_in_progress'
+          }
+          return
+        end
+
         updates = {}
         updates[:stripe_account_id] = user.stripe_connect_account_id if project.stripe_account_id != user.stripe_connect_account_id
         updates[:use_stripe] = true unless project.use_stripe?
@@ -114,6 +125,20 @@ module Neighborly
           updated: updates.any?,
           changes: updates
         }
+      end
+
+      def stripe_project_account_locked?(project)
+        if project.respond_to?(:stripe_account_locked_for_payout?)
+          return project.stripe_account_locked_for_payout?
+        end
+
+        settlement_type = project.respond_to?(:stripe_settlement_type) ? project.stripe_settlement_type.to_s : ''
+        payout_status = project.respond_to?(:stripe_payout_status) ? project.stripe_payout_status.to_s : ''
+        payout_id = project.respond_to?(:stripe_payout_id) ? project.stripe_payout_id : nil
+
+        settlement_type == 'transferred' ||
+          payout_id.present? ||
+          %w[pending in_transit paid failed canceled].include?(payout_status)
       end
 
       def sync_contributions!

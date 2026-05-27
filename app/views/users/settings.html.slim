@@ -35,9 +35,9 @@
                     i.icon-et-info
                     = " Etat du retrait"
                 .large-4.columns style="margin-bottom: 0.5rem;"
-                  = button_to neighborly_stripe.sync_account_path, method: :post, class: 'button small secondary radius', style: 'width: 100%;', data: { disable_with: 'Sync...' } do
+                  = button_to neighborly_stripe.sync_account_path, method: :post, class: 'button small secondary radius', style: 'width: 100%;', data: { disable_with: 'Verification...' } do
                     i.icon-et-refresh
-                    = " Synchroniser"
+                    = " Verifier"
                 .large-4.columns style="margin-bottom: 0.5rem;"
                   a.button.small.radius href="#" data-click-toggle="unlink-stripe-section" style="background: #ef4444; width: 100%;"
                     i.icon-et-close
@@ -84,40 +84,17 @@
                 i.icon-et-info style="font-size: 1.8rem; color: #3b82f6;"
               .large-11.columns
                 h5 style="color: #1e40af; margin-bottom: 0.25rem; font-weight: 600;"
-                  | Connectez votre compte
+                  | Configurer votre compte de paiement
                 p style="color: #475569; margin-bottom: 0; font-size: 0.9rem;"
                   | Pour recevoir les contributions, configurez votre compte de paiement.
             
             hr style="margin: 1.25rem 0; border-color: #e2e8f0;"
             
             .row
-              .large-6.columns style="margin-bottom: 0.5rem;"
-                = link_to neighborly_stripe.connect_create_path, method: :post, class: 'button radius', style: 'background: #22c55e; width: 100%; margin-bottom: 0;' do
-                  i.icon-et-plus
-                  = " Nouveau compte"
-              .large-6.columns
-                a.button.secondary.radius href="#" data-click-toggle="link-existing-form" style="width: 100%; margin-bottom: 0;"
-                  i.icon-et-link
-                  = " Lier un compte existant"
-            
-            #link-existing-form style="display: none; margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid #e2e8f0;"
-              h6 style="color: #334155; font-weight: 600; margin-bottom: 0.75rem;"
-                i.icon-et-link style="margin-right: 0.5rem;"
-                | Lier un compte existant
-              
-              p style="color: #64748b; font-size: 0.85rem; margin-bottom: 1rem;"
-                | Entrez l'identifiant de votre compte de paiement existant.
-              
-              = form_tag neighborly_stripe.connect_link_existing_path, method: :post do
-                .row
-                  .large-9.columns
-                    = text_field_tag :stripe_account_id, nil, placeholder: 'acct_xxxxxxxxxx', style: 'margin-bottom: 0; font-family: monospace;'
-                  .large-3.columns
-                    = submit_tag 'Lier', class: 'button small radius', style: 'width: 100%; margin-bottom: 0; background: #635bff;'
-              
-              p style="color: #94a3b8; font-size: 0.8rem; margin-top: 0.75rem; margin-bottom: 0;"
-                i.icon-et-help style="margin-right: 0.25rem;"
-                | Utilisez uniquement un identifiant fourni par notre support.
+              .large-12.columns style="margin-bottom: 0.5rem;"
+                = link_to pay_project_path(@user.projects.last), class: 'button radius', style: 'background: #22c55e; width: 100%; margin-bottom: 0;' do
+                  i.icon-et-arrow-right
+                  = " Completer mon profil de retrait"
         
         javascript:
           document.addEventListener('DOMContentLoaded', function() {
@@ -158,10 +135,10 @@
                   td style="text-align: center; padding: 0.75rem;"
                     - if project.stripe_account_id.present?
                       span style="background: #dcfce7; color: #166534; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 500;"
-                        | Connecté
+                        | Configure
                     - else
                       span style="background: #f1f5f9; color: #64748b; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem;"
-                        | Non connecté
+                        | A configurer
                   td style="text-align: center; padding: 0.75rem;"
                     - if project.stripe_account_ready?
                       span style="background: #dcfce7; color: #166534; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 500;"

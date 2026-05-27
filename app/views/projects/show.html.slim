@@ -156,9 +156,9 @@
         - payout_states = ['successful', 'waiting_funds', 'online', 'request_funds', 'paid']
         - if can_request_payout && payout_states.include?(@project.state)
           - payout_status = @project.stripe_payout_status.to_s
-          - already_paid = @project.state == 'paid'
           - payout_processing = %w[pending in_transit].include?(payout_status)
           - payout_failed = %w[failed canceled].include?(payout_status)
+          - already_paid = @project.state == 'paid' && !payout_failed
           - transfer_done = @project.stripe_settlement_type == 'transferred' || @project.stripe_transfer_id.present?
           - payout_pending = (@project.state == 'request_funds' || payout_processing || payout_failed || transfer_done) && !already_paid
           - payout_ready = @payout_profile_complete

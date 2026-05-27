@@ -399,6 +399,20 @@ module Neighborly
         false
       end
 
+      def stripe_project_account_locked_for_sync?
+        if project.respond_to?(:stripe_account_locked_for_payout?)
+          return project.stripe_account_locked_for_payout?
+        end
+
+        settlement_type = project.respond_to?(:stripe_settlement_type) ? project.stripe_settlement_type.to_s : ''
+        payout_status = project.respond_to?(:stripe_payout_status) ? project.stripe_payout_status.to_s : ''
+        payout_id = project.respond_to?(:stripe_payout_id) ? project.stripe_payout_id : nil
+
+        settlement_type == 'transferred' ||
+          payout_id.present? ||
+          %w[pending in_transit paid failed canceled].include?(payout_status)
+      end
+
       def transferable_contributions
         stripe_contributions.where(state: 'confirmed')
                             .where(stripe_refunded: [false, nil])
@@ -524,7 +538,7 @@ module Neighborly
         
         # SYNCHRONISATION AUTOMATIQUE: Si le projet n'a pas de stripe_account_id 
         # mais que le porteur en a un, synchroniser maintenant
-        if project.stripe_account_id.blank? && project.user.stripe_connect_account_id.present?
+        if project.stripe_account_id.blank? && project.user.stripe_connect_account_id.present? && !stripe_project_account_locked_for_sync?
           Rails.logger.info "CampaignSettlement: Synchronisation automatique du stripe_account_id depuis le porteur"
           project.update_columns(stripe_account_id: project.user.stripe_connect_account_id)
           project.reload

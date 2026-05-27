@@ -47,6 +47,7 @@ module StripeProject
   def sync_stripe_account_from_user
     return unless user.present?
     return unless user.respond_to?(:stripe_connect_account_id)
+    return if stripe_account_locked_for_payout?
     return if stripe_account_id == user.stripe_connect_account_id
     
     if user.stripe_connect_account_id.present?
@@ -61,9 +62,20 @@ module StripeProject
   def should_sync_stripe?
     return false unless user.present?
     return false unless user.respond_to?(:stripe_connect_account_id)
-    
+    return false if stripe_account_locked_for_payout?
+
     user.stripe_connect_account_id.present? && 
       stripe_account_id != user.stripe_connect_account_id
+  end
+
+  def stripe_account_locked_for_payout?
+    settlement_type = respond_to?(:stripe_settlement_type) ? stripe_settlement_type.to_s : ''
+    payout_status = respond_to?(:stripe_payout_status) ? stripe_payout_status.to_s : ''
+    payout_id = respond_to?(:stripe_payout_id) ? stripe_payout_id : nil
+
+    settlement_type == 'transferred' ||
+      payout_id.present? ||
+      %w[pending in_transit paid failed canceled].include?(payout_status)
   end
 
   def stripe_connect_status

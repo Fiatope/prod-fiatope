@@ -273,6 +273,7 @@ class Project < ActiveRecord::Base
   # Synchronise stripe_account_id depuis le compte Stripe Connect du porteur
   def sync_stripe_account_from_user
     return unless user.present?
+    return if respond_to?(:stripe_account_locked_for_payout?) && stripe_account_locked_for_payout?
     return if stripe_account_id.present?
     return unless user.stripe_connect_account_id.present?
     

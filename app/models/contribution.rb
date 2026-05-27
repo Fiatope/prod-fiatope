@@ -138,6 +138,7 @@ class Contribution < ActiveRecord::Base
   
   # Remboursement via Stripe
   def stripe_refund
+    return true if respond_to?(:stripe_refunded?) && stripe_refunded?
     return true unless payment_id.present? && payment_id.start_with?('pi_')
     
     begin

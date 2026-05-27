@@ -8,6 +8,7 @@ module Neighborly::Stripe::Project
   def setup_stripe_account!
     return stripe_account_id if stripe_account_id.present?
     return nil if user.stripe_connect_account_id.blank?
+    return nil if stripe_account_locked_for_payout?
     
     account_id = user.stripe_connect_account_id
     update_column(:stripe_account_id, account_id)
@@ -20,7 +21,7 @@ module Neighborly::Stripe::Project
   
   def enable_stripe!
     # Si le user a déjà un compte connecté, le réutiliser
-    if user.stripe_connect_account_id.present?
+    if user.stripe_connect_account_id.present? && !stripe_account_locked_for_payout?
       # Utiliser update_columns pour ce projet spécifique (plus rapide)
       update_columns(
         stripe_account_id: user.stripe_connect_account_id,
@@ -45,7 +46,13 @@ module Neighborly::Stripe::Project
     return unless user.stripe_connect_account_id.present?
     
     synced = 0
+    skipped = 0
     user.projects.find_each do |project|
+      if project.respond_to?(:stripe_account_locked_for_payout?) && project.stripe_account_locked_for_payout?
+        skipped += 1
+        next
+      end
+
       needs_sync = project.stripe_account_id != user.stripe_connect_account_id || !project.use_stripe?
       
       if needs_sync
@@ -57,8 +64,18 @@ module Neighborly::Stripe::Project
       end
     end
     
-    Rails.logger.info "Stripe: Synchronisé #{synced} projet(s) pour #{user.email}"
+    Rails.logger.info "Stripe: Synchronise #{synced} projet(s) pour #{user.email}; #{skipped} ignore(s) car deja en reglement"
     synced
+  end
+
+  def stripe_account_locked_for_payout?
+    settlement_type = respond_to?(:stripe_settlement_type) ? stripe_settlement_type.to_s : ''
+    payout_status = respond_to?(:stripe_payout_status) ? stripe_payout_status.to_s : ''
+    payout_id = respond_to?(:stripe_payout_id) ? stripe_payout_id : nil
+
+    settlement_type == 'transferred' ||
+      payout_id.present? ||
+      %w[pending in_transit paid failed canceled].include?(payout_status)
   end
   
   def process_stripe_payout(amount_cents:)
