@@ -37,6 +37,7 @@ module Neighborly
         ensure_platform_managed_account!
         sync_account_identity!
         sync_bank_account!
+        refresh_stripe_account!
         sync_kyc_documents!
         refresh_onboarding_flags!
         verify_stripe_payout_ready!
@@ -145,7 +146,7 @@ module Neighborly
         tos_payload = tos_acceptance_payload
         account_params[:tos_acceptance] = tos_payload if tos_payload.present?
 
-        ::Stripe::Account.update(user.stripe_connect_account_id, account_params)
+        @stripe_account = ::Stripe::Account.update(user.stripe_connect_account_id, account_params)
         sync_representative_person!(name_parts) if business_type == 'company'
       rescue ::Stripe::StripeError => e
         errors << "Synchronisation identite Stripe impossible: #{e.message}"
@@ -233,12 +234,14 @@ module Neighborly
         )
 
         ::Stripe::Account.update(user.stripe_connect_account_id, external_account: token.id)
+        @stripe_account = nil
       rescue ::Stripe::StripeError => e
         errors << "Synchronisation bancaire Stripe impossible: #{e.message}"
       end
 
       def sync_kyc_documents!
         return if errors.any?
+        return add_warning_once('Aucun nouveau justificatif bancaire demande par Stripe.') if stripe_required_payout_kyc_types.empty?
 
         if business_type == 'company'
           sync_company_documents!
@@ -318,7 +321,7 @@ module Neighborly
       end
 
       def payout_kyc_type_required?(proof_type)
-        required_payout_kyc_types.include?(proof_type.to_s)
+        stripe_required_payout_kyc_types.include?(proof_type.to_s)
       end
 
       def required_payout_kyc_types
@@ -330,6 +333,38 @@ module Neighborly
           else
             %w[IDENTITY_PROOF]
           end
+        end
+      end
+
+      def stripe_required_payout_kyc_types
+        @stripe_required_payout_kyc_types ||= begin
+          required_types = payout_kyc_types_for_requirements(account_requirements_due(stripe_account))
+          local_required_types = required_payout_kyc_types
+          (required_types & local_required_types).presence || required_types
+        end
+      end
+
+      def payout_kyc_types_for_requirements(requirements)
+        Array(requirements).flat_map do |requirement|
+          requirement = requirement.to_s
+          payout_requirement_kyc_type_mappings.each_with_object([]) do |(pattern, proof_type), types|
+            types << proof_type if requirement.match?(pattern)
+          end
+        end.uniq
+      end
+
+      def payout_requirement_kyc_type_mappings
+        if user.class.const_defined?(:PAYOUT_REQUIREMENT_KYC_TYPES)
+          user.class.const_get(:PAYOUT_REQUIREMENT_KYC_TYPES)
+        else
+          [
+            [/(individual|representative|person).*verification\.additional_document/i, 'ADDRESS_PROOF'],
+            [/(individual|representative|person).*verification\.document/i, 'IDENTITY_PROOF'],
+            [/company\.verification\.document/i, 'REGISTRATION_PROOF'],
+            [/company\.verification\.additional_document/i, 'ARTICLES_OF_ASSOCIATION'],
+            [/documents\.company_registration_verification/i, 'REGISTRATION_PROOF'],
+            [/documents\.company_memorandum_of_association/i, 'ARTICLES_OF_ASSOCIATION']
+          ]
         end
       end
 
@@ -345,7 +380,7 @@ module Neighborly
 
         ::Stripe::Account.update(user.stripe_connect_account_id, account_token: token)
       rescue ::Stripe::StripeError => e
-        errors << "#{label} non synchronises: #{e.message}"
+        handle_document_sync_error(e, "#{label} non synchronises")
       end
 
       def attach_person_verification_document(verification)
@@ -363,7 +398,7 @@ module Neighborly
           person_token: token
         )
       rescue ::Stripe::StripeError => e
-        errors << "Documents representant non synchronises: #{e.message}"
+        handle_document_sync_error(e, 'Documents representant non synchronises')
       end
 
       def attach_company_verification_document(company_verification)
@@ -384,6 +419,18 @@ module Neighborly
             errors << "Document #{proof_type} impossible a transmettre pour verification."
           end
         end
+      end
+
+      def handle_document_sync_error(error, label)
+        if verified_document_update_blocked?(error) && stripe_required_payout_kyc_types.empty?
+          add_warning_once("#{label}: justificatif deja verifie; aucune nouvelle piece demandee.")
+        else
+          errors << "#{label}: #{error.message}"
+        end
+      end
+
+      def verified_document_update_blocked?(error)
+        error.message.to_s.match?(/cannot change .*verification.*document.*account is verified/i)
       end
 
       def upload_documents_for(proof_type, purpose, limit: 10)
@@ -478,6 +525,13 @@ module Neighborly
 
       def stripe_account
         @stripe_account ||= ::Stripe::Account.retrieve(user.stripe_connect_account_id)
+      end
+
+      def refresh_stripe_account!
+        @stripe_required_payout_kyc_types = nil
+        @stripe_account = ::Stripe::Account.retrieve(user.stripe_connect_account_id)
+      rescue ::Stripe::StripeError => e
+        errors << "Verification du compte Stripe impossible: #{e.message}"
       end
 
       def account_ready_for_transfers?(account)
