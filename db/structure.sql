@@ -109,6 +109,8 @@ CREATE TABLE public.contributions (
     stripe_refund_id character varying,
     stripe_charge_id character varying,
     stripe_refund_amount numeric(10,2),
+    stripe_transfer_amount_cents integer,
+    stripe_transfer_currency character varying,
     CONSTRAINT backers_value_positive CHECK ((value >= (0)::numeric))
 );
 
@@ -220,6 +222,18 @@ CREATE TABLE public.projects (
     stripe_transfer_id character varying,
     stripe_settled_at timestamp without time zone,
     stripe_settlement_type character varying,
+    stripe_transfer_created_at timestamp without time zone,
+    stripe_payout_id character varying,
+    stripe_payout_ids text,
+    stripe_payout_status character varying,
+    stripe_payout_source character varying,
+    stripe_payout_amount_cents integer,
+    stripe_payout_currency character varying,
+    stripe_payout_arrival_date timestamp without time zone,
+    stripe_payout_paid_at timestamp without time zone,
+    stripe_payout_failed_at timestamp without time zone,
+    stripe_payout_failure_code character varying,
+    stripe_payout_failure_message text,
     CONSTRAINT projects_about_not_blank CHECK ((length(btrim(about)) > 0)),
     CONSTRAINT projects_headline_length_within CHECK (((length(headline) >= 1) AND (length(headline) <= 140))),
     CONSTRAINT projects_headline_not_blank CHECK ((length(btrim(headline)) > 0))
@@ -1716,7 +1730,8 @@ CREATE TABLE public.organizations (
     image character varying(255),
     user_id integer,
     created_at timestamp without time zone,
-    updated_at timestamp without time zone
+    updated_at timestamp without time zone,
+    registration_number character varying
 );
 
 
@@ -4535,10 +4550,31 @@ CREATE INDEX index_projects_on_stripe_account_id ON public.projects USING btree 
 
 
 --
+-- Name: index_projects_on_stripe_payout_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_projects_on_stripe_payout_id ON public.projects USING btree (stripe_payout_id);
+
+
+--
+-- Name: index_projects_on_stripe_payout_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_projects_on_stripe_payout_status ON public.projects USING btree (stripe_payout_status);
+
+
+--
 -- Name: index_projects_on_stripe_settled_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_projects_on_stripe_settled_at ON public.projects USING btree (stripe_settled_at);
+
+
+--
+-- Name: index_projects_on_stripe_transfer_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_projects_on_stripe_transfer_created_at ON public.projects USING btree (stripe_transfer_created_at);
 
 
 --
@@ -5632,6 +5668,8 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20260122121145'),
 ('20260122172500'),
 ('20260127150500'),
-('20260129140000');
+('20260129140000'),
+('20260525120000'),
+('20260525132000');
 
 
