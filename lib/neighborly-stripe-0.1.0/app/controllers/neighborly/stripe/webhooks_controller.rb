@@ -553,7 +553,10 @@ module Neighborly
         project = ::Project.find_by(stripe_payout_id: payout.id)
         return project if project
 
-        project = ::Project.where("stripe_payout_ids LIKE ?", "%#{payout.id}%").first
+        project = ::Project.where(
+          "EXISTS (SELECT 1 FROM unnest(string_to_array(COALESCE(projects.stripe_payout_ids, ''), ',')) AS stored_payout_id WHERE btrim(stored_payout_id) = ?)",
+          payout.id.to_s
+        ).first
         return project if project
 
         account_id = connected_account_id
@@ -566,13 +569,18 @@ module Neighborly
         candidates.reject! { |candidate| candidate.state == 'paid' && candidate.stripe_payout_status == 'paid' }
         candidates += user.projects.where(state: 'request_funds').order(updated_at: :desc).to_a
         candidates.uniq!
-        exact_match = candidates.find do |candidate|
+        exact_matches = candidates.select do |candidate|
           stored_amount_matches = candidate.stripe_payout_amount_cents.to_i == payout.amount.to_i &&
                                   candidate.stripe_payout_currency.to_s.downcase == payout.currency.to_s.downcase
           expected_amount_matches = expected_project_payout_amount_cents(candidate, payout.currency).to_i == payout.amount.to_i
           stored_amount_matches || expected_amount_matches
         end
-        return exact_match if exact_match
+        return exact_matches.first if exact_matches.size == 1
+
+        if exact_matches.size > 1
+          Rails.logger.warn "Webhook payout #{payout.id}: rattachement ambigu pour compte #{account_id}. Ajoutez l'identifiant du projet dans la description du payout."
+          return nil
+        end
 
         return candidates.first if candidates.size == 1
 
