@@ -5,39 +5,34 @@
 - net = (gross * (1.0 - fee_pct)).round(2)
 - currency_sym = project.currency || 'EUR'
 
-|Chèr(e) #{project.user.display_name},
+|Bonjour #{project.user.display_name},
 br
 br
-strong | 🎉 Bonne nouvelle ! Vos fonds sont en route.
+|Votre paiement pour le projet #{link_to(project.name, project_url(project))} est en cours.
 br
-br
-|Votre demande de virement pour le projet #{link_to(project.name, project_url(project))} a été traitée avec succès par notre équipe.
+|Les fonds sont en route vers votre compte bancaire.
 br
 br
 table[style="border-collapse: collapse; width: 100%; max-width: 500px;"]
-  tr[style="background: #f0fdf4;"]
-    td[style="padding: 10px; border: 1px solid #bbf7d0; font-weight: bold;"] Projet
-    td[style="padding: 10px; border: 1px solid #bbf7d0;"] #{project.name}
+  tr[style="background: #f8fafc;"]
+    td[style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;"] Projet
+    td[style="padding: 10px; border: 1px solid #e2e8f0;"] #{project.name}
   tr
-    td[style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;"] Montant collecté
+    td[style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;"] Montant collecte
     td[style="padding: 10px; border: 1px solid #e2e8f0;"] #{number_to_currency(gross, unit: currency_sym, format: '%n %u')}
   tr
-    td[style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;"] Commission (#{(fee_pct * 100).to_i}%)
-    td[style="padding: 10px; border: 1px solid #e2e8f0; color: #d97706;"] − #{number_to_currency((gross * fee_pct).round(2), unit: currency_sym, format: '%n %u')}
-  tr[style="background: #dcfce7;"]
-    td[style="padding: 10px; border: 1px solid #bbf7d0; font-weight: bold;"] Montant virement NET
+    td[style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;"] Commission
+    td[style="padding: 10px; border: 1px solid #e2e8f0;"] #{number_to_currency((gross * fee_pct).round(2), unit: currency_sym, format: '%n %u')}
+  tr[style="background: #f0fdf4;"]
+    td[style="padding: 10px; border: 1px solid #bbf7d0; font-weight: bold;"] Montant a recevoir
     td[style="padding: 10px; border: 1px solid #bbf7d0; color: #16a34a; font-weight: bold;"] #{number_to_currency(net, unit: currency_sym, format: '%n %u')}
-  tr[style="background: #f8fafc;"]
-    td[style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;"] Délai estimé
-    td[style="padding: 10px; border: 1px solid #e2e8f0;"] 2 à 7 jours ouvrés
 br
 br
-|Les fonds seront crédités directement sur votre compte bancaire enregistré. Vous recevrez un second email lorsque le virement sera arrivé sur votre compte.
+|Le paiement arrive generalement sous 2 a 7 jours ouvres.
+br
+|Vous recevrez un second email lorsque les fonds seront arrives sur votre compte bancaire.
 br
 br
-|Si vous n'avez pas reçu les fonds après 7 jours ouvrés, contactez-nous à #{mail_to Configuration[:email_contact]}.
+|Merci,
 br
-br
-|Merci pour votre confiance,
-br
-|L'équipe #{Configuration[:company_name]}
+|L'equipe #{Configuration[:company_name]}

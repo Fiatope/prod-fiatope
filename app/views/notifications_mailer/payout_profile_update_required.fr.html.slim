@@ -3,17 +3,19 @@
 |Bonjour #{project.user.display_name},
 br
 br
-|Nous avons controle votre demande de retrait pour le projet #{link_to(project.name, project_url(project))}.
+|Nous avons verifie les documents necessaires au paiement du projet #{link_to(project.name, project_url(project))}.
 br
-|Certaines informations ou pieces justificatives doivent etre corrigees avant que Fiatope puisse finaliser le virement bancaire.
-br
-br
-|Le formulaire de retrait est de nouveau ouvert pendant 14 jours.
-br
-= link_to 'Modifier mon profil de retrait', pay_project_url(project)
+|Une information ou un document doit etre corrige avant que Fiatope puisse finaliser le paiement.
 br
 br
-|Merci de verifier les informations de l'entreprise, association ou organisation, les coordonnees bancaires et les justificatifs demandes. Apres votre nouvelle soumission, notre equipe reprendra la verification du dossier.
+|Vous pouvez corriger et renvoyer vos documents pendant 14 jours.
+br
+= link_to 'Corriger mes documents de paiement', pay_project_url(project)
+br
+br
+|Merci de verifier les informations de la structure, les coordonnees bancaires et les documents demandes.
+br
+|Apres votre nouvel envoi, notre equipe reprendra la verification.
 br
 br
 |Pour votre securite, n'envoyez pas vos documents par email. Utilisez uniquement le formulaire Fiatope.

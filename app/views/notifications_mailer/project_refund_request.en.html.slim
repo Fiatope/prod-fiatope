@@ -1,0 +1,26 @@
+- project = @notification.project
+- fee_pct = ENV.fetch('PLATFORM_FEE', '5.0').tr(',', '.').to_f / 100.0
+- gross = project.contributions.where(payment_method: 'Stripe', state: 'confirmed').sum(:value).to_f
+- gross = project.try(:pledged).to_f if gross == 0
+- net = (gross * (1.0 - fee_pct)).round(2)
+- currency_sym = project.currency || 'EUR'
+
+|Hello #{project.user.display_name},
+br
+br
+|We have received your payment request for the project #{link_to(project.name, project_url(project))}.
+br
+br
+|Collected amount: #{number_to_currency(gross, unit: currency_sym, format: '%n %u')}
+br
+|Amount to receive: #{number_to_currency(net, unit: currency_sym, format: '%n %u')}
+br
+br
+|Our team will review the required payment documents and start the payment.
+br
+|You will receive an email when the payment is in progress, then another one when the funds have arrived on your bank account.
+br
+br
+|Thank you,
+br
+|The #{Configuration[:company_name]} team

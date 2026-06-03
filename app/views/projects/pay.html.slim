@@ -1,4 +1,4 @@
-- content_for :title, "Retrait des fonds - #{@project.name}"
+- content_for :title, "Paiement des fonds - #{@project.name}"
 = render 'projects/meta_tags'
 
 .project-page
@@ -48,7 +48,7 @@
       / ===== TRACKER D'ÉTAPES VISUEL =====
       .panel.radius[style="background:#f8f9fa;border:1px solid #e9ecef;margin-bottom:25px;padding:20px 15px 10px;"]
         .row.text-center
-          - steps = [{ icon: 'fa-cog', label: 'Configurer', desc: 'Compte de réception' }, { icon: 'fa-paper-plane', label: 'Demander', desc: 'Virement des fonds' }, { icon: 'fa-clock-o', label: 'Traitement', desc: 'Vérification équipe' }, { icon: 'fa-check-circle', label: 'Viré !', desc: 'Fonds reçus' }]
+          - steps = [{ icon: 'fa-file-text-o', label: 'Documents', desc: 'A fournir' }, { icon: 'fa-paper-plane', label: 'Demande', desc: 'A envoyer' }, { icon: 'fa-clock-o', label: 'Paiement', desc: 'En cours' }, { icon: 'fa-check-circle', label: 'Recu', desc: 'Fonds recus' }]
           - steps.each_with_index do |step, i|
             - step_num = i + 1
             - is_done = step_num < current_step
@@ -96,9 +96,9 @@
         .panel.radius[style="background:#d5f5e3;border:2px solid #27ae60;padding:20px;margin-bottom:25px;"]
           h4[style="color:#27ae60;"]
             i.fa.fa-check-circle
-            |  Fonds reçus sur votre compte bancaire
+            |  Fonds recus sur votre compte bancaire
           p
-            | Le virement bancaire a ete confirme sur votre compte.
+            | Le paiement a ete confirme sur votre compte bancaire.
           - paid_date = @project.stripe_payout_paid_at || @project.stripe_settled_at
           - if paid_date.present?
             p
@@ -110,9 +110,9 @@
         .panel.radius[style="background:#eef5ff;border:1px solid #7aa7e0;padding:20px;margin-bottom:25px;"]
           h4[style="color:#2f6fb2;"]
             i.fa.fa-clock-o
-            |  Virement bancaire en cours
+            |  Paiement en cours
           p
-            | Le virement bancaire vers votre compte est en cours. Vos fonds ne sont pas encore marques comme recus.
+            | Le paiement vers votre compte bancaire est en cours. Vous recevrez un email lorsque les fonds seront arrives.
           - if @project.stripe_payout_arrival_date.present?
             p.small
               i.fa.fa-calendar
@@ -122,54 +122,48 @@
         .panel.radius[style="background:#fff7e6;border:1px solid #f0c36d;padding:20px;margin-bottom:25px;"]
           h4[style="color:#8a6d3b;"]
             i.fa.fa-exclamation-triangle
-            |  Virement bancaire a reprendre
+            |  Paiement a reprendre
           p
-            | Le virement bancaire n'a pas pu etre finalise. Notre equipe va verifier le dossier et vous recontactera si une correction est necessaire.
+            | Le paiement n'a pas pu etre finalise. Notre equipe va verifier vos documents et vous recontactera si une correction est necessaire.
 
       - elsif payout_pending && !@payout_profile_edit_unlocked
         .panel.radius[style="background:#eef5ff;border:1px solid #7aa7e0;padding:20px;margin-bottom:25px;"]
           h4[style="color:#2f6fb2;"]
             i.fa.fa-clock-o
-            |  Demande en cours de traitement
+            |  Demande de paiement envoyee
           p
-            | Votre demande de virement de 
+            | Votre demande de paiement de
             strong #{number_to_currency(net_to_receive, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')}
-            |  est entre les mains de notre équipe.
+            |  est entre les mains de notre equipe.
           p
-            | Nous verifions votre dossier. Les fonds seront marques comme recus uniquement apres confirmation bancaire finale.
-          p.small
-            i.fa.fa-shield
-            |  Sécurité : les fonds sont traités via un système certifié PCI DSS, conforme aux normes bancaires européennes.
+            | Nous verifions vos documents. Vous recevrez un email a chaque etape importante.
 
       - elsif !payout_ready || @payout_profile_edit_unlocked
         .panel.radius[style="background:#fffdf7;border:1px solid #f0d8a8;padding:20px;margin-bottom:25px;"]
           h4[style="color:#b9770e;"]
             i.fa.fa-id-card
             - if stripe_waiting
-              |  Verification en cours
+              |  Documents envoyes
             - elsif @payout_profile_edit_unlocked
-              |  Modifiez votre profil de retrait
+              |  Corriger mes documents
             - else
-              |  Completez votre profil de retrait
+              |  Documents necessaires au paiement
           - if stripe_waiting
             p
-              | Votre profil est complet dans Fiatope. La verification bancaire est encore en cours; notre equipe vous contactera si une correction est necessaire.
+              | Vos documents ont ete envoyes. Notre equipe vous contactera si une information doit etre corrigee.
           - else
             p
-              | Pour retirer vos fonds sans quitter Fiatope, renseignez votre profil organisation (association, entreprise ou organisation), vos informations bancaires et vos justificatifs.
-          p.small[style="margin-top:8px;color:#6c757d;"]
-            i.fa.fa-info-circle
-            |  Profil applique automatiquement: organisation.
+              | Pour recevoir vos fonds sans quitter Fiatope, indiquez les informations de votre structure, vos informations bancaires et les documents demandes.
 
           - if @payout_profile_edit_unlocked
             .alert-box.info[style="margin-top:10px;"]
               i.fa.fa-unlock
-              |  L administration vous autorise a modifier et soumettre a nouveau ce formulaire.
+              |  Vous pouvez corriger et renvoyer vos documents.
 
           - if @payout_profile_missing_fields.present?
             .alert-box[style="margin-top:10px;background:#fff8e1;border:1px solid #f3d38a;color:#7a5d00;"]
               p
-                strong Elements manquants:
+                strong Informations ou documents manquants:
               ul[style="margin-bottom:0;"]
                 - @payout_profile_missing_fields.each do |missing_field|
                   li = missing_field
@@ -240,12 +234,12 @@
                   label for="bank_reference_value" IBAN
                   = text_field_tag :bank_reference_value, @bank_reference_value, class: 'form-control', required: true, placeholder: 'FR76...'
                   p.small.text-muted[style="margin-top:5px;"]
-                    | Un IBAN est necessaire pour effectuer le virement bancaire.
+                    | Un IBAN est necessaire pour recevoir le paiement.
 
             .panel.radius[style="background:#fff;margin-top:15px;padding:15px;"]
               h5
                 i.fa.fa-id-card
-                |  Justificatifs a fournir
+                |  Documents a fournir
               - required_kyc_types.each do |proof_type|
                 - existing_docs = Array(existing_kyc_docs[proof_type])
                 - label = required_kyc_labels[proof_type] || proof_type.humanize
@@ -258,7 +252,7 @@
                     | Formats acceptes: #{accepted_formats_label}. Vous pouvez envoyer plusieurs fichiers (ex: recto/verso).
                   - if existing_docs.any?
                     p.small.text-muted[style="margin-top:8px;margin-bottom:6px;"]
-                      | Documents deja enregistres:
+                      | Documents deja envoyes:
                     .d-flex.flex-wrap[style="margin-top:4px;"]
                       - existing_docs.each do |existing_doc|
                         - next unless existing_doc.uploaded_image.present?
@@ -278,18 +272,18 @@
             .text-center[style="margin-top:20px;"]
               .alert-box.info.text-left[style="max-width:760px;margin:0 auto 15px;"]
                 i.fa.fa-info-circle
-                |  Le parcours automatique est disponible lorsque la personne renseignee ci-dessus est l unique representant legal, dirigeant, responsable et beneficiaire effectif a declarer pour ce dossier. Si plusieurs personnes doivent etre declarees, contactez notre equipe avant de soumettre le formulaire.
+                |  Ce parcours est disponible lorsque la personne renseignee ci-dessus est la seule personne a declarer pour la structure. Si plusieurs personnes doivent etre declarees, contactez notre equipe avant d envoyer les documents.
               .form-group.text-left[style="max-width:760px;margin:0 auto 15px;"]
                 label[style="font-weight:normal;"]
                   = check_box_tag :organization_single_representative_attestation, '1', false, required: true, class: 'js-payout-required-checkbox'
-                  |  J atteste que la personne renseignee est l unique representant legal, dirigeant, responsable et beneficiaire effectif a declarer pour ce dossier.
+                  |  J atteste que la personne renseignee est la seule personne a declarer pour cette structure.
               .form-group.text-left[style="max-width:760px;margin:0 auto 15px;"]
                 label[style="font-weight:normal;"]
                   = check_box_tag :stripe_tos_acceptance, '1', false, required: true, class: 'js-payout-required-checkbox'
-                  |  J atteste etre autorise a representer cette structure et j accepte que ces informations soient utilisees pour verifier le dossier et effectuer le virement.
+                  |  J atteste etre autorise a representer cette structure et j accepte que ces informations soient utilisees pour verifier les documents et effectuer le paiement.
               button.btn.btn-lg.btn-warning[type="submit" disabled=true style="padding:12px 40px;font-size:1.1em;"]
                 i.fa.fa-save
-                |  Enregistrer mon profil de retrait
+                |  Envoyer mes documents
 
           javascript:
             document.addEventListener('DOMContentLoaded', function() {
@@ -320,14 +314,14 @@
               p[style="color:#27ae60;font-size:1.1em;"]
                 i.fa.fa-check-circle
                 strong |  Tout est prêt !
-                |  Votre espace est vérifié et vos contributions sont confirmées.
+                |  Vos documents sont prets et vos contributions sont confirmees.
               = form_tag request_payout_project_path(@project), method: :post, style: 'margin-top:15px;' do
-                button.btn.btn-lg.btn-success[type="submit" style="padding:14px 50px;font-size:1.2em;" data-confirm="Confirmer la demande de virement de #{number_to_currency(net_to_receive, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')} ?"]
+                button.btn.btn-lg.btn-success[type="submit" style="padding:14px 50px;font-size:1.2em;" data-confirm="Confirmer la demande de paiement de #{number_to_currency(net_to_receive, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')} ?"]
                   i.fa.fa-paper-plane
-                  |  Retirer mes fonds
+                  |  Demander le paiement
               p.small[style="color:#95a5a6;margin-top:12px;"]
                 i.fa.fa-shield
-                |  Apres validation par notre equipe, le virement bancaire est generalement traite sous 2-7 jours ouvres.
+                |  Apres validation par notre equipe, le paiement est generalement traite sous 2-7 jours ouvres.
 
       / ===== DÉTAIL DES CONTRIBUTIONS =====
       - if contribs_count > 0
@@ -367,14 +361,14 @@
           .col-md-6
             p
               strong | Quand vais-je recevoir mes fonds ?
-            p.small | Apres votre demande, notre equipe verifie le dossier et declenche le virement bancaire. Les fonds sont marques comme recus uniquement apres confirmation bancaire finale.
+            p.small | Apres votre demande, notre equipe verifie vos documents et declenche le paiement. Vous recevrez un email lorsque les fonds seront arrives.
             p
               strong | Que couvrent les frais ?
             p.small | La commission de #{fee_pct}% couvre le traitement sécurisé des cartes bancaires et les frais de service Fiatope (support, hébergement, maintenance).
           .col-md-6
             p
               strong | Mes fonds sont-ils en sécurité ?
-            p.small | Oui. Les paiements sont sécurisés par un prestataire certifié PCI DSS niveau 1 (le plus haut niveau de sécurité bancaire). Vos fonds transitent via des comptes sécurisés.
+            p.small | Oui. Les paiements sont traites par un prestataire bancaire specialise. Nous vous prevenons par email a chaque etape importante.
             p
               strong | Puis-je rembourser un contributeur ?
             p.small | Si nécessaire, contactez notre équipe. Les remboursements sont possibles avant le transfert des fonds.

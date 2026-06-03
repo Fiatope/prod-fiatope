@@ -166,7 +166,7 @@ class ProjectsController < ApplicationController
     end
 
     unless payout_profile_single_representative_attested?
-      flash[:alert] = 'Vous devez cocher l attestation confirmant que la personne renseignee est l unique representant legal, dirigeant, responsable et beneficiaire effectif a declarer pour ce dossier.'
+      flash[:alert] = 'Vous devez cocher l attestation avant d envoyer vos documents de paiement.'
       return redirect_to pay_project_path(@project)
     end
 
@@ -209,9 +209,9 @@ class ProjectsController < ApplicationController
         clear_payout_profile_edit_unlock!(current_user)
         if sync_result.warnings.any?
           Rails.logger.warn "Payout profile sync warnings for user #{current_user.id}: #{sync_result.warnings.join(', ')}"
-          flash[:notice] = 'Votre profil de retrait a ete enregistre. Certaines verifications restent en cours; notre equipe vous contactera si une correction est necessaire.'
+          flash[:notice] = 'Vos documents de paiement ont ete enregistres. Nous vous contacterons si une information doit etre corrigee.'
         else
-          flash[:success] = 'Votre profil de retrait a ete enregistre avec succes.'
+          flash[:success] = 'Vos documents de paiement ont ete enregistres avec succes.'
         end
       else
         Rails.logger.warn "Payout profile sync failed for user #{current_user.id}: #{sync_result.errors.join(', ')}"
@@ -222,7 +222,7 @@ class ProjectsController < ApplicationController
       flash[:alert] = e.record.errors.full_messages.to_sentence
     rescue => e
       Rails.logger.error "ProjectsController#update_payout_profile: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
-      flash[:alert] = 'Erreur technique lors de la sauvegarde du profil de retrait. Verifiez vos justificatifs et reessayez.'
+      flash[:alert] = 'Erreur technique lors de l envoi des documents de paiement. Verifiez vos justificatifs et reessayez.'
     end
 
     redirect_to pay_project_path(@project)
@@ -241,9 +241,9 @@ class ProjectsController < ApplicationController
       return redirect_to pay_project_path(@project)
     end
 
-    # Le porteur doit avoir complete son profil de retrait dans la plateforme.
+    # Le porteur doit avoir envoye les documents de paiement dans la plateforme.
     unless current_user.payout_profile_complete?
-      flash[:alert] = 'Vous devez d abord completer votre profil de retrait (identite, banque, justificatifs) avant de demander le virement.'
+      flash[:alert] = 'Vous devez d abord envoyer les documents necessaires au paiement avant de demander le paiement.'
       return redirect_to pay_project_path(@project)
     end
 
@@ -254,32 +254,32 @@ class ProjectsController < ApplicationController
     end
 
     if %w[pending in_transit].include?(payout_status)
-      flash[:notice] = "Votre virement bancaire est en cours. Vous recevrez une confirmation des que les fonds seront confirmes comme recus."
+      flash[:notice] = "Votre paiement est en cours. Vous recevrez un email lorsque les fonds seront arrives sur votre compte."
       return redirect_to pay_project_path(@project)
     end
 
     if payout_status == 'manual_review'
-      flash[:notice] = "Votre dossier est en cours de verification par notre equipe. Nous vous recontacterons si une action est necessaire."
+      flash[:notice] = "Votre demande de paiement est en cours. Nous vous contacterons si une information manque."
       return redirect_to pay_project_path(@project)
     end
 
     if @project.stripe_settlement_type == 'transferred' || @project.stripe_transfer_id.present?
-      flash[:notice] = "Votre dossier a deja ete traite par notre equipe. Le virement bancaire est en cours de finalisation ou de reprise."
+      flash[:notice] = "Votre paiement est deja en cours."
       return redirect_to pay_project_path(@project)
     end
 
     # Demande déjà en cours de traitement
     if @project.state == 'request_funds'
-      flash[:notice] = "Votre demande de virement est déjà en cours de traitement par notre équipe."
+      flash[:notice] = "Votre demande de paiement est deja en cours."
       return redirect_to pay_project_path(@project)
     end
 
-    # Vérifier qu'il y a des contributions à virer
+    # Verifier qu'il y a des contributions a payer
     contributions = @project.contributions
                             .where(payment_method: 'Stripe', state: 'confirmed')
                             .where(stripe_refunded: [false, nil], stripe_transferred: [false, nil])
     if contributions.empty?
-      flash[:alert] = "Aucune contribution confirmée à virer pour ce projet."
+      flash[:alert] = "Aucune contribution confirmee a payer pour ce projet."
       return redirect_to pay_project_path(@project)
     end
 
@@ -300,7 +300,7 @@ class ProjectsController < ApplicationController
       # FLUX CROWDFUNDING CORRECT:
       # 1. Porteur initie → projet passe en request_funds + admin notifié
       # 2. Admin décide de payer → process_stripe_transfer (panel admin)
-      # 3. CampaignSettlement effectue le transfert et le virement vers banque porteur
+      # 3. CampaignSettlement effectue le transfert et le paiement vers la banque du porteur
       if @project.can_push_to_request_funds?
         @project.push_to_request_funds!
         clear_payout_profile_edit_unlock!(current_user)
@@ -316,13 +316,13 @@ class ProjectsController < ApplicationController
           Rails.logger.warn "request_payout: notification admin échouée - #{notify_err.message}"
         end
 
-        flash[:success] = "Demande de virement de #{net} EUR envoyee. Notre equipe va verifier le dossier; les fonds seront confirmes comme recus uniquement apres confirmation bancaire finale."
+        flash[:success] = "Votre demande de paiement de #{net} EUR a bien ete envoyee. Vous recevrez un email de confirmation."
       else
         flash[:alert] = "Impossible de soumettre la demande depuis l'état actuel du projet (#{@project.state})."
       end
     rescue => e
       Rails.logger.error "ProjectsController#request_payout: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
-      flash[:alert] = 'Erreur technique lors de la demande de virement. Veuillez reessayer.'
+      flash[:alert] = 'Erreur technique lors de la demande de paiement. Veuillez reessayer.'
     end
 
     redirect_to pay_project_path(@project)
@@ -549,38 +549,38 @@ class ProjectsController < ApplicationController
   end
 
   def payout_profile_acceptance_required_message
-    'Vous devez cocher l attestation avant de soumettre votre profil de retrait.'
+    'Vous devez cocher l attestation avant d envoyer vos documents de paiement.'
   end
 
   def payout_profile_sync_failure_message(errors)
     details = Array(errors).join(' ')
 
     if details.match?(/valid phone number|phone/i)
-      return 'Votre profil a ete enregistre, mais le numero de telephone doit etre au format international. Exemple: +237654770064.'
+      return 'Le numero de telephone doit etre au format international. Exemple: +237654770064.'
     end
 
     if details.match?(/not currently supported|not supported/i)
-      return 'Votre profil a ete enregistre, mais le pays choisi pour le compte de reception n est pas pris en charge pour ce virement. Utilisez un compte bancaire IBAN dans un pays pris en charge ou contactez notre equipe.'
+      return 'Le pays choisi pour le compte bancaire ne permet pas encore de recevoir ce paiement. Utilisez un IBAN dans un pays pris en charge ou contactez notre equipe.'
     end
 
     if details.match?(/postal|zip/i)
-      return 'Votre profil a ete enregistre, mais le code postal semble invalide. Verifiez le code postal du titulaire du compte.'
+      return 'Le code postal semble invalide. Verifiez le code postal du titulaire du compte.'
     end
 
     if details.match?(/iban|bank account|account_number|routing/i)
-      return 'Votre profil a ete enregistre, mais les informations bancaires semblent invalides. Verifiez l IBAN et le pays du compte bancaire.'
+      return 'Les informations bancaires semblent invalides. Verifiez l IBAN et le pays du compte bancaire.'
     end
 
     if details.match?(/date of birth|dob|birthday/i)
-      return 'Votre profil a ete enregistre, mais la date de naissance semble invalide. Verifiez le champ date de naissance.'
+      return 'La date de naissance semble invalide. Verifiez le champ date de naissance.'
     end
 
     if details.match?(/address|city|country|line1/i)
-      return 'Votre profil a ete enregistre, mais l adresse du titulaire semble incomplete ou invalide. Verifiez l adresse, la ville, le pays et le code postal.'
+      return 'L adresse du titulaire semble incomplete ou invalide. Verifiez l adresse, la ville, le pays et le code postal.'
     end
 
     if details.match?(/document|file|upload/i)
-      return 'Votre profil a ete enregistre, mais un justificatif n a pas pu etre verifie. Verifiez les fichiers envoyes et reessayez.'
+      return 'Un justificatif n a pas pu etre lu ou verifie. Verifiez les fichiers envoyes et reessayez.'
     end
 
     if details.match?(/conditions de paiement|accepter les conditions|conditions/i)
@@ -588,10 +588,10 @@ class ProjectsController < ApplicationController
     end
 
     if details.match?(/account token|business_type|jeton securise|configuration|api key/i)
-      return 'Votre profil a ete enregistre, mais une verification technique interne est encore en cours. Notre equipe va finaliser le dossier et vous recontactera si besoin.'
+      return 'Vos documents ont ete enregistres. Nous devons verifier une information avant de lancer le paiement. Nous vous contacterons si besoin.'
     end
 
-    'Votre profil de retrait a ete enregistre, mais la verification automatique n a pas encore abouti. Notre equipe va verifier le dossier et vous recontactera si besoin.'
+    'Vos documents ont ete enregistres. Nous vous contacterons si une information doit etre corrigee.'
   end
 
   def payout_profile_edit_unlock_cache_key(user)

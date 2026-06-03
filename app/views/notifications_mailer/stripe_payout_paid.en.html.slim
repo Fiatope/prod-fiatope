@@ -6,33 +6,30 @@
 - currency_sym = project.currency || 'EUR'
 - settled_at = project.stripe_payout_paid_at || project.stripe_settled_at
 
-|Dear #{project.user.display_name},
+|Hello #{project.user.display_name},
 br
 br
-strong | ✅ Your transfer has arrived in your bank account!
-br
-br
-|Great news! The funds from project #{link_to(project.name, project_url(project))} have been successfully transferred to your bank account.
+|The funds for project #{link_to(project.name, project_url(project))} have arrived on your bank account.
 br
 br
 table[style="border-collapse: collapse; width: 100%; max-width: 500px;"]
-  tr[style="background: #f0fdf4;"]
-    td[style="padding: 10px; border: 1px solid #bbf7d0; font-weight: bold;"] Project
-    td[style="padding: 10px; border: 1px solid #bbf7d0;"] #{project.name}
+  tr[style="background: #f8fafc;"]
+    td[style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;"] Project
+    td[style="padding: 10px; border: 1px solid #e2e8f0;"] #{project.name}
   tr
     td[style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;"] Amount received
     td[style="padding: 10px; border: 1px solid #e2e8f0; color: #16a34a; font-weight: bold;"]
       = number_to_currency(net, unit: currency_sym, format: '%n %u')
   - if settled_at.present?
     tr[style="background: #f8fafc;"]
-      td[style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;"] Transfer date
+      td[style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;"] Reception date
       td[style="padding: 10px; border: 1px solid #e2e8f0;"]
         = l(settled_at.to_date, format: :long)
 br
 br
-|Check your bank statement. If you do not see the transfer within a few hours, contact your bank or our team at #{mail_to Configuration[:email_contact]}.
+|You can check your bank statement. If you do not see the funds, contact your bank or our team at #{mail_to Configuration[:email_contact]}.
 br
 br
-|Thank you for your trust,
+|Thank you,
 br
 |The #{Configuration[:company_name]} team

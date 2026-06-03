@@ -6,33 +6,30 @@
 - currency_sym = project.currency || 'EUR'
 - settled_at = project.stripe_payout_paid_at || project.stripe_settled_at
 
-|Chèr(e) #{project.user.display_name},
+|Bonjour #{project.user.display_name},
 br
 br
-strong | ✅ Votre virement est arrivé sur votre compte bancaire !
-br
-br
-|Excellente nouvelle ! Les fonds du projet #{link_to(project.name, project_url(project))} ont été virés avec succès sur votre compte bancaire.
+|Les fonds du projet #{link_to(project.name, project_url(project))} sont arrives sur votre compte bancaire.
 br
 br
 table[style="border-collapse: collapse; width: 100%; max-width: 500px;"]
-  tr[style="background: #f0fdf4;"]
-    td[style="padding: 10px; border: 1px solid #bbf7d0; font-weight: bold;"] Projet
-    td[style="padding: 10px; border: 1px solid #bbf7d0;"] #{project.name}
+  tr[style="background: #f8fafc;"]
+    td[style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;"] Projet
+    td[style="padding: 10px; border: 1px solid #e2e8f0;"] #{project.name}
   tr
     td[style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;"] Montant recu
     td[style="padding: 10px; border: 1px solid #e2e8f0; color: #16a34a; font-weight: bold;"]
       = number_to_currency(net, unit: currency_sym, format: '%n %u')
   - if settled_at.present?
     tr[style="background: #f8fafc;"]
-      td[style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;"] Date de virement
+      td[style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;"] Date de reception
       td[style="padding: 10px; border: 1px solid #e2e8f0;"]
         = l(settled_at.to_date, format: :long)
 br
 br
-|Vérifiez votre relevé bancaire. Si vous ne voyez pas le virement dans les prochaines heures, contactez votre banque ou notre équipe à #{mail_to Configuration[:email_contact]}.
+|Vous pouvez verifier votre releve bancaire. Si vous ne voyez pas les fonds, contactez votre banque ou notre equipe a #{mail_to Configuration[:email_contact]}.
 br
 br
-|Merci pour votre confiance,
+|Merci,
 br
-|L'équipe #{Configuration[:company_name]}
+|L'equipe #{Configuration[:company_name]}

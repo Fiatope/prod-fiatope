@@ -22,8 +22,8 @@ class Notification < ActiveRecord::Base
   def self.notify(template_name, user, params = {})
     notification_params = {
       locale:        user.locale || I18n.locale,
-      origin_email:  Configuration[:email_contact],
-      origin_name:   Configuration[:company_name],
+      origin_email:  Configuration[:email_contact] || Configuration[:email_system] || ENV['EMAIL_CONTACT'] || ENV['EMAIL_SYSTEM'] || 'contact@fiatope.com',
+      origin_name:   Configuration[:company_name] || 'Fiatope',
       template_name: template_name,
       user:          user
     }.merge(params)

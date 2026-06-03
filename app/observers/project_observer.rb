@@ -65,8 +65,7 @@ def from_online_to_fraud_suspiscion(project)
   end
 
   def from_online_to_request_funds(project)
-    #project.notify_owner( :project_refund_request)
-    deliver_default_notification_for(project, :project_refund_request)
+    project.notify_owner(:project_refund_request)
   end
 
   def from_draft_to_soon(project)
