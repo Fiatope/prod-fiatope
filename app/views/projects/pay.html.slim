@@ -276,6 +276,13 @@
                           = link_to doc_name, doc_url, target: '_blank', class: 'btn btn-sm btn-outline-secondary mr-2 mb-2'
 
             .text-center[style="margin-top:20px;"]
+              .alert-box.info.text-left[style="max-width:760px;margin:0 auto 15px;"]
+                i.fa.fa-info-circle
+                |  Le parcours automatique est disponible lorsque la personne renseignee ci-dessus est l unique representant legal, dirigeant, responsable et beneficiaire effectif a declarer pour ce dossier. Si plusieurs personnes doivent etre declarees, contactez notre equipe avant de soumettre le formulaire.
+              .form-group.text-left[style="max-width:760px;margin:0 auto 15px;"]
+                label[style="font-weight:normal;"]
+                  = check_box_tag :organization_single_representative_attestation, '1', false, required: true
+                  |  J atteste que la personne renseignee est l unique representant legal, dirigeant, responsable et beneficiaire effectif a declarer pour ce dossier.
               .form-group.text-left[style="max-width:760px;margin:0 auto 15px;"]
                 label[style="font-weight:normal;"]
                   = check_box_tag :stripe_tos_acceptance, '1', false, required: true

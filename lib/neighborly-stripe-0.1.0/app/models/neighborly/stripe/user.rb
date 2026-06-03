@@ -265,6 +265,13 @@ module Neighborly::Stripe::User
       address: stripe_connect_address_payload(country)
     }
 
+    if organization.respond_to?(:payout_single_representative_attested_at) &&
+       organization.payout_single_representative_attested_at.present?
+      payload[:directors_provided] = true
+      payload[:executives_provided] = true
+      payload[:owners_provided] = true
+    end
+
     if organization.respond_to?(:registration_number) && organization.registration_number.present?
       registration_number = organization.registration_number.to_s.strip.upcase
       payload[:registration_number] = registration_number
@@ -290,6 +297,13 @@ module Neighborly::Stripe::User
 
   def stripe_connect_person_token_payload(country, verification: nil)
     payload = stripe_connect_individual_payload(country)
+    payload[:relationship] = {
+      representative: true,
+      executive: true,
+      director: true,
+      owner: true,
+      title: 'Representant legal'
+    }
     payload[:verification] = verification if verification.present?
     payload
   end

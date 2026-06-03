@@ -410,13 +410,17 @@ module Neighborly
 
         settlement_type == 'transferred' ||
           payout_id.present? ||
-          %w[pending in_transit paid failed canceled].include?(payout_status)
+          %w[pending in_transit paid failed canceled manual_review].include?(payout_status)
       end
 
       def transferable_contributions
-        stripe_contributions.where(state: 'confirmed')
-                            .where(stripe_refunded: [false, nil])
-                            .where(stripe_transferred: [false, nil])
+        contributions = stripe_contributions.where(state: 'confirmed')
+                                            .where(stripe_refunded: [false, nil])
+                                            .where(stripe_transferred: [false, nil])
+        if ::Contribution.column_names.include?('stripe_dispute_id')
+          contributions = contributions.where(stripe_dispute_id: [nil, ''])
+        end
+        contributions
       end
 
       def transferred_contributions
@@ -426,7 +430,7 @@ module Neighborly
       end
 
       def create_bank_payout_for_transferred_funds!
-        return add_error("Le virement bancaire Stripe est déjà confirmé") if project.stripe_payout_status == 'paid'
+        return add_error("Un virement bancaire Stripe requiert un rapprochement manuel") if project.stripe_payout_status == 'manual_review'
         return add_error("Un virement bancaire Stripe est déjà en cours") if %w[pending in_transit].include?(project.stripe_payout_status)
 
         amounts_by_currency = transferred_amounts_by_currency
@@ -552,7 +556,9 @@ module Neighborly
           return add_error("Le porteur n'a pas complété son profil Stripe")
         end
         
-        if project.stripe_payout_status == 'paid'
+        contributions = transferable_contributions
+
+        if project.stripe_payout_status == 'paid' && contributions.empty?
           return add_error("Le virement bancaire Stripe est déjà confirmé")
         end
 
@@ -560,7 +566,10 @@ module Neighborly
           return add_error("Un virement bancaire Stripe est déjà en cours")
         end
 
-        contributions = transferable_contributions
+        if project.stripe_payout_status == 'manual_review'
+          return add_error("Un virement bancaire Stripe requiert un rapprochement manuel")
+        end
+
         if contributions.empty?
           already_transferred = stripe_contributions.where(stripe_transferred: true).count
           already_refunded = stripe_contributions.where(stripe_refunded: true).count

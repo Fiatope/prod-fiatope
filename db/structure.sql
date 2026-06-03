@@ -1,5 +1,3 @@
-\restrict 262gWVe1ZK3Ao9d6qIzyMC6e5PsJoBASdiyLAdTeka9539b5NYhEZl42XSjKT3y
-
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6
 
@@ -111,6 +109,7 @@ CREATE TABLE public.contributions (
     stripe_refund_amount numeric(10,2),
     stripe_transfer_amount_cents integer,
     stripe_transfer_currency character varying,
+    stripe_dispute_id character varying,
     CONSTRAINT backers_value_positive CHECK ((value >= (0)::numeric))
 );
 
@@ -1731,7 +1730,8 @@ CREATE TABLE public.organizations (
     user_id integer,
     created_at timestamp without time zone,
     updated_at timestamp without time zone,
-    registration_number character varying
+    registration_number character varying,
+    payout_single_representative_attested_at timestamp without time zone
 );
 
 
@@ -4305,6 +4305,13 @@ CREATE INDEX index_contributions_on_reward_id ON public.contributions USING btre
 
 
 --
+-- Name: index_contributions_on_stripe_dispute_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_contributions_on_stripe_dispute_id ON public.contributions USING btree (stripe_dispute_id);
+
+
+--
 -- Name: index_contributions_on_stripe_refunded; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -5357,7 +5364,6 @@ ALTER TABLE ONLY public.updates
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 262gWVe1ZK3Ao9d6qIzyMC6e5PsJoBASdiyLAdTeka9539b5NYhEZl42XSjKT3y
 
 SET search_path TO "$user", public;
 
@@ -5670,6 +5676,8 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20260127150500'),
 ('20260129140000'),
 ('20260525120000'),
-('20260525132000');
+('20260525132000'),
+('20260602093000'),
+('20260602123000');
 
 

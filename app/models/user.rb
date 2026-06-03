@@ -253,6 +253,11 @@ class User < ActiveRecord::Base
       if organization.present? && organization.respond_to?(:registration_number) && organization.registration_number.blank?
         missing << 'Numero SIREN, SIRET ou RNA'
       end
+      if organization.present? &&
+         organization.respond_to?(:payout_single_representative_attested_at) &&
+         organization.payout_single_representative_attested_at.blank?
+        missing << 'Attestation sur le representant legal unique'
+      end
     end
 
     info = bank_information

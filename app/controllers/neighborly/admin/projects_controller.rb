@@ -230,9 +230,15 @@ module Neighborly::Admin
       @project.reload
       
       payout_status = @project.stripe_payout_status.to_s
-      if @project.stripe_settlement_type == 'transferred' && %w[paid pending in_transit].include?(payout_status)
+      remaining_contributions = @project.contributions.where(payment_method: 'Stripe', state: 'confirmed')
+                                        .where(stripe_refunded: [false, nil], stripe_transferred: [false, nil])
+      payout_blocks_retry = %w[pending in_transit manual_review].include?(payout_status) ||
+                            (payout_status == 'paid' && remaining_contributions.empty?)
+      if @project.stripe_settlement_type == 'transferred' && payout_blocks_retry
         flash[:notice] = if payout_status == 'paid'
                            "Le virement bancaire Stripe a deja ete confirme."
+                         elsif payout_status == 'manual_review'
+                           "Un rapprochement manuel est requis avant toute nouvelle operation Stripe."
                          else
                            "Un virement bancaire Stripe est deja en cours. Le projet passera en paye apres confirmation bancaire Stripe."
                          end

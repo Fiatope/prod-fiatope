@@ -1,6 +1,8 @@
 module Neighborly
   module Stripe
     class PaymentsController < ::ApplicationController
+      class CheckoutIntegrityError < StandardError; end
+
       before_action :authenticate_user!, except: [:success, :cancel]
       layout false, only: [:success]
       
@@ -14,6 +16,16 @@ module Neighborly
         @project = ::Project.find(params[:project_id])
         @contribution = @project.contributions.find(params[:contribution_id]) if params[:contribution_id].present?
         @amount = @contribution&.value || params[:amount].to_f
+
+        unless contribution_owned_by_current_user?
+          flash[:alert] = I18n.t('stripe.payment_not_authorized', default: 'Vous ne pouvez pas regler cette contribution.')
+          redirect_to "/projects/#{@project.permalink}" and return
+        end
+
+        if contribution_already_confirmed?
+          flash[:notice] = I18n.t('stripe.payment_already_confirmed', default: 'Cette contribution a deja ete reglee.')
+          redirect_to "/projects/#{@project.permalink}" and return
+        end
         
         unless @project.use_stripe?
           flash[:alert] = I18n.t('stripe.project_not_ready', default: 'Ce projet ne peut pas encore accepter les paiements en ligne')
@@ -23,6 +35,10 @@ module Neighborly
         # Créer directement la session Stripe Checkout et rediriger
         begin
           amount_cents = (@amount * 100).to_i
+          unless amount_cents.positive?
+            flash[:alert] = I18n.t('stripe.payment_invalid_amount', default: 'Le montant de la contribution est invalide.')
+            redirect_to "/projects/#{@project.permalink}" and return
+          end
           
           # Vérifier si le compte Connect peut recevoir des transferts
           connect_ready = false
@@ -126,7 +142,7 @@ module Neighborly
           redirect_to session.url, allow_other_host: true
         rescue ::Stripe::StripeError => e
           Rails.logger.error "Stripe payment error: #{e.message}"
-          flash[:alert] = I18n.t('stripe.payment_error', error: e.message, default: "Erreur de paiement : #{e.message}")
+          flash[:alert] = I18n.t('stripe.payment_error', default: 'Le paiement ne peut pas etre initialise. Verifiez vos informations et reessayez.')
           redirect_to "/projects/#{@project.permalink}"
         end
       end
@@ -146,6 +162,11 @@ module Neighborly
         else
           @amount = params[:amount].to_f
         end
+
+        if contribution_already_confirmed?
+          flash[:notice] = I18n.t('stripe.payment_already_confirmed', default: 'Cette contribution a deja ete reglee.')
+          redirect_to "/projects/#{@project.permalink}" and return
+        end
         
         unless @project.use_stripe?
           flash[:alert] = I18n.t('stripe.project_not_ready', default: 'Ce projet ne peut pas encore accepter les paiements en ligne')
@@ -154,6 +175,10 @@ module Neighborly
         
         begin
           amount_cents = (@amount * 100).to_i
+          unless amount_cents.positive?
+            flash[:alert] = I18n.t('stripe.payment_invalid_amount', default: 'Le montant de la contribution est invalide.')
+            redirect_to "/projects/#{@project.permalink}" and return
+          end
           platform_fee = @project.platform_fee_amount(amount_cents)
           
           # Construire URL image valide pour action create aussi
@@ -258,7 +283,7 @@ module Neighborly
           redirect_to session.url, allow_other_host: true
         rescue ::Stripe::StripeError => e
           Rails.logger.error "Stripe payment error: #{e.message}"
-          flash[:alert] = I18n.t('stripe.payment_error', error: e.message, default: "Erreur de paiement : #{e.message}")
+          flash[:alert] = I18n.t('stripe.payment_error', default: 'Le paiement ne peut pas etre initialise. Verifiez vos informations et reessayez.')
           redirect_to "/projects/#{@project.permalink}"
         end
       end
@@ -274,6 +299,7 @@ module Neighborly
             session = ::Stripe::Checkout::Session.retrieve(session_id)
             
             if session.payment_status == 'paid'
+              ensure_checkout_session_matches_project!(session)
               @payment_intent_id = session.payment_intent
               
               # Récupérer les métadonnées
@@ -282,11 +308,30 @@ module Neighborly
               amount = session.amount_total / 100.0
               
               user = ::User.find_by(id: user_id)
+              raise CheckoutIntegrityError, 'Utilisateur local introuvable pour la session Checkout' unless user
               
-              if user
+              with_checkout_payment_lock(session.payment_intent) do
                 # Chercher ou créer la contribution
                 if contribution_id.present?
-                  @contribution = ::Contribution.find_by(id: contribution_id)
+                  @contribution = @project.contributions.find_by(id: contribution_id, user_id: user.id)
+                  raise CheckoutIntegrityError, 'Contribution locale incompatible avec la session Checkout' unless @contribution
+                else
+                  @contribution = ::Contribution.find_by(payment_id: session.payment_intent)
+                  ensure_contribution_matches_checkout!(@contribution, user, session) if @contribution
+                end
+
+                if @contribution && @contribution.payment_id.present? && @contribution.payment_id != session.payment_intent
+                  Rails.logger.warn "Checkout duplicate payment: contribution #{@contribution.id} already linked to #{@contribution.payment_id}; recording #{session.payment_intent} separately"
+                  @contribution = nil
+                end
+
+                existing_payment_contribution = ::Contribution.find_by(payment_id: session.payment_intent)
+                if existing_payment_contribution
+                  ensure_contribution_matches_checkout!(existing_payment_contribution, user, session)
+                  if @contribution && existing_payment_contribution.id != @contribution.id
+                    raise CheckoutIntegrityError, 'PaymentIntent deja rattache a une autre contribution'
+                  end
+                  @contribution ||= existing_payment_contribution
                 end
                 
                 # Récupérer charge_id depuis PaymentIntent
@@ -302,16 +347,16 @@ module Neighborly
                 
                 if @contribution
                   # Mise à jour de la contribution existante
-                  @contribution.update(
-                    payment_method: 'Stripe',
-                    payment_id: session.payment_intent,
-                    payment_service_fee: calculate_stripe_fee(amount),
-                    stripe_charge_id: charge_id,
-                    confirmed_at: Time.current,
-                    # CROWDFUNDING: Pas de transfert automatique
-                    stripe_transfer_id: nil,
-                    stripe_transferred: false
-                  )
+                  ensure_contribution_matches_checkout!(@contribution, user, session)
+                  unless checkout_already_processed?(@contribution, session)
+                    @contribution.update!(
+                      payment_method: 'Stripe',
+                      payment_id: session.payment_intent,
+                      payment_service_fee: calculate_stripe_fee(amount),
+                      stripe_charge_id: charge_id,
+                      confirmed_at: Time.current
+                    )
+                  end
                 else
                   # Créer une nouvelle contribution
                   @contribution = ::Contribution.new(
@@ -356,9 +401,12 @@ module Neighborly
             else
               flash.now[:alert] = I18n.t('stripe.payment_pending', default: 'Paiement en cours de traitement...')
             end
+          rescue CheckoutIntegrityError => e
+            Rails.logger.warn "Checkout integrity error: #{e.message}"
+            flash.now[:alert] = I18n.t('stripe.payment_verification_error', default: 'Ce paiement ne peut pas etre confirme automatiquement. Contactez notre equipe.')
           rescue ::Stripe::StripeError => e
             Rails.logger.error "Error retrieving checkout session: #{e.message}"
-            flash.now[:alert] = "Erreur lors de la vérification du paiement: #{e.message}"
+            flash.now[:alert] = I18n.t('stripe.payment_verification_error', default: 'Ce paiement ne peut pas etre confirme automatiquement. Contactez notre equipe.')
           rescue => e
             Rails.logger.error "Error processing contribution: #{e.message}\n#{e.backtrace.join("\n")}"
             flash.now[:alert] = "Erreur lors de l'enregistrement de la contribution"
@@ -375,6 +423,50 @@ module Neighborly
       end
       
       private
+
+      def contribution_owned_by_current_user?
+        @contribution.blank? || @contribution.user_id == current_user.id
+      end
+
+      def contribution_already_confirmed?
+        @contribution.present? && @contribution.state == 'confirmed'
+      end
+
+      def ensure_checkout_session_matches_project!(session)
+        metadata = session.metadata || {}
+        user_id = metadata['user_id'].to_s
+        expected_currency = @project.currency.presence&.downcase || 'eur'
+
+        raise CheckoutIntegrityError, 'Projet Checkout incompatible' unless metadata['project_id'].to_s == @project.id.to_s
+        raise CheckoutIntegrityError, 'Utilisateur Checkout absent' if user_id.blank?
+        if session.client_reference_id.present? && session.client_reference_id.to_s != user_id
+          raise CheckoutIntegrityError, 'Reference client Checkout incompatible'
+        end
+        raise CheckoutIntegrityError, 'PaymentIntent Checkout absent' if session.payment_intent.blank?
+        raise CheckoutIntegrityError, 'Montant Checkout invalide' unless session.amount_total.to_i.positive?
+        raise CheckoutIntegrityError, 'Devise Checkout incompatible' unless session.currency.to_s.downcase == expected_currency
+      end
+
+      def ensure_contribution_matches_checkout!(contribution, user, session)
+        return unless contribution
+
+        raise CheckoutIntegrityError, 'Projet de contribution incompatible' unless contribution.project_id == @project.id
+        raise CheckoutIntegrityError, 'Utilisateur de contribution incompatible' unless contribution.user_id == user.id
+        raise CheckoutIntegrityError, 'Montant de contribution incompatible' unless (contribution.value.to_f * 100).round == session.amount_total.to_i
+      end
+
+      def checkout_already_processed?(contribution, session)
+        contribution.payment_id == session.payment_intent && contribution.state == 'confirmed'
+      end
+
+      def with_checkout_payment_lock(payment_intent_id)
+        ::Contribution.transaction do
+          connection = ::Contribution.connection
+          lock_name = "stripe-checkout:#{payment_intent_id}"
+          connection.execute("SELECT pg_advisory_xact_lock(hashtext(#{connection.quote(lock_name)}))")
+          yield
+        end
+      end
       
       def calculate_stripe_fee(amount)
         # Frais Stripe: 1.4% + 0.25€ pour les cartes européennes

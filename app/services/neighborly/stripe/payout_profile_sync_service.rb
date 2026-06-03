@@ -153,13 +153,7 @@ module Neighborly
       end
 
       def sync_representative_person!(name_parts)
-        payload = {
-          relationship: {
-            representative: true,
-            executive: true,
-            title: 'Representant legal'
-          }
-        }
+        payload = {}
 
         person_token = representative_person_token
         unless person_token.present?
@@ -598,6 +592,13 @@ module Neighborly
           phone: stripe_phone_number,
           address: stripe_address_payload
         }
+
+        if user.organization.respond_to?(:payout_single_representative_attested_at) &&
+           user.organization.payout_single_representative_attested_at.present?
+          payload[:directors_provided] = true
+          payload[:executives_provided] = true
+          payload[:owners_provided] = true
+        end
 
         if user.organization.respond_to?(:registration_number) && user.organization.registration_number.present?
           registration_number = user.organization.registration_number.to_s.strip.upcase

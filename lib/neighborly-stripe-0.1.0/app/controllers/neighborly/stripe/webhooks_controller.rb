@@ -1,6 +1,8 @@
 module Neighborly
   module Stripe
     class WebhooksController < ApplicationController
+      class WebhookIntegrityError < StandardError; end
+
       skip_before_action :verify_authenticity_token, raise: false
       before_action :verify_stripe_signature
       
@@ -71,55 +73,83 @@ module Neighborly
       end
       
       def handle_checkout_completed(session)
-        project_id = session.metadata['project_id']
-        user_id = session.metadata['user_id']
-        contribution_id = session.metadata['contribution_id']
+        metadata = session.metadata || {}
+        project_id = metadata['project_id']
+        user_id = metadata['user_id']
+        contribution_id = metadata['contribution_id']
         amount = session.amount_total
         
-        return unless project_id && user_id
+        raise WebhookIntegrityError, 'Projet Checkout absent' if project_id.blank?
+        raise WebhookIntegrityError, 'Utilisateur Checkout absent' if user_id.blank?
+        raise WebhookIntegrityError, 'PaymentIntent Checkout absent' if session.payment_intent.blank?
+        raise WebhookIntegrityError, 'Montant Checkout invalide' unless amount.to_i.positive?
         
         project = ::Project.find_by(id: project_id)
         user = ::User.find_by(id: user_id)
         
-        return unless project && user
+        raise WebhookIntegrityError, 'Projet local Checkout introuvable' unless project
+        raise WebhookIntegrityError, 'Utilisateur local Checkout introuvable' unless user
+        ensure_checkout_session_matches!(session, project, user)
         
-        # Si contribution_id existe, utiliser la contribution existante
-        if contribution_id.present?
-          contribution = ::Contribution.find_by(id: contribution_id)
+        with_checkout_payment_lock(session.payment_intent) do
+          contribution = ::Contribution.find_by(payment_id: session.payment_intent)
           if contribution
-            contribution.update(
-              payment_method: 'Stripe',
-              payment_id: session.payment_intent
-            )
+            ensure_checkout_contribution_matches!(contribution, project, user, session)
           else
-            # Contribution supprimée entre-temps, en créer une nouvelle
-            contribution = ::Contribution.create!(
-              project: project,
-              user: user,
-              value: amount / 100.0,
-              payment_method: 'Stripe',
-              payment_id: session.payment_intent,
-              state: 'pending'
-            )
+            contribution = ::Contribution.find_by(id: contribution_id) if contribution_id.present?
+            ensure_checkout_contribution_matches!(contribution, project, user, session) if contribution
+            if contribution&.payment_id.present? && contribution.payment_id != session.payment_intent
+              Rails.logger.warn "Checkout duplicate payment: contribution #{contribution.id} already linked to #{contribution.payment_id}; recording #{session.payment_intent} separately"
+              contribution = nil
+            end
+
+            contribution ||= create_checkout_contribution(project, user, amount, session)
+            contribution.update!(payment_method: 'Stripe', payment_id: session.payment_intent)
           end
-        else
-          # Pas de contribution existante, en créer une nouvelle
-          contribution = ::Contribution.create!(
-            project: project,
-            user: user,
-            value: amount / 100.0,
-            payment_method: 'Stripe',
-            payment_id: session.payment_intent,
-            state: 'pending'
+
+          stripe_order = contribution.create_stripe_order(
+            payment_intent_id: session.payment_intent,
+            checkout_session_id: session.id
           )
+
+          handle_payment_succeeded(::Stripe::PaymentIntent.retrieve(session.payment_intent)) if session.payment_status == 'paid'
+
+          Rails.logger.info "Checkout completed: Contribution #{contribution.id} (#{contribution_id.present? ? 'existing' : 'new'})"
         end
-        
-        stripe_order = contribution.create_stripe_order(
-          payment_intent_id: session.payment_intent,
-          checkout_session_id: session.id
+      end
+
+      def create_checkout_contribution(project, user, amount, session)
+        ::Contribution.create!(
+          project: project,
+          user: user,
+          value: amount / 100.0,
+          payment_method: 'Stripe',
+          payment_id: session.payment_intent,
+          state: 'pending'
         )
-        
-        Rails.logger.info "Checkout completed: Contribution #{contribution.id} (#{contribution_id.present? ? 'existing' : 'new'})"
+      end
+
+      def ensure_checkout_session_matches!(session, project, user)
+        expected_currency = project.currency.presence&.downcase || 'eur'
+        if session.client_reference_id.present? && session.client_reference_id.to_s != user.id.to_s
+          raise WebhookIntegrityError, 'Reference client Checkout incompatible'
+        end
+        raise WebhookIntegrityError, 'Devise Checkout incompatible' unless session.currency.to_s.downcase == expected_currency
+      end
+
+      def ensure_checkout_contribution_matches!(contribution, project, user, session)
+        raise WebhookIntegrityError, 'Projet de contribution incompatible' unless contribution.project_id == project.id
+        raise WebhookIntegrityError, 'Utilisateur de contribution incompatible' unless contribution.user_id == user.id
+        raise WebhookIntegrityError, 'Montant de contribution incompatible' unless (contribution.value.to_f * 100).round == session.amount_total.to_i
+      end
+
+      def with_checkout_payment_lock(payment_intent_id)
+        ::Contribution.transaction do
+          connection = ::Contribution.connection
+          lock_name = "stripe-checkout:#{payment_intent_id}"
+          connection.execute("SELECT pg_advisory_xact_lock(hashtext(#{connection.quote(lock_name)}))")
+          yield
+        end
       end
       
       def handle_payment_succeeded(payment_intent)
@@ -173,13 +203,28 @@ module Neighborly
         contribution ||= stripe_order&.contribution
         return unless contribution || stripe_order
 
-        stripe_order&.update(status: 'refunded')
-        
         if contribution
           refund = stripe_refund_from_charge(charge)
-          updates = { stripe_refunded: true }
+          fully_refunded = charge_fully_refunded?(charge)
+          expected_partial_refund = expected_platform_partial_refund?(contribution, refund)
+          updates = {}
           updates[:stripe_refund_id] = refund.id if refund.respond_to?(:id) && refund.id.present?
-          updates[:stripe_refund_amount] = refund.amount.to_i / 100.0 if refund.respond_to?(:amount) && contribution.respond_to?(:stripe_refund_amount=)
+          if contribution.respond_to?(:stripe_refund_amount=)
+            updates[:stripe_refund_amount] = stripe_value(charge, :amount_refunded).to_i / 100.0
+          end
+
+          unless fully_refunded || expected_partial_refund
+            contribution.update_columns(updates) if updates.any?
+            mark_project_for_manual_review!(
+              contribution.project,
+              "remboursement partiel externe sur charge #{charge.id}"
+            )
+            Rails.logger.warn "Charge partially refunded: Charge #{charge.id} requires manual review"
+            return
+          end
+
+          stripe_order&.update(status: 'refunded')
+          updates[:stripe_refunded] = true
           contribution.update_columns(updates)
         end
 
@@ -359,9 +404,28 @@ module Neighborly
 
       def stripe_refund_from_charge(charge)
         refunds = stripe_value(charge, :refunds)
-        return unless refunds.respond_to?(:data)
+        return refunds.data.first if refunds.respond_to?(:data) && refunds.data.present?
 
-        refunds.data.first
+        ::Stripe::Refund.list({ charge: charge.id, limit: 1 }).data.first
+      rescue ::Stripe::StripeError => e
+        Rails.logger.warn "Charge #{charge.id}: recuperation du remboursement Stripe impossible: #{e.message}"
+        nil
+      end
+
+      def charge_fully_refunded?(charge)
+        return true if stripe_value(charge, :refunded) == true
+
+        amount = stripe_value(charge, :amount).to_i
+        amount.positive? && stripe_value(charge, :amount_refunded).to_i >= amount
+      end
+
+      def expected_platform_partial_refund?(contribution, refund)
+        return true if contribution.respond_to?(:stripe_refunded?) && contribution.stripe_refunded?
+        return false unless refund
+
+        metadata = stripe_value(refund, :metadata)
+        stripe_value(metadata, :contribution_id).to_s == contribution.id.to_s &&
+          stripe_value(metadata, :reason).to_s == 'campaign_cancelled'
       end
 
       def handle_transfer_created(transfer)
@@ -379,10 +443,7 @@ module Neighborly
       
       # Paiement asynchrone réussi (SEPA, etc.)
       def handle_async_payment_succeeded(session)
-        contribution_id = session.metadata['contribution_id']
-        return unless contribution_id.present?
-        
-        contribution = ::Contribution.find_by(id: contribution_id)
+        contribution = checkout_contribution_from_metadata!(session)
         return unless contribution
         
         # Confirmer la contribution
@@ -402,10 +463,7 @@ module Neighborly
       
       # Paiement asynchrone échoué (SEPA, etc.)
       def handle_async_payment_failed(session)
-        contribution_id = session.metadata['contribution_id']
-        return unless contribution_id.present?
-        
-        contribution = ::Contribution.find_by(id: contribution_id)
+        contribution = checkout_contribution_from_metadata!(session)
         return unless contribution
         
         # Annuler la contribution
@@ -422,6 +480,27 @@ module Neighborly
         stripe_order = Order.find_by(stripe_checkout_session_id: session.id)
         stripe_order&.update(status: 'failed')
       end
+
+      def checkout_contribution_from_metadata!(session)
+        metadata = session.metadata || {}
+        contribution_id = metadata['contribution_id']
+        return if contribution_id.blank?
+
+        project_id = metadata['project_id']
+        user_id = metadata['user_id']
+        raise WebhookIntegrityError, 'Projet Checkout async absent' if project_id.blank?
+        raise WebhookIntegrityError, 'Utilisateur Checkout async absent' if user_id.blank?
+
+        contribution = ::Contribution.find_by(id: contribution_id)
+        return unless contribution
+
+        raise WebhookIntegrityError, 'Projet de contribution async incompatible' unless contribution.project_id.to_s == project_id.to_s
+        raise WebhookIntegrityError, 'Utilisateur de contribution async incompatible' unless contribution.user_id.to_s == user_id.to_s
+
+        ensure_checkout_session_matches!(session, contribution.project, contribution.user)
+        ensure_checkout_contribution_matches!(contribution, contribution.project, contribution.user, session)
+        contribution
+      end
       
       # Litige/dispute créé - CRITIQUE pour la gestion financière
       def handle_dispute_created(dispute)
@@ -431,6 +510,12 @@ module Neighborly
         contribution = ::Contribution.find_by(stripe_charge_id: charge_id)
         contribution ||= Order.find_by(stripe_charge_id: charge_id)&.contribution
         return unless contribution
+
+        remember_dispute!(contribution, dispute)
+        mark_project_for_manual_review!(
+          contribution.project,
+          "litige #{dispute.id} sur contribution #{contribution.id}"
+        )
         
         # Logger l'alerte - les litiges doivent être traités manuellement
         Rails.logger.error "DISPUTE CRÉÉ: Contribution #{contribution.id}, Projet #{contribution.project.name}, Montant #{contribution.value}€"
@@ -449,16 +534,10 @@ module Neighborly
               }
             )
 
-            update_attrs = { stripe_transferred: false }
-            update_attrs[:stripe_dispute_id] = dispute.id if contribution.respond_to?(:stripe_dispute_id=)
-            contribution.update_columns(update_attrs)
-
             Rails.logger.error "Transfert #{contribution.stripe_transfer_id} reverse suite au litige"
           rescue ::Stripe::StripeError => e
             Rails.logger.error "Impossible de reverser le transfert #{contribution.stripe_transfer_id}: #{e.message}"
           end
-        elsif contribution.respond_to?(:stripe_dispute_id=)
-          contribution.update_column(:stripe_dispute_id, dispute.id)
         end
 
         # Notifier l'admin (si méthode existe)
@@ -493,9 +572,23 @@ module Neighborly
         end
 
         already_finalized = project.state == 'paid' && project.stripe_payout_paid_at.present?
+        payout_source = stripe_value(payout.metadata, :source).presence || project.stripe_payout_source.presence || 'stripe_dashboard'
+        mark_dashboard_payout_transfer_if_needed!(project, payout, payout_source)
+        project.reload
         account_id = connected_account_id.presence || project.stripe_account_id
         all_paid = all_project_payouts_paid?(project, payout, account_id)
-        update_project_payout_from_stripe!(project, payout, status_override: (all_paid ? 'paid' : 'in_transit'))
+        status =
+          if all_paid
+            'paid'
+          elsif payout.status == 'paid' &&
+                (payout_source == 'stripe_dashboard' ||
+                 (!project_has_untransferred_confirmed_contributions?(project) &&
+                  !project_has_outstanding_payouts?(project, payout, account_id)))
+            'manual_review'
+          else
+            incomplete_project_payout_status(project)
+          end
+        update_project_payout_from_stripe!(project, payout, status_override: status)
 
         unless all_paid
           Rails.logger.info "Payout #{payout.id} paye, attente des autres payouts du projet #{project.id}"
@@ -581,8 +674,6 @@ module Neighborly
           Rails.logger.warn "Webhook payout #{payout.id}: rattachement ambigu pour compte #{account_id}. Ajoutez l'identifiant du projet dans la description du payout."
           return nil
         end
-
-        return candidates.first if candidates.size == 1
 
         Rails.logger.warn "Webhook payout #{payout.id}: rattachement refuse pour compte #{account_id}. Ajoutez l'identifiant du projet dans la description du payout."
         nil
@@ -690,19 +781,62 @@ module Neighborly
       end
 
       def all_project_payouts_paid?(project, current_payout, account_id)
+        return false if project_has_untransferred_confirmed_contributions?(project)
+
         payout_ids = project.stripe_payout_ids.to_s.split(',').map(&:strip)
         payout_ids << current_payout.id
         payout_ids = payout_ids.reject(&:blank?).uniq
-        return current_payout.status == 'paid' if payout_ids.size <= 1
-        return false unless account_id.present?
+        return false if payout_ids.size > 1 && account_id.blank?
 
-        payout_ids.all? do |payout_id|
-          payout = payout_id == current_payout.id ? current_payout : ::Stripe::Payout.retrieve(payout_id, { stripe_account: account_id })
-          payout.status == 'paid'
+        payouts = payout_ids.map do |payout_id|
+          payout_id == current_payout.id ? current_payout : ::Stripe::Payout.retrieve(payout_id, { stripe_account: account_id })
         end
+        active_payouts = payouts.reject { |payout| %w[failed canceled].include?(payout.status) }
+        return false if active_payouts.empty? || active_payouts.any? { |payout| payout.status != 'paid' }
+
+        paid_payout_amounts_cover_transfers?(project, active_payouts)
       rescue ::Stripe::StripeError => e
         Rails.logger.warn "Verification payouts projet #{project.id} impossible: #{e.message}"
         false
+      end
+
+      def paid_payout_amounts_cover_transfers?(project, paid_payouts)
+        expected_by_currency = Hash.new(0)
+        transferred = project.contributions.where(payment_method: 'Stripe', state: 'confirmed', stripe_transferred: true)
+                             .where(stripe_refunded: [false, nil])
+        transferred.each do |contribution|
+          currency = contribution.stripe_transfer_currency.presence || project.currency.to_s.downcase.presence || 'eur'
+          expected_by_currency[currency.to_s.downcase] += estimated_contribution_payout_amount_cents(contribution).to_i
+        end
+        return false if expected_by_currency.empty?
+
+        paid_by_currency = Hash.new(0)
+        paid_payouts.each { |payout| paid_by_currency[payout.currency.to_s.downcase] += payout.amount.to_i }
+        tolerance_cents = [transferred.size, 2].max
+        expected_by_currency.keys.sort == paid_by_currency.keys.sort &&
+          expected_by_currency.all? { |currency, amount| (paid_by_currency[currency] - amount).abs <= tolerance_cents }
+      end
+
+      def project_has_outstanding_payouts?(project, current_payout, account_id)
+        payout_ids = project.stripe_payout_ids.to_s.split(',').map(&:strip)
+        payout_ids << current_payout.id
+        payout_ids.reject(&:blank?).uniq.any? do |payout_id|
+          payout = payout_id == current_payout.id ? current_payout : ::Stripe::Payout.retrieve(payout_id, { stripe_account: account_id })
+          %w[pending in_transit].include?(payout.status)
+        end
+      rescue ::Stripe::StripeError => e
+        Rails.logger.warn "Verification payouts en cours projet #{project.id} impossible: #{e.message}"
+        true
+      end
+
+      def incomplete_project_payout_status(project)
+        project_has_untransferred_confirmed_contributions?(project) ? 'requires_payout' : 'in_transit'
+      end
+
+      def project_has_untransferred_confirmed_contributions?(project)
+        project.contributions.where(payment_method: 'Stripe', state: 'confirmed')
+               .where(stripe_refunded: [false, nil], stripe_transferred: [false, nil])
+               .exists?
       end
 
       def finalize_project_after_payout!(project)
@@ -719,28 +853,63 @@ module Neighborly
         timestamp.present? ? Time.zone.at(timestamp) : nil
       end
       
-      # Transfert inversé/annulé
       def handle_transfer_reversed(transfer)
-        # Trouver la contribution via le transfer_id
         contribution = ::Contribution.find_by(stripe_transfer_id: transfer.id)
-        
+        project = contribution&.project || ::Project.find_by(stripe_transfer_id: transfer.id)
+        fully_reversed = transfer_fully_reversed?(transfer)
+
         if contribution
-          contribution.update_columns(
-            stripe_transferred: false,
-            stripe_transfer_id: nil
-          )
-          Rails.logger.warn "Transfer reversed: Contribution #{contribution.id} - transfert annulé"
+          if fully_reversed
+            contribution.update_columns(
+              stripe_transferred: false,
+              stripe_transfer_id: nil
+            )
+            Rails.logger.warn "Transfer reversed: Contribution #{contribution.id} - transfert annule"
+          else
+            Rails.logger.warn "Transfer partially reversed: Contribution #{contribution.id} - rapprochement manuel requis"
+          end
         end
-        
-        # Mettre à jour le projet si c'est le transfert principal
-        project = ::Project.find_by(stripe_transfer_id: transfer.id)
+
         if project
-          project.update_columns(
-            stripe_transfer_id: nil,
-            stripe_settlement_type: nil
+          clear_project_transfer_after_full_reversal!(project, transfer.id) if fully_reversed
+          mark_project_for_manual_review!(
+            project,
+            fully_reversed ? "inversion du transfert #{transfer.id}" : "inversion partielle du transfert #{transfer.id}"
           )
-          Rails.logger.warn "Transfer reversed: Projet #{project.id} - règlement annulé"
         end
+      end
+
+      def transfer_fully_reversed?(transfer)
+        return true if stripe_value(transfer, :reversed) == true
+
+        amount = stripe_value(transfer, :amount).to_i
+        amount.positive? && stripe_value(transfer, :amount_reversed).to_i >= amount
+      end
+
+      def clear_project_transfer_after_full_reversal!(project, reversed_transfer_id)
+        return unless project.stripe_transfer_id.to_s == reversed_transfer_id.to_s
+
+        remaining_transfer = project.contributions.where(stripe_transferred: true).where.not(stripe_transfer_id: nil).first
+        project.update_columns(
+          stripe_transfer_id: remaining_transfer&.stripe_transfer_id,
+          stripe_settlement_type: remaining_transfer ? project.stripe_settlement_type : nil
+        )
+      end
+
+      def remember_dispute!(contribution, dispute)
+        contribution.update_column(:stripe_dispute_id, dispute.id) if contribution.respond_to?(:stripe_dispute_id=)
+      end
+
+      def mark_project_for_manual_review!(project, reason)
+        return unless project
+
+        attrs = {
+          stripe_payout_status: 'manual_review',
+          stripe_settled_at: nil
+        }
+        attrs[:state] = 'request_funds' if project.state == 'paid'
+        project.update_columns(attrs)
+        Rails.logger.warn "Projet #{project.id}: rapprochement manuel requis (#{reason})"
       end
     end
   end

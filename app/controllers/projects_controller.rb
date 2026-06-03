@@ -175,6 +175,10 @@ class ProjectsController < ApplicationController
           organization = current_user.organization || current_user.build_organization
           organization.name = payout_profile_organization_name
           organization.registration_number = payout_profile_organization_registration_number if organization.respond_to?(:registration_number=)
+          if organization.respond_to?(:payout_single_representative_attested_at=)
+            organization.payout_single_representative_attested_at =
+              payout_profile_single_representative_attested? ? Time.current : nil
+          end
           organization.save!
         end
 
@@ -241,6 +245,11 @@ class ProjectsController < ApplicationController
 
     if %w[pending in_transit].include?(payout_status)
       flash[:notice] = "Votre virement bancaire est en cours. Vous recevrez une confirmation des que les fonds seront confirmes comme recus."
+      return redirect_to pay_project_path(@project)
+    end
+
+    if payout_status == 'manual_review'
+      flash[:notice] = "Votre dossier est en cours de verification par notre equipe. Nous vous recontacterons si une action est necessaire."
       return redirect_to pay_project_path(@project)
     end
 
@@ -484,6 +493,10 @@ class ProjectsController < ApplicationController
 
   def payout_profile_organization_registration_number
     params[:organization_registration_number].to_s.strip.upcase
+  end
+
+  def payout_profile_single_representative_attested?
+    params[:organization_single_representative_attestation].to_s == '1'
   end
 
   def payout_profile_kyc_types_for(user)
