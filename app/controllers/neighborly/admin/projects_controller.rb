@@ -138,7 +138,7 @@ module Neighborly::Admin
         warnings = sync_result.warnings.any? ? " Avertissements: #{sync_result.warnings.join(', ').truncate(200)}" : ''
         flash[:success] = "Profil de retrait synchronise vers Stripe.#{warnings}"
       else
-        flash[:alert] = "Synchronisation Stripe impossible: #{sync_result.errors.join(', ').truncate(200)}"
+        handle_payout_profile_sync_failure!(sync_result, @project, 'Synchronisation Stripe impossible')
       end
     rescue => e
       flash[:alert] = "Erreur de synchronisation Stripe: #{e.message.truncate(200)}"
@@ -224,7 +224,7 @@ module Neighborly::Admin
 
       sync_result = Neighborly::Stripe::PayoutProfileSyncService.call(@project.user)
       unless sync_result.success?
-        flash[:alert] = "Synchronisation Stripe impossible avant transfert: #{sync_result.errors.join(', ')}"
+        handle_payout_profile_sync_failure!(sync_result, @project, 'Synchronisation Stripe impossible avant transfert')
         return redirect_back(fallback_location: projects_path)
       end
       @project.reload
@@ -487,6 +487,59 @@ module Neighborly::Admin
     end
 
     protected
+
+    def handle_payout_profile_sync_failure!(sync_result, project, prefix)
+      errors = Array(sync_result.errors)
+
+      if payout_profile_owner_action_required?(errors)
+        reopen_result = reopen_payout_profile_edit!(project)
+        notification_message = reopen_result[:notification_sent] ? ' Un email a ete envoye au porteur.' : ' Attention: email porteur non envoye, voir les logs.'
+        reopened_message = reopen_result[:reopened_request] ? ' La demande a ete reouverte pour une nouvelle soumission.' : ''
+        flash[:alert] = "#{prefix}: #{payout_profile_admin_failure_message(errors)} Le formulaire de retrait a ete reactive pendant 14 jours.#{reopened_message}#{notification_message}"
+      else
+        flash[:alert] = "#{prefix}: #{errors.join(', ').truncate(200)}"
+      end
+    end
+
+    def payout_profile_owner_action_required?(errors)
+      details = Array(errors).join(' ')
+      details.match?(/Profil de retrait incomplet|conditions de paiement|accepter les conditions|soumettre.*formulaire|recree|recreer|valid phone|phone|not currently supported|not supported|postal|zip|iban|bank account|account_number|routing|date of birth|dob|birthday|address|city|country|line1|document|file|upload/i)
+    end
+
+    def payout_profile_admin_failure_message(errors)
+      details = Array(errors).join(' ')
+
+      return 'le porteur doit cocher l attestation et soumettre a nouveau son profil depuis la plateforme.' if details.match?(/conditions de paiement|accepter les conditions|soumettre.*formulaire|recree|recreer/i)
+      return 'le numero de telephone doit etre corrige au format international.' if details.match?(/valid phone|phone/i)
+      return 'le pays ou le compte bancaire renseigne n est pas pris en charge pour ce virement.' if details.match?(/not currently supported|not supported/i)
+      return 'le code postal doit etre corrige.' if details.match?(/postal|zip/i)
+      return 'les informations bancaires doivent etre corrigees.' if details.match?(/iban|bank account|account_number|routing/i)
+      return 'la date de naissance doit etre corrigee.' if details.match?(/date of birth|dob|birthday/i)
+      return 'l adresse du titulaire doit etre corrigee.' if details.match?(/address|city|country|line1/i)
+      return 'un justificatif doit etre corrige ou renvoye.' if details.match?(/document|file|upload/i)
+
+      'le porteur doit verifier et soumettre a nouveau son profil de retrait.'
+    end
+
+    def reopen_payout_profile_edit!(project)
+      reopened_request = false
+
+      if project.state == 'request_funds'
+        project.update_column(:state, 'waiting_funds')
+        reopened_request = true
+      end
+
+      Rails.cache.write(
+        payout_profile_edit_unlock_cache_key(project.user),
+        { unlocked_at: Time.current.to_i, admin_id: current_user.try(:id) },
+        expires_in: 14.days
+      )
+
+      {
+        reopened_request: reopened_request,
+        notification_sent: notify_payout_profile_update_required(project)
+      }
+    end
 
     def payout_profile_edit_unlock_cache_key(user)
       "payout_profile_edit_unlock:user:#{user.id}"

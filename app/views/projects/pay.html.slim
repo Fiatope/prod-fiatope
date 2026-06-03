@@ -174,7 +174,7 @@
                 - @payout_profile_missing_fields.each do |missing_field|
                   li = missing_field
 
-          = form_tag update_payout_profile_project_path(@project), method: :put, multipart: true do
+          = form_tag update_payout_profile_project_path(@project), method: :put, multipart: true, class: 'js-payout-profile-form' do
             .row
               .col-md-12
                 .form-group
@@ -281,15 +281,32 @@
                 |  Le parcours automatique est disponible lorsque la personne renseignee ci-dessus est l unique representant legal, dirigeant, responsable et beneficiaire effectif a declarer pour ce dossier. Si plusieurs personnes doivent etre declarees, contactez notre equipe avant de soumettre le formulaire.
               .form-group.text-left[style="max-width:760px;margin:0 auto 15px;"]
                 label[style="font-weight:normal;"]
-                  = check_box_tag :organization_single_representative_attestation, '1', false, required: true
+                  = check_box_tag :organization_single_representative_attestation, '1', false, required: true, class: 'js-payout-required-checkbox'
                   |  J atteste que la personne renseignee est l unique representant legal, dirigeant, responsable et beneficiaire effectif a declarer pour ce dossier.
               .form-group.text-left[style="max-width:760px;margin:0 auto 15px;"]
                 label[style="font-weight:normal;"]
-                  = check_box_tag :stripe_tos_acceptance, '1', false, required: true
+                  = check_box_tag :stripe_tos_acceptance, '1', false, required: true, class: 'js-payout-required-checkbox'
                   |  J atteste etre autorise a representer cette structure et j accepte que ces informations soient utilisees pour verifier le dossier et effectuer le virement.
-              button.btn.btn-lg.btn-warning[type="submit" style="padding:12px 40px;font-size:1.1em;"]
+              button.btn.btn-lg.btn-warning[type="submit" disabled=true style="padding:12px 40px;font-size:1.1em;"]
                 i.fa.fa-save
                 |  Enregistrer mon profil de retrait
+
+          javascript:
+            document.addEventListener('DOMContentLoaded', function() {
+              Array.prototype.slice.call(document.querySelectorAll('.js-payout-profile-form')).forEach(function(form) {
+                var requiredCheckboxes = Array.prototype.slice.call(form.querySelectorAll('.js-payout-required-checkbox'));
+                var submitButtons = Array.prototype.slice.call(form.querySelectorAll('button[type="submit"], input[type="submit"]'));
+                var refreshSubmitState = function() {
+                  var allChecked = requiredCheckboxes.length === 0 || requiredCheckboxes.every(function(checkbox) { return checkbox.checked; });
+                  submitButtons.forEach(function(button) { button.disabled = !allChecked; });
+                };
+
+                requiredCheckboxes.forEach(function(checkbox) {
+                  checkbox.addEventListener('change', refreshSubmitState);
+                });
+                refreshSubmitState();
+              });
+            });
 
       - else
         - if total_collected <= 0

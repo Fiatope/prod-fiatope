@@ -165,6 +165,16 @@ class ProjectsController < ApplicationController
       return redirect_to project_path(@project)
     end
 
+    unless payout_profile_single_representative_attested?
+      flash[:alert] = 'Vous devez cocher l attestation confirmant que la personne renseignee est l unique representant legal, dirigeant, responsable et beneficiaire effectif a declarer pour ce dossier.'
+      return redirect_to pay_project_path(@project)
+    end
+
+    unless payout_profile_tos_accepted?
+      flash[:alert] = payout_profile_acceptance_required_message
+      return redirect_to pay_project_path(@project)
+    end
+
     begin
       ActiveRecord::Base.transaction do
         current_user.assign_attributes(payout_profile_user_params)
@@ -282,7 +292,7 @@ class ProjectsController < ApplicationController
     unless sync_result.success?
       Rails.logger.warn "Payout request profile sync failed for user #{current_user.id}: #{sync_result.errors.join(', ')}"
       unlock_payout_profile_edit_for_retry!(current_user)
-      flash[:alert] = 'Votre profil de retrait doit encore etre verifie avant la demande de virement. Notre equipe va verifier le dossier et vous recontactera si une correction est necessaire.'
+      flash[:alert] = payout_profile_sync_failure_message(sync_result.errors)
       return redirect_to pay_project_path(@project)
     end
 
@@ -538,6 +548,10 @@ class ProjectsController < ApplicationController
     params[:stripe_tos_acceptance].to_s == '1'
   end
 
+  def payout_profile_acceptance_required_message
+    'Vous devez cocher l attestation avant de soumettre votre profil de retrait.'
+  end
+
   def payout_profile_sync_failure_message(errors)
     details = Array(errors).join(' ')
 
@@ -570,7 +584,7 @@ class ProjectsController < ApplicationController
     end
 
     if details.match?(/conditions de paiement|accepter les conditions|conditions/i)
-      return 'Votre profil a ete enregistre, mais vous devez cocher l attestation avant de soumettre le formulaire.'
+      return payout_profile_acceptance_required_message
     end
 
     if details.match?(/account token|business_type|jeton securise|configuration|api key/i)
