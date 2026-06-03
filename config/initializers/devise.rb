@@ -261,7 +261,14 @@ Devise.setup do |config|
       #   end
       # end
 
-      config.omniauth :openid_connect, :name => "openid_connect", :identifier => "http://x-connect.herokuapp.com/.well-known/openid-configuration", :client_id =>"531b3696-68e6-4738-974c-211f30e8a3ef", :client_secret => "CGbHx5iKLStJMxearOgg0ijZsIKCRYdHoErRfJvBI-qH4rk7eL4leprv-xiSM7_lXNqbknNauRY7BO2W2wXouw" 
+      if ENV['ENABLE_OPENID_CONNECT'] == 'true'
+        require 'omniauth_openid_connect'
+        config.omniauth :openid_connect,
+          name: 'openid_connect',
+          identifier: ENV['OPENID_CONNECT_IDENTIFIER'],
+          client_id: ENV['OPENID_CONNECT_CLIENT_ID'],
+          client_secret: ENV['OPENID_CONNECT_CLIENT_SECRET']
+      end
 
     rescue Exception => e
       puts "problem while using OauthProvider model:\n '#{e.message}'"

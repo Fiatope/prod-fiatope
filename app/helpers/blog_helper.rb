@@ -1,3 +1,5 @@
+require 'redcarpet'
+
 module BlogHelper
   class HTMLwithPygments < Redcarpet::Render::HTML
     def block_code(code, language)

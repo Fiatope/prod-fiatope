@@ -1,5 +1,9 @@
 require File.expand_path('../boot', __FILE__)
+require 'logger'
 require 'rails/all'
+%w(absence acceptance callbacks confirmation exclusion format helper_methods inclusion length numericality presence validates with).each do |validator|
+  require "active_model/validations/#{validator}"
+end
 if Rails.env.development?
   require 'openssl'
 end
