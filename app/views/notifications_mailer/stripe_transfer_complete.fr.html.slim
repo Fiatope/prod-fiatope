@@ -18,21 +18,21 @@ table[style="border-collapse: collapse; width: 100%; max-width: 500px;"]
     td[style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;"] Projet
     td[style="padding: 10px; border: 1px solid #e2e8f0;"] #{project.name}
   tr
-    td[style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;"] Montant collecte
+    td[style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;"] Montant collecté
     td[style="padding: 10px; border: 1px solid #e2e8f0;"] #{number_to_currency(gross, unit: currency_sym, format: '%n %u')}
   tr
     td[style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;"] Commission
     td[style="padding: 10px; border: 1px solid #e2e8f0;"] #{number_to_currency((gross * fee_pct).round(2), unit: currency_sym, format: '%n %u')}
   tr[style="background: #f0fdf4;"]
-    td[style="padding: 10px; border: 1px solid #bbf7d0; font-weight: bold;"] Montant a recevoir
+    td[style="padding: 10px; border: 1px solid #bbf7d0; font-weight: bold;"] Montant à recevoir
     td[style="padding: 10px; border: 1px solid #bbf7d0; color: #16a34a; font-weight: bold;"] #{number_to_currency(net, unit: currency_sym, format: '%n %u')}
 br
 br
-|Le paiement arrive generalement sous 2 a 7 jours ouvres.
+|Le paiement arrive généralement sous 2 à 7 jours ouvrés.
 br
-|Vous recevrez un second email lorsque les fonds seront arrives sur votre compte bancaire.
+|Vous recevrez un second email lorsque les fonds seront arrivés sur votre compte bancaire.
 br
 br
 |Merci,
 br
-|L'equipe #{Configuration[:company_name]}
+|L’équipe #{Configuration[:company_name]}

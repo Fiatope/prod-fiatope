@@ -9,7 +9,7 @@
 |Bonjour #{project.user.display_name},
 br
 br
-|Les fonds du projet #{link_to(project.name, project_url(project))} sont arrives sur votre compte bancaire.
+|Les fonds du projet #{link_to(project.name, project_url(project))} sont arrivés sur votre compte bancaire.
 br
 br
 table[style="border-collapse: collapse; width: 100%; max-width: 500px;"]
@@ -17,19 +17,19 @@ table[style="border-collapse: collapse; width: 100%; max-width: 500px;"]
     td[style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;"] Projet
     td[style="padding: 10px; border: 1px solid #e2e8f0;"] #{project.name}
   tr
-    td[style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;"] Montant recu
+    td[style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;"] Montant reçu
     td[style="padding: 10px; border: 1px solid #e2e8f0; color: #16a34a; font-weight: bold;"]
       = number_to_currency(net, unit: currency_sym, format: '%n %u')
   - if settled_at.present?
     tr[style="background: #f8fafc;"]
-      td[style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;"] Date de reception
+      td[style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;"] Date de réception
       td[style="padding: 10px; border: 1px solid #e2e8f0;"]
         = l(settled_at.to_date, format: :long)
 br
 br
-|Vous pouvez verifier votre releve bancaire. Si vous ne voyez pas les fonds, contactez votre banque ou notre equipe a #{mail_to Configuration[:email_contact]}.
+|Vous pouvez vérifier votre relevé bancaire. Si vous ne voyez pas les fonds, contactez votre banque ou notre équipe à #{mail_to Configuration[:email_contact]}.
 br
 br
 |Merci,
 br
-|L'equipe #{Configuration[:company_name]}
+|L’équipe #{Configuration[:company_name]}

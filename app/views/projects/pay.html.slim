@@ -48,7 +48,7 @@
       / ===== TRACKER D'ÉTAPES VISUEL =====
       .panel.radius[style="background:#f8f9fa;border:1px solid #e9ecef;margin-bottom:25px;padding:20px 15px 10px;"]
         .row.text-center
-          - steps = [{ icon: 'fa-file-text-o', label: 'Documents', desc: 'A fournir' }, { icon: 'fa-paper-plane', label: 'Demande', desc: 'A envoyer' }, { icon: 'fa-clock-o', label: 'Paiement', desc: 'En cours' }, { icon: 'fa-check-circle', label: 'Recu', desc: 'Fonds recus' }]
+          - steps = [{ icon: 'fa-file-text-o', label: 'Documents', desc: 'À fournir' }, { icon: 'fa-paper-plane', label: 'Demande', desc: 'À envoyer' }, { icon: 'fa-clock-o', label: 'Paiement', desc: 'En cours' }, { icon: 'fa-check-circle', label: 'Reçu', desc: 'Fonds reçus' }]
           - steps.each_with_index do |step, i|
             - step_num = i + 1
             - is_done = step_num < current_step
@@ -96,9 +96,9 @@
         .panel.radius[style="background:#d5f5e3;border:2px solid #27ae60;padding:20px;margin-bottom:25px;"]
           h4[style="color:#27ae60;"]
             i.fa.fa-check-circle
-            |  Fonds recus sur votre compte bancaire
+            |  Fonds reçus sur votre compte bancaire
           p
-            | Le paiement a ete confirme sur votre compte bancaire.
+            | Le paiement a été confirmé sur votre compte bancaire.
           - paid_date = @project.stripe_payout_paid_at || @project.stripe_settled_at
           - if paid_date.present?
             p
@@ -112,7 +112,7 @@
             i.fa.fa-clock-o
             |  Paiement en cours
           p
-            | Le paiement vers votre compte bancaire est en cours. Vous recevrez un email lorsque les fonds seront arrives.
+            | Le paiement vers votre compte bancaire est en cours. Vous recevrez un email lorsque les fonds seront arrivés.
           - if @project.stripe_payout_arrival_date.present?
             p.small
               i.fa.fa-calendar
@@ -122,38 +122,38 @@
         .panel.radius[style="background:#fff7e6;border:1px solid #f0c36d;padding:20px;margin-bottom:25px;"]
           h4[style="color:#8a6d3b;"]
             i.fa.fa-exclamation-triangle
-            |  Paiement a reprendre
+            |  Paiement à reprendre
           p
-            | Le paiement n'a pas pu etre finalise. Notre equipe va verifier vos documents et vous recontactera si une correction est necessaire.
+            | Le paiement n'a pas pu être finalisé. Notre équipe va vérifier vos documents et vous recontactera si une correction est nécessaire.
 
       - elsif payout_pending && !@payout_profile_edit_unlocked
         .panel.radius[style="background:#eef5ff;border:1px solid #7aa7e0;padding:20px;margin-bottom:25px;"]
           h4[style="color:#2f6fb2;"]
             i.fa.fa-clock-o
-            |  Demande de paiement envoyee
+            |  Demande de paiement envoyée
           p
             | Votre demande de paiement de
             strong #{number_to_currency(net_to_receive, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')}
-            |  est entre les mains de notre equipe.
+            |  est entre les mains de notre équipe.
           p
-            | Nous verifions vos documents. Vous recevrez un email a chaque etape importante.
+            | Nous vérifions vos documents. Vous recevrez un email à chaque étape importante.
 
       - elsif !payout_ready || @payout_profile_edit_unlocked
         .panel.radius[style="background:#fffdf7;border:1px solid #f0d8a8;padding:20px;margin-bottom:25px;"]
           h4[style="color:#b9770e;"]
             i.fa.fa-id-card
             - if stripe_waiting
-              |  Documents envoyes
+              |  Documents envoyés
             - elsif @payout_profile_edit_unlocked
               |  Corriger mes documents
             - else
-              |  Documents necessaires au paiement
+              |  Documents nécessaires au paiement
           - if stripe_waiting
             p
-              | Vos documents ont ete envoyes. Notre equipe vous contactera si une information doit etre corrigee.
+              | Vos documents ont été envoyés. Notre équipe vous contactera si une information doit être corrigée.
           - else
             p
-              | Pour recevoir vos fonds sans quitter Fiatope, indiquez les informations de votre structure, vos informations bancaires et les documents demandes.
+              | Pour recevoir vos fonds sans quitter Fiatope, indiquez les informations de votre structure, vos informations bancaires et les documents demandés.
 
           - if @payout_profile_edit_unlocked
             .alert-box.info[style="margin-top:10px;"]
@@ -163,7 +163,7 @@
           - if @payout_profile_missing_fields.present?
             .alert-box[style="margin-top:10px;background:#fff8e1;border:1px solid #f3d38a;color:#7a5d00;"]
               p
-                strong Informations ou documents manquants:
+                strong Informations ou documents manquants :
               ul[style="margin-bottom:0;"]
                 - @payout_profile_missing_fields.each do |missing_field|
                   li = missing_field
@@ -202,7 +202,7 @@
             .row
               .col-md-12
                 .form-group
-                  label for="organization_registration_number" Numero SIREN, SIRET ou RNA
+                  label for="organization_registration_number" Numéro SIREN, SIRET ou RNA
                   = text_field_tag :organization_registration_number, @organization_registration_number, class: 'form-control', placeholder: 'Ex: 123456789 ou W123456789', required: true
 
             .row
@@ -234,12 +234,12 @@
                   label for="bank_reference_value" IBAN
                   = text_field_tag :bank_reference_value, @bank_reference_value, class: 'form-control', required: true, placeholder: 'FR76...'
                   p.small.text-muted[style="margin-top:5px;"]
-                    | Un IBAN est necessaire pour recevoir le paiement.
+                    | Un IBAN est nécessaire pour recevoir le paiement.
 
             .panel.radius[style="background:#fff;margin-top:15px;padding:15px;"]
               h5
                 i.fa.fa-id-card
-                |  Documents a fournir
+                |  Documents à fournir
               - required_kyc_types.each do |proof_type|
                 - existing_docs = Array(existing_kyc_docs[proof_type])
                 - label = required_kyc_labels[proof_type] || proof_type.humanize
@@ -252,7 +252,7 @@
                     | Formats acceptes: #{accepted_formats_label}. Vous pouvez envoyer plusieurs fichiers (ex: recto/verso).
                   - if existing_docs.any?
                     p.small.text-muted[style="margin-top:8px;margin-bottom:6px;"]
-                      | Documents deja envoyes:
+                      | Documents déjà envoyés :
                     .d-flex.flex-wrap[style="margin-top:4px;"]
                       - existing_docs.each do |existing_doc|
                         - next unless existing_doc.uploaded_image.present?
@@ -272,15 +272,15 @@
             .text-center[style="margin-top:20px;"]
               .alert-box.info.text-left[style="max-width:760px;margin:0 auto 15px;"]
                 i.fa.fa-info-circle
-                |  Ce parcours est disponible lorsque la personne renseignee ci-dessus est la seule personne a declarer pour la structure. Si plusieurs personnes doivent etre declarees, contactez notre equipe avant d envoyer les documents.
+                |  Ce parcours est disponible lorsque la personne renseignée ci-dessus est la seule personne à déclarer pour la structure. Si plusieurs personnes doivent être déclarées, contactez notre équipe avant d’envoyer les documents.
               .form-group.text-left[style="max-width:760px;margin:0 auto 15px;"]
                 label[style="font-weight:normal;"]
                   = check_box_tag :organization_single_representative_attestation, '1', false, required: true, class: 'js-payout-required-checkbox'
-                  |  J atteste que la personne renseignee est la seule personne a declarer pour cette structure.
+                  |  J’atteste que la personne renseignée est la seule personne à déclarer pour cette structure.
               .form-group.text-left[style="max-width:760px;margin:0 auto 15px;"]
                 label[style="font-weight:normal;"]
                   = check_box_tag :stripe_tos_acceptance, '1', false, required: true, class: 'js-payout-required-checkbox'
-                  |  J atteste etre autorise a representer cette structure et j accepte que ces informations soient utilisees pour verifier les documents et effectuer le paiement.
+                  |  J’atteste être autorisé à représenter cette structure et j’accepte que ces informations soient utilisées pour vérifier les documents et effectuer le paiement.
               button.btn.btn-lg.btn-warning[type="submit" disabled=true style="padding:12px 40px;font-size:1.1em;"]
                 i.fa.fa-save
                 |  Envoyer mes documents
@@ -314,14 +314,14 @@
               p[style="color:#27ae60;font-size:1.1em;"]
                 i.fa.fa-check-circle
                 strong |  Tout est prêt !
-                |  Vos documents sont prets et vos contributions sont confirmees.
+                |  Vos documents sont prêts et vos contributions sont confirmées.
               = form_tag request_payout_project_path(@project), method: :post, style: 'margin-top:15px;' do
                 button.btn.btn-lg.btn-success[type="submit" style="padding:14px 50px;font-size:1.2em;" data-confirm="Confirmer la demande de paiement de #{number_to_currency(net_to_receive, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')} ?"]
                   i.fa.fa-paper-plane
                   |  Demander le paiement
               p.small[style="color:#95a5a6;margin-top:12px;"]
                 i.fa.fa-shield
-                |  Apres validation par notre equipe, le paiement est generalement traite sous 2-7 jours ouvres.
+                |  Après validation par notre équipe, le paiement est généralement traité sous 2 à 7 jours ouvrés.
 
       / ===== DÉTAIL DES CONTRIBUTIONS =====
       - if contribs_count > 0
@@ -361,14 +361,14 @@
           .col-md-6
             p
               strong | Quand vais-je recevoir mes fonds ?
-            p.small | Apres votre demande, notre equipe verifie vos documents et declenche le paiement. Vous recevrez un email lorsque les fonds seront arrives.
+            p.small | Après votre demande, notre équipe vérifie vos documents et déclenche le paiement. Vous recevrez un email lorsque les fonds seront arrivés.
             p
               strong | Que couvrent les frais ?
             p.small | La commission de #{fee_pct}% couvre le traitement sécurisé des cartes bancaires et les frais de service Fiatope (support, hébergement, maintenance).
           .col-md-6
             p
               strong | Mes fonds sont-ils en sécurité ?
-            p.small | Oui. Les paiements sont traites par un prestataire bancaire specialise. Nous vous prevenons par email a chaque etape importante.
+            p.small | Oui. Les paiements sont traités par un prestataire bancaire spécialisé. Nous vous prévenons par email à chaque étape importante.
             p
               strong | Puis-je rembourser un contributeur ?
             p.small | Si nécessaire, contactez notre équipe. Les remboursements sont possibles avant le transfert des fonds.
