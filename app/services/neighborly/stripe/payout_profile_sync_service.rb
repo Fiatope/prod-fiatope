@@ -35,6 +35,7 @@ module Neighborly
 
         ensure_connect_account!
         ensure_platform_managed_account!
+        ensure_transfer_capability_requested!
         unless using_existing_ready_account?
           sync_account_identity!
           sync_bank_account!
@@ -160,6 +161,21 @@ module Neighborly
         warnings << "Ancien compte Connect #{old_account_id} introuvable; nouveau compte gere par la plateforme cree."
       rescue ::Stripe::StripeError => e
         errors << "Creation du compte Stripe impossible: #{e.message}"
+      end
+
+      def ensure_transfer_capability_requested!
+        return if errors.any?
+
+        status = stripe_capability(stripe_account, :transfers).to_s
+        return if status.present? && status != 'unrequested'
+
+        @stripe_account = ::Stripe::Account.update(
+          user.stripe_connect_account_id,
+          capabilities: { transfers: { requested: true } }
+        )
+        warnings << 'La capacite de virement du compte de paiement a ete demandee.'
+      rescue ::Stripe::StripeError => e
+        errors << "Activation des virements Stripe impossible: #{e.message}"
       end
 
       def detach_incompatible_connect_account!(old_account_id)
@@ -587,9 +603,17 @@ module Neighborly
 
         due = account_requirements_due(account)
         user.remember_payout_required_kyc_types_from_requirements(due) if user.respond_to?(:remember_payout_required_kyc_types_from_requirements)
+        requirement_errors = account_requirement_errors(account)
+
+        if due.empty? && requirement_errors.empty? && account_matches_payout_context?(account)
+          warnings << 'Les informations et documents ont ete transmis. Les virements ne sont pas encore actives; aucune correction du porteur n est demandee pour le moment.'
+          return
+        end
+
         disabled_reason = stripe_nested_value(account.requirements, :disabled_reason)
         details = []
         details << "exigences Stripe restantes: #{due.join(', ')}" if due.any?
+        details << "erreurs Stripe: #{requirement_errors.join(', ')}" if requirement_errors.any?
         details << "raison Stripe: #{disabled_reason}" if disabled_reason.present?
         details << 'transfers capability inactive' unless stripe_capability(account, :transfers) == 'active'
         details << 'payouts_enabled=false' unless account.payouts_enabled
@@ -657,6 +681,16 @@ module Neighborly
           Array(stripe_nested_value(future_requirements, :currently_due)) +
           Array(stripe_nested_value(future_requirements, :past_due))
         ).uniq
+      end
+
+      def account_requirement_errors(account)
+        Array(stripe_nested_value(account.requirements, :errors)).map do |error|
+          [
+            stripe_nested_value(error, :requirement),
+            stripe_nested_value(error, :code),
+            stripe_nested_value(error, :reason)
+          ].compact.join(' - ')
+        end.reject(&:blank?)
       end
 
       def stripe_capability(account, capability)

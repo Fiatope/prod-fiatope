@@ -516,6 +516,7 @@ module Neighborly::Admin
     def payout_profile_owner_action_required?(errors)
       details = Array(errors).join(' ')
       return false if details.match?(/responsibilities of collecting requirements|platform-profile|platform profile|collecting requirements/i)
+      return false if details.match?(/virements ne sont pas encore actives|capacite de virement|capability inactive|transfers capability|payouts_enabled=false|pending_verification/i)
 
       details.match?(/Profil de retrait incomplet|conditions de paiement|accepter les conditions|valid phone|phone|not currently supported|not supported|postal|zip|iban|bank account|account_number|routing|date of birth|dob|birthday|address|city|country|line1|document|file|upload/i)
     end
@@ -524,6 +525,7 @@ module Neighborly::Admin
       details = Array(errors).join(' ')
 
       return 'le profil Stripe Connect de la plateforme doit être finalisé dans le Dashboard Stripe. Le porteur n’a rien à corriger.' if details.match?(/responsibilities of collecting requirements|platform-profile|platform profile|collecting requirements/i)
+      return 'les informations ont été envoyées. Les virements ne sont pas encore activés sur le compte de paiement; le porteur n’a rien à renvoyer pour le moment.' if details.match?(/virements ne sont pas encore actives|capacite de virement|capability inactive|transfers capability|payouts_enabled=false|pending_verification/i)
       return 'le porteur doit cocher l’attestation et renvoyer ses informations depuis la plateforme.' if details.match?(/conditions de paiement|accepter les conditions/i)
       return 'le numéro de téléphone doit être corrigé au format international.' if details.match?(/valid phone|phone/i)
       return 'le pays ou le compte bancaire renseigné n’est pas pris en charge pour ce paiement.' if details.match?(/not currently supported|not supported/i)

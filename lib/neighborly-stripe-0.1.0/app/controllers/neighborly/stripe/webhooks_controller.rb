@@ -258,7 +258,12 @@ module Neighborly
         else
           due = account_requirements_due(account)
           user.remember_payout_required_kyc_types_from_requirements(due) if user.respond_to?(:remember_payout_required_kyc_types_from_requirements)
-          unlock_payout_profiles_for_required_updates(user, account, due)
+          if account_waiting_for_stripe_activation?(account, due)
+            user.clear_payout_required_kyc_types! if user.respond_to?(:clear_payout_required_kyc_types!)
+            Rails.logger.info "Account updated: User #{user.id} en attente d activation Stripe, aucune correction porteur demandee"
+          else
+            unlock_payout_profiles_for_required_updates(user, account, due)
+          end
         end
       end
       
@@ -320,8 +325,21 @@ module Neighborly
 
       def account_needs_payout_profile_update?(account, due)
         due.any? ||
-          Array(stripe_value(account.requirements, :errors)).any? ||
-          stripe_value(account.requirements, :disabled_reason).present?
+          Array(stripe_value(account.requirements, :errors)).any?
+      end
+
+      def account_waiting_for_stripe_activation?(account, due)
+        return false if due.any?
+        return false if Array(stripe_value(account.requirements, :errors)).any?
+
+        pending = Array(stripe_value(account.requirements, :pending_verification))
+        disabled_reason = stripe_value(account.requirements, :disabled_reason).to_s
+        transfers = stripe_value(account.capabilities, :transfers).to_s
+
+        pending.any? ||
+          disabled_reason.match?(/pending_verification|under_review/i) ||
+          transfers == 'pending' ||
+          (stripe_value(account.requirements, :disabled_reason).present? && transfers != 'active')
       end
 
       def payout_profile_edit_unlock_cache_key(user)
