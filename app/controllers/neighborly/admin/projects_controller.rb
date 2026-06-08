@@ -122,8 +122,13 @@ module Neighborly::Admin
       @project = Project.find_by_permalink params[:id]
       user = @project.user
 
-      unless user.payout_profile_complete?
-        flash[:alert] = "Informations ou documents de paiement incomplets: #{user.payout_profile_missing_fields.join(', ')}"
+      missing_fields = user.payout_profile_missing_fields
+      unless missing_fields.empty?
+        Rails.logger.warn "[Admin] Payout profile incomplete for project #{@project.id} (#{@project.permalink}) user #{user.id}: #{missing_fields.join(', ')}"
+        reopen_result = reopen_payout_profile_edit!(@project)
+        notification_message = reopen_result[:notification_sent] ? ' Un email a ete envoye au porteur.' : ' Attention: email porteur non envoye, voir les logs.'
+        reopened_message = reopen_result[:reopened_request] ? ' La demande a ete rouverte pour une nouvelle soumission.' : ''
+        flash[:alert] = "Informations ou documents de paiement incomplets: #{missing_fields.join(', ')}. Le formulaire a ete reactive pendant 14 jours.#{reopened_message}#{notification_message}"
         return redirect_back(fallback_location: projects_path)
       end
 
@@ -135,6 +140,7 @@ module Neighborly::Admin
       )
 
       if sync_result.success?
+        Rails.logger.info "[Admin] Payout profile sync success for project #{@project.id} (#{@project.permalink}) user #{user.id}, account=#{user.reload.stripe_connect_account_id}, warnings=#{sync_result.warnings.join(' | ')}"
         warnings = sync_result.warnings.any? ? " À vérifier: #{payout_profile_admin_failure_message(sync_result.warnings)}" : ''
         flash[:success] = "Informations de paiement vérifiées.#{warnings}"
       else
@@ -495,6 +501,7 @@ module Neighborly::Admin
 
     def handle_payout_profile_sync_failure!(sync_result, project, prefix)
       errors = Array(sync_result.errors)
+      Rails.logger.warn "[Admin] Payout profile sync failed for project #{project.id} (#{project.permalink}) user #{project.user_id}: #{errors.join(' | ')}"
 
       if payout_profile_owner_action_required?(errors)
         reopen_result = reopen_payout_profile_edit!(project)
