@@ -98,6 +98,12 @@ module Neighborly
         end
 
         replace_incompatible_connect_account!(account)
+      rescue ::Stripe::InvalidRequestError => e
+        if stripe_missing_account_error?(e)
+          replace_missing_connect_account!
+        else
+          errors << "Verification du compte Stripe impossible: #{e.message}"
+        end
       rescue ::Stripe::StripeError => e
         errors << "Verification du compte Stripe impossible: #{e.message}"
       end
@@ -132,6 +138,30 @@ module Neighborly
         warnings << "Ancien compte Connect #{old_account_id} remplace par un compte gere par la plateforme."
       end
 
+      def replace_missing_connect_account!
+        old_account_id = user.stripe_connect_account_id
+        Rails.logger.warn "Payout profile sync: compte Connect #{old_account_id} introuvable pour user #{user.id}; recreation d un compte gere par la plateforme."
+
+        unless @tos_accepted
+          errors << 'Le compte de retrait existant est introuvable. Demandez au porteur de soumettre a nouveau le formulaire de retrait depuis la plateforme.'
+          return
+        end
+
+        detach_incompatible_connect_account!(old_account_id)
+        user.create_stripe_connect_account!(force: true, tos_accepted: @tos_accepted)
+        @stripe_account = nil
+        @representative_person = nil if defined?(@representative_person)
+
+        unless platform_managed_account?(stripe_account) && account_matches_payout_context?(stripe_account)
+          errors << "Le nouveau compte de retrait #{stripe_account.id} n est pas compatible avec la collecte locale des informations."
+          return
+        end
+
+        warnings << "Ancien compte Connect #{old_account_id} introuvable; nouveau compte gere par la plateforme cree."
+      rescue ::Stripe::StripeError => e
+        errors << "Creation du compte Stripe impossible: #{e.message}"
+      end
+
       def detach_incompatible_connect_account!(old_account_id)
         attrs = {
           stripe_connect_account_id: nil,
@@ -149,6 +179,10 @@ module Neighborly
         end
 
         @stripe_account = nil
+      end
+
+      def stripe_missing_account_error?(error)
+        error.message.to_s.match?(/No such account|No such connected account|does not have access to account/i)
       end
 
       def project_account_locked?(project)
