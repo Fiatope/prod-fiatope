@@ -35,10 +35,12 @@ module Neighborly
 
         ensure_connect_account!
         ensure_platform_managed_account!
-        sync_account_identity!
-        sync_bank_account!
-        refresh_stripe_account!
-        sync_kyc_documents!
+        unless using_existing_ready_account?
+          sync_account_identity!
+          sync_bank_account!
+          refresh_stripe_account!
+          sync_kyc_documents!
+        end
         refresh_onboarding_flags!
         verify_stripe_payout_ready!
 
@@ -83,6 +85,12 @@ module Neighborly
         account = stripe_account
         return if platform_managed_account?(account)
 
+        if account_ready_for_transfers?(account)
+          @using_existing_ready_account = true
+          warnings << "Compte de paiement existant #{account.id} deja pret pour le paiement; aucune recreation necessaire."
+          return
+        end
+
         replace_incompatible_connect_account!(account)
       rescue ::Stripe::StripeError => e
         errors << "Verification du compte Stripe impossible: #{e.message}"
@@ -90,6 +98,10 @@ module Neighborly
 
       def platform_managed_account?(account)
         account.type == 'custom' || stripe_nested_value(account.controller, :requirement_collection) == 'application'
+      end
+
+      def using_existing_ready_account?
+        @using_existing_ready_account == true
       end
 
       def replace_incompatible_connect_account!(account)

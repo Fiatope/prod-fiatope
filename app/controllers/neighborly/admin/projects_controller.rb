@@ -130,7 +130,8 @@ module Neighborly::Admin
       sync_result = Neighborly::Stripe::PayoutProfileSyncService.call(
         user,
         request_ip: request.remote_ip,
-        user_agent: request.user_agent
+        user_agent: request.user_agent,
+        tos_accepted: true
       )
 
       if sync_result.success?
@@ -221,7 +222,12 @@ module Neighborly::Admin
         return redirect_back(fallback_location: projects_path)
       end
 
-      sync_result = Neighborly::Stripe::PayoutProfileSyncService.call(@project.user)
+      sync_result = Neighborly::Stripe::PayoutProfileSyncService.call(
+        @project.user,
+        request_ip: request.remote_ip,
+        user_agent: request.user_agent,
+        tos_accepted: true
+      )
       unless sync_result.success?
         handle_payout_profile_sync_failure!(sync_result, @project, 'Vérification impossible avant paiement')
         return redirect_back(fallback_location: projects_path)
@@ -502,13 +508,16 @@ module Neighborly::Admin
 
     def payout_profile_owner_action_required?(errors)
       details = Array(errors).join(' ')
-      details.match?(/Profil de retrait incomplet|conditions de paiement|accepter les conditions|soumettre.*formulaire|recree|recreer|valid phone|phone|not currently supported|not supported|postal|zip|iban|bank account|account_number|routing|date of birth|dob|birthday|address|city|country|line1|document|file|upload/i)
+      return false if details.match?(/responsibilities of collecting requirements|platform-profile|platform profile|collecting requirements/i)
+
+      details.match?(/Profil de retrait incomplet|conditions de paiement|accepter les conditions|valid phone|phone|not currently supported|not supported|postal|zip|iban|bank account|account_number|routing|date of birth|dob|birthday|address|city|country|line1|document|file|upload/i)
     end
 
     def payout_profile_admin_failure_message(errors)
       details = Array(errors).join(' ')
 
-      return 'le porteur doit cocher l’attestation et renvoyer ses informations depuis la plateforme.' if details.match?(/conditions de paiement|accepter les conditions|soumettre.*formulaire|recree|recreer/i)
+      return 'le profil Stripe Connect de la plateforme doit être finalisé dans le Dashboard Stripe. Le porteur n’a rien à corriger.' if details.match?(/responsibilities of collecting requirements|platform-profile|platform profile|collecting requirements/i)
+      return 'le porteur doit cocher l’attestation et renvoyer ses informations depuis la plateforme.' if details.match?(/conditions de paiement|accepter les conditions/i)
       return 'le numéro de téléphone doit être corrigé au format international.' if details.match?(/valid phone|phone/i)
       return 'le pays ou le compte bancaire renseigné n’est pas pris en charge pour ce paiement.' if details.match?(/not currently supported|not supported/i)
       return 'le code postal doit être corrigé.' if details.match?(/postal|zip/i)

@@ -299,12 +299,12 @@ class ProjectsController < ApplicationController
       Rails.logger.warn "Payout request profile sync failed for user #{current_user.id}: #{sync_result.errors.join(', ')}"
       if payout_profile_internal_sync_issue?(sync_result.errors)
         clear_payout_profile_edit_unlock!(current_user)
-        flash[:notice] = payout_profile_sync_failure_message(sync_result.errors)
+        Rails.logger.warn "request_payout: demande poursuivie malgre une verification interne a finaliser pour user #{current_user.id}: #{sync_result.errors.join(', ')}"
       else
         unlock_payout_profile_edit_for_retry!(current_user)
         flash[:alert] = payout_profile_sync_failure_message(sync_result.errors)
+        return redirect_to pay_project_path(@project)
       end
-      return redirect_to pay_project_path(@project)
     end
 
     begin
