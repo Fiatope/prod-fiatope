@@ -119,6 +119,7 @@ module Neighborly
           return
         end
 
+        detach_incompatible_connect_account!(old_account_id)
         user.create_stripe_connect_account!(force: true, tos_accepted: @tos_accepted)
         @stripe_account = nil
         @representative_person = nil if defined?(@representative_person)
@@ -129,6 +130,35 @@ module Neighborly
         end
 
         warnings << "Ancien compte Connect #{old_account_id} remplace par un compte gere par la plateforme."
+      end
+
+      def detach_incompatible_connect_account!(old_account_id)
+        attrs = {
+          stripe_connect_account_id: nil,
+          stripe_onboarding_complete: false
+        }
+        attrs[:stripe_account_type] = nil if user.respond_to?(:stripe_account_type=)
+        attrs[:stripe_charges_enabled] = false if user.respond_to?(:stripe_charges_enabled=)
+        attrs[:stripe_payouts_enabled] = false if user.respond_to?(:stripe_payouts_enabled=)
+        user.update_columns(attrs)
+
+        user.projects.where(stripe_account_id: old_account_id).find_each do |project|
+          next if project_account_locked?(project)
+
+          project.update_columns(stripe_account_id: nil, use_stripe: true)
+        end
+
+        @stripe_account = nil
+      end
+
+      def project_account_locked?(project)
+        settlement_type = project.respond_to?(:stripe_settlement_type) ? project.stripe_settlement_type.to_s : ''
+        payout_status = project.respond_to?(:stripe_payout_status) ? project.stripe_payout_status.to_s : ''
+        payout_id = project.respond_to?(:stripe_payout_id) ? project.stripe_payout_id : nil
+
+        settlement_type == 'transferred' ||
+          payout_id.present? ||
+          %w[pending in_transit paid failed canceled manual_review].include?(payout_status)
       end
 
       def sync_account_identity!
