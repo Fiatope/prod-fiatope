@@ -150,9 +150,7 @@ class ProjectsController < ApplicationController
     @organization_name = current_user.organization&.name
     @organization_registration_number = current_user.organization.respond_to?(:registration_number) ? current_user.organization&.registration_number : nil
     @payout_profile_complete = current_user.payout_profile_complete?
-    @stripe_payout_ready = @payout_profile_complete &&
-                           current_user.stripe_connect_account_id.present? &&
-                           current_user[:stripe_onboarding_complete] == true
+    @stripe_payout_ready = stripe_payout_ready_for?(current_user)
     @payout_profile_missing_fields = current_user.payout_profile_missing_fields
   end
 
@@ -299,7 +297,8 @@ class ProjectsController < ApplicationController
       Rails.logger.warn "Payout request profile sync failed for user #{current_user.id}: #{sync_result.errors.join(', ')}"
       if payout_profile_internal_sync_issue?(sync_result.errors)
         clear_payout_profile_edit_unlock!(current_user)
-        Rails.logger.warn "request_payout: demande poursuivie malgre une verification interne a finaliser pour user #{current_user.id}: #{sync_result.errors.join(', ')}"
+        flash[:notice] = payout_profile_sync_failure_message(sync_result.errors)
+        return redirect_to pay_project_path(@project)
       else
         unlock_payout_profile_edit_for_retry!(current_user)
         flash[:alert] = payout_profile_sync_failure_message(sync_result.errors)
@@ -561,6 +560,16 @@ class ProjectsController < ApplicationController
 
   def payout_profile_acceptance_required_message
     'Vous devez cocher l’attestation avant d’envoyer vos informations et documents.'
+  end
+
+  def stripe_payout_ready_for?(user)
+    return false unless @payout_profile_complete
+    return false if user.stripe_connect_account_id.blank?
+
+    user.stripe_onboarding_complete?
+  rescue => e
+    Rails.logger.warn "Payout page: verification compte paiement indisponible pour user #{user.id}: #{e.message}"
+    false
   end
 
   def payout_profile_internal_sync_issue?(errors)

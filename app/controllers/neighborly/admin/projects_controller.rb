@@ -502,7 +502,7 @@ module Neighborly::Admin
         reopened_message = reopen_result[:reopened_request] ? ' La demande a été rouverte pour une nouvelle soumission.' : ''
         flash[:alert] = "#{prefix}: #{payout_profile_admin_failure_message(errors)} Le formulaire a été réactivé pendant 14 jours.#{reopened_message}#{notification_message}"
       else
-        flash[:alert] = "#{prefix}: vérification complémentaire nécessaire. Consultez les logs si le problème persiste."
+        flash[:alert] = "#{prefix}: #{payout_profile_admin_failure_message(errors)}"
       end
     end
 

@@ -114,7 +114,7 @@
           p
             | Le paiement n'a pas pu être finalisé. Notre équipe va vérifier vos documents et vous recontactera si une correction est nécessaire.
 
-      - elsif payout_pending && !@payout_profile_edit_unlocked
+      - elsif payout_pending && payout_ready && !@payout_profile_edit_unlocked
         .panel.radius[style="background:#eef5ff;border:1px solid #7aa7e0;padding:20px;margin-bottom:25px;"]
           h4[style="color:#2f6fb2;"]
             i.fa.fa-clock-o
