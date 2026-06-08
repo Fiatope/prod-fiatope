@@ -83,6 +83,12 @@ module Neighborly
         return if errors.any?
 
         account = stripe_account
+        unless account_matches_payout_context?(account)
+          warnings << "Compte de paiement existant #{account.id} ignore: #{account_context_details(account)}."
+          replace_incompatible_connect_account!(account)
+          return
+        end
+
         return if platform_managed_account?(account)
 
         if account_ready_for_transfers?(account)
@@ -117,7 +123,7 @@ module Neighborly
         @stripe_account = nil
         @representative_person = nil if defined?(@representative_person)
 
-        unless platform_managed_account?(stripe_account)
+        unless platform_managed_account?(stripe_account) && account_matches_payout_context?(stripe_account)
           errors << "Le nouveau compte de retrait #{stripe_account.id} n est pas compatible avec la collecte locale des informations."
           return
         end
@@ -523,6 +529,7 @@ module Neighborly
         details << "raison Stripe: #{disabled_reason}" if disabled_reason.present?
         details << 'transfers capability inactive' unless stripe_capability(account, :transfers) == 'active'
         details << 'payouts_enabled=false' unless account.payouts_enabled
+        details << account_context_details(account) unless account_matches_payout_context?(account)
 
         errors << "Compte Stripe pas encore pret pour les virements (#{details.join('; ')})."
       rescue ::Stripe::StripeError => e
@@ -543,7 +550,38 @@ module Neighborly
       def account_ready_for_transfers?(account)
         account.payouts_enabled &&
           stripe_capability(account, :transfers) == 'active' &&
-          account_requirements_due(account).empty?
+          account_requirements_due(account).empty? &&
+          account_matches_payout_context?(account)
+      end
+
+      def account_matches_payout_context?(account)
+        if user.respond_to?(:stripe_connect_account_matches_context?)
+          return user.stripe_connect_account_matches_context?(account)
+        end
+
+        account_business_type(account) == business_type
+      end
+
+      def account_context_details(account)
+        details = []
+        current_business_type = account_business_type(account)
+        if current_business_type.blank? || current_business_type != business_type
+          details << "type #{current_business_type.presence || 'inconnu'} au lieu de #{business_type}"
+        end
+        platform = account_metadata_value(account, :platform)
+        details << "plateforme #{platform}" if platform.present? && platform != PLATFORM_NAME
+        profile = account_metadata_value(account, :profile_type)
+        details << "profil #{profile}" if profile.present? && profile != user.profile_type.to_s
+        details << "contexte absent" if details.empty?
+        details.join(', ')
+      end
+
+      def account_business_type(account)
+        stripe_nested_value(account, :business_type).to_s
+      end
+
+      def account_metadata_value(account, key)
+        stripe_nested_value(stripe_nested_value(account, :metadata), key).to_s
       end
 
       def account_requirements_due(account)
@@ -564,7 +602,12 @@ module Neighborly
       def stripe_nested_value(object, key)
         return nil if object.blank?
         return object.public_send(key) if object.respond_to?(key)
-        return object[key.to_s] if object.respond_to?(:[])
+        if object.respond_to?(:[])
+          string_value = object[key.to_s]
+          return string_value unless string_value.nil?
+
+          return object[key]
+        end
 
         nil
       rescue

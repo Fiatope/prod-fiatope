@@ -167,7 +167,25 @@ module Neighborly::Stripe::User
     token.id
   end
 
+  def stripe_connect_account_matches_context?(account)
+    account_business_type = stripe_nested_value(account, :business_type).to_s
+    return false if account_business_type.blank? || account_business_type != stripe_connect_business_type
+
+    metadata = stripe_nested_value(account, :metadata)
+    platform = stripe_nested_value(metadata, :platform).to_s
+    return false if platform.present? && platform != stripe_connect_platform_name
+
+    account_profile_type = stripe_nested_value(metadata, :profile_type).to_s
+    return false if account_profile_type.present? && account_profile_type != profile_type.to_s
+
+    true
+  end
+
   private
+
+  def stripe_connect_platform_name
+    'fiatope'
+  end
 
   def stripe_project_account_locked?(project)
     settlement_type = project.respond_to?(:stripe_settlement_type) ? project.stripe_settlement_type.to_s : ''
@@ -404,7 +422,8 @@ module Neighborly::Stripe::User
   def stripe_account_ready_for_transfers?(account)
     account.payouts_enabled &&
       stripe_nested_value(account.capabilities, :transfers) == 'active' &&
-      stripe_account_requirements_due(account).empty?
+      stripe_account_requirements_due(account).empty? &&
+      stripe_connect_account_matches_context?(account)
   end
 
   def stripe_account_requirements_due(account)
@@ -421,7 +440,12 @@ module Neighborly::Stripe::User
   def stripe_nested_value(object, key)
     return nil if object.blank?
     return object.public_send(key) if object.respond_to?(key)
-    return object[key.to_s] if object.respond_to?(:[])
+    if object.respond_to?(:[])
+      string_value = object[key.to_s]
+      return string_value unless string_value.nil?
+
+      return object[key]
+    end
 
     nil
   rescue
