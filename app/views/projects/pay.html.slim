@@ -148,17 +148,17 @@
                 - if missing_information.any?
                   |  #{missing_information.join(', ')}
                 - else
-                  |  vérifiez les champs ci-dessous.
+                  |  les champs déjà renseignés sont affichés ci-dessous.
               p[style="margin:0;"]
                 strong vos documents :
                 - if missing_documents.any?
                   |  #{missing_documents.join(', ')}
                 - elsif required_kyc_types.any?
-                  |  vérifiez les fichiers ci-dessous.
+                  |  les documents déjà envoyés sont affichés ci-dessous.
                 - else
                   |  aucun nouveau document à envoyer.
 
-          = form_tag update_payout_profile_project_path(@project), method: :put, multipart: true, class: 'js-payout-profile-form' do
+          = form_tag update_payout_profile_project_path(@project), method: :put, multipart: true, class: 'js-payout-profile-form', style: (stripe_waiting ? 'display:none;' : nil) do
             .row
               .col-md-12
                 .form-group

@@ -292,11 +292,13 @@ class ProjectsController < ApplicationController
     sync_result = Neighborly::Stripe::PayoutProfileSyncService.call(
       current_user,
       request_ip: request.remote_ip,
-      user_agent: request.user_agent
+      user_agent: request.user_agent,
+      tos_accepted: true
     )
     unless sync_result.success?
       Rails.logger.warn "Payout request profile sync failed for user #{current_user.id}: #{sync_result.errors.join(', ')}"
       if payout_profile_internal_sync_issue?(sync_result.errors)
+        clear_payout_profile_edit_unlock!(current_user)
         flash[:notice] = payout_profile_sync_failure_message(sync_result.errors)
       else
         unlock_payout_profile_edit_for_retry!(current_user)
@@ -563,7 +565,7 @@ class ProjectsController < ApplicationController
 
   def payout_profile_internal_sync_issue?(errors)
     Array(errors).join(' ').match?(
-      /account token|business_type|jeton sécurisé|configuration|api key|responsibilities of collecting requirements|platform-profile|platform profile|collecting requirements|cannot change.*verification.*document|account is verified|legal entity information/i
+      /account token|business_type|jeton sécurisé|configuration|api key|responsibilities of collecting requirements|platform-profile|platform profile|collecting requirements|cannot change.*verification.*document|account is verified|legal entity information|compte de retrait existant|doit etre recree|doit être recréé|soumettre a nouveau le formulaire|soumettre à nouveau le formulaire/i
     )
   end
 
@@ -571,7 +573,7 @@ class ProjectsController < ApplicationController
     details = Array(errors).join(' ')
 
     if payout_profile_internal_sync_issue?(errors)
-      return 'Vos informations et documents ont été envoyés. Notre équipe finalise une vérification avant le paiement et vous contactera seulement si une action est nécessaire.'
+      return 'Vos informations et documents sont bien enregistrés. Notre équipe finalise une vérification avant le paiement et vous contactera seulement si une action est nécessaire.'
     end
 
     if details.match?(/valid phone number|phone/i)
