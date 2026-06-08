@@ -6,21 +6,6 @@
 
   .row.padding-20
     .col-md-10.col-md-offset-1
-
-      /= Affichage explicite des messages flash
-      - if flash[:success].present?
-        .alert-box.success[style="margin-bottom:15px;padding:15px;border-radius:5px;"]
-          i.fa.fa-check-circle
-          |  #{flash[:success]}
-      - if flash[:alert].present?
-        .alert-box[style="margin-bottom:15px;padding:15px;border-radius:5px;background:#fff7e6;border:1px solid #f0c36d;color:#8a6d3b;"]
-          i.fa.fa-exclamation-triangle
-          |  #{flash[:alert]}
-      - if flash[:notice].present?
-        .alert-box.info[style="margin-bottom:15px;padding:15px;border-radius:5px;"]
-          i.fa.fa-info-circle
-          |  #{flash[:notice]}
-
       /= Données pré-calculées
       - payout_ready = @stripe_payout_ready
       - stripe_waiting = @payout_profile_complete && !payout_ready && !@payout_profile_edit_unlocked
@@ -44,6 +29,9 @@
       - required_kyc_types = @required_kyc_types || []
       - required_kyc_labels = @required_kyc_labels || {}
       - existing_kyc_docs = @kyc_documents_by_type || {}
+      - missing_fields = Array(@payout_profile_missing_fields)
+      - missing_documents = missing_fields.select { |field| field.to_s.start_with?('Document manquant:') }.map { |field| field.to_s.sub(/\ADocument manquant:\s*/, '') }
+      - missing_information = missing_fields.reject { |field| field.to_s.start_with?('Document manquant:') }
 
       / ===== TRACKER D'ÉTAPES VISUEL =====
       .panel.radius[style="background:#f8f9fa;border:1px solid #e9ecef;margin-bottom:25px;padding:20px 15px 10px;"]
@@ -66,26 +54,26 @@
                 p.small[style="color:#95a5a6;margin:0;"] = step[:desc]
 
       / ===== RÉSUMÉ FINANCIER DÉTAILLÉ =====
-      .panel.callout.radius[style="margin-bottom:25px;border-left:4px solid #2980b9;"]
-        h4[style="margin-bottom:15px;"]
+      .panel.radius[style="margin-bottom:25px;border:1px solid #e7ddc8;background:#fff;padding:0;overflow:hidden;"]
+        h4[style="margin:0;padding:14px 18px;background:#fffdf7;border-bottom:1px solid #e7ddc8;color:#b9770e;"]
           i.fa.fa-bar-chart
           |  Résumé financier de votre campagne
         - if total_collected > 0
-          table[style="width:100%;border-collapse:collapse;"]
+          table[style="width:100%;border-collapse:collapse;color:#2d3436;"]
             tr[style="border-bottom:1px solid #ecf0f1;"]
-              td[style="padding:8px 0;"] Montant brut collecté (#{contribs_count} contribution#{'s' if contribs_count > 1})
-              td.text-right[style="padding:8px 0;font-weight:bold;"] #{number_to_currency(total_collected, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')}
-            tr[style="border-bottom:1px solid #ecf0f1;color:#e67e22;"]
-              td[style="padding:8px 0;"]
+              td[style="padding:12px 18px;"] Montant collecté (#{contribs_count} contribution#{'s' if contribs_count > 1})
+              td.text-right[style="padding:12px 18px;font-weight:bold;white-space:nowrap;"] #{number_to_currency(total_collected, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')}
+            tr[style="border-bottom:1px solid #ecf0f1;"]
+              td[style="padding:12px 18px;"]
                 | Commission Fiatope
-                small[style="color:#95a5a6;"]  (#{fee_pct}% - inclut frais bancaires)
-              td.text-right[style="padding:8px 0;"] - #{number_to_currency(platform_fee_amount, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')}
-            tr[style="border-top:2px solid #2ecc71;"]
-              td[style="padding:12px 0;font-weight:bold;font-size:1.1em;"] Montant NET que vous recevrez
-              td.text-right[style="padding:12px 0;font-weight:bold;font-size:1.3em;color:#27ae60;"] #{number_to_currency(net_to_receive, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')}
-          p.small[style="color:#95a5a6;margin-top:10px;"]
+                small[style="color:#58656d;"]  (#{fee_pct}%, frais bancaires inclus)
+              td.text-right[style="padding:12px 18px;color:#8a6d3b;white-space:nowrap;"] - #{number_to_currency(platform_fee_amount, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')}
+            tr[style="border-top:2px solid #27ae60;background:#fbfffd;"]
+              td[style="padding:14px 18px;font-weight:bold;font-size:1.1em;"] Montant net que vous recevrez
+              td.text-right[style="padding:14px 18px;font-weight:bold;font-size:1.3em;color:#1f8a4c;white-space:nowrap;"] #{number_to_currency(net_to_receive, unit: '€', separator: ',', delimiter: ' ', format: '%n %u')}
+          p.small[style="color:#58656d;margin:12px 18px 16px;line-height:1.5;"]
             i.fa.fa-info-circle
-            |  La commission de #{fee_pct}% couvre l'ensemble des frais : traitement bancaire sécurisé des paiements par carte et frais de service Fiatope.
+            |  La commission couvre les frais bancaires et le service Fiatope.
         - else
           p.text-center[style="color:#95a5a6;padding:20px;"]
             i.fa.fa-inbox[style="font-size:2em;display:block;margin-bottom:10px;"]
@@ -116,7 +104,7 @@
           - if @project.stripe_payout_arrival_date.present?
             p.small
               i.fa.fa-calendar
-              |  Date estimee d'arrivee : #{l(@project.stripe_payout_arrival_date.to_date, format: :long)}
+              |  Date estimée d’arrivée : #{l(@project.stripe_payout_arrival_date.to_date, format: :long)}
 
       - elsif payout_failed && !@payout_profile_edit_unlocked
         .panel.radius[style="background:#fff7e6;border:1px solid #f0c36d;padding:20px;margin-bottom:25px;"]
@@ -145,28 +133,30 @@
             - if stripe_waiting
               |  Documents envoyés
             - elsif @payout_profile_edit_unlocked
-              |  Corriger mes documents
+              |  Corriger mes informations et documents
             - else
               |  Documents nécessaires au paiement
           - if stripe_waiting
             p
-              | Vos documents ont été envoyés. Notre équipe vous contactera si une information doit être corrigée.
+              | Vos informations et documents ont été envoyés. Nous vous contacterons seulement si une correction est nécessaire.
           - else
             p
-              | Pour recevoir vos fonds sans quitter Fiatope, indiquez les informations de votre structure, vos informations bancaires et les documents demandés.
-
-          - if @payout_profile_edit_unlocked
-            .alert-box.info[style="margin-top:10px;"]
-              i.fa.fa-unlock
-              |  Vous pouvez corriger et renvoyer vos documents.
-
-          - if @payout_profile_missing_fields.present?
-            .alert-box[style="margin-top:10px;background:#fff8e1;border:1px solid #f3d38a;color:#7a5d00;"]
-              p
-                strong Informations ou documents manquants :
-              ul[style="margin-bottom:0;"]
-                - @payout_profile_missing_fields.each do |missing_field|
-                  li = missing_field
+              | Pour recevoir vos fonds, indiquez :
+            .panel.radius[style="background:#fff;border:1px solid #e7ddc8;padding:12px 15px;margin:10px 0 18px;"]
+              p[style="margin:0 0 6px;"]
+                strong vos informations et celles de votre structure :
+                - if missing_information.any?
+                  |  #{missing_information.join(', ')}
+                - else
+                  |  vérifiez les champs ci-dessous.
+              p[style="margin:0;"]
+                strong vos documents :
+                - if missing_documents.any?
+                  |  #{missing_documents.join(', ')}
+                - elsif required_kyc_types.any?
+                  |  vérifiez les fichiers ci-dessous.
+                - else
+                  |  aucun nouveau document à envoyer.
 
           = form_tag update_payout_profile_project_path(@project), method: :put, multipart: true, class: 'js-payout-profile-form' do
             .row
@@ -182,21 +172,21 @@
                   = date_field_tag :birthday, current_user.birthday, class: 'form-control', required: true
               .col-md-4
                 .form-group
-                  label for="nationality" Nationalite (code pays)
+                  label for="nationality" Nationalité (code pays)
                   = text_field_tag :nationality, current_user.nationality, class: 'form-control', placeholder: 'FR', required: true
               .col-md-4
                 .form-group
-                  label for="residence_country" Pays de residence (code pays)
+                  label for="residence_country" Pays de résidence (code pays)
                   = text_field_tag :residence_country, current_user.residence_country, class: 'form-control', placeholder: 'FR', required: true
 
             .row
               .col-md-6
                 .form-group
-                  label for="organization_name" Nom de l association / entreprise / organisation
-                  = text_field_tag :organization_name, @organization_name, class: 'form-control', placeholder: 'Nom legal de la structure', required: true
+                  label for="organization_name" Nom de l’association / entreprise / organisation
+                  = text_field_tag :organization_name, @organization_name, class: 'form-control', placeholder: 'Nom légal de la structure', required: true
               .col-md-6
                 .form-group
-                  label for="mobile_phone" Telephone
+                  label for="mobile_phone" Téléphone
                   = text_field_tag :mobile_phone, current_user.mobile_phone, class: 'form-control'
 
             .row
@@ -216,7 +206,7 @@
                   = text_field_tag :owner_city, @bank_information.owner_city, class: 'form-control', required: true
               .col-md-3
                 .form-group
-                  label for="owner_region" Region / Etat si applicable
+                  label for="owner_region" Région / État si applicable
                   = text_field_tag :owner_region, @bank_information.owner_region, class: 'form-control'
 
             .row
@@ -249,7 +239,7 @@
                   label = label
                   = file_field_tag "kyc_files[#{proof_type}][]", class: 'form-control', multiple: true, accept: accepted_formats
                   p.small.text-muted[style="margin-top:5px;"]
-                    | Formats acceptes: #{accepted_formats_label}. Vous pouvez envoyer plusieurs fichiers (ex: recto/verso).
+                    | Formats acceptés : #{accepted_formats_label}. Vous pouvez envoyer plusieurs fichiers (ex : recto/verso).
                   - if existing_docs.any?
                     p.small.text-muted[style="margin-top:8px;margin-bottom:6px;"]
                       | Documents déjà envoyés :
@@ -270,20 +260,14 @@
                           = link_to doc_name, doc_url, target: '_blank', class: 'btn btn-sm btn-outline-secondary mr-2 mb-2'
 
             .text-center[style="margin-top:20px;"]
-              .alert-box.info.text-left[style="max-width:760px;margin:0 auto 15px;"]
-                i.fa.fa-info-circle
-                |  Ce parcours est disponible lorsque la personne renseignée ci-dessus est la seule personne à déclarer pour la structure. Si plusieurs personnes doivent être déclarées, contactez notre équipe avant d’envoyer les documents.
               .form-group.text-left[style="max-width:760px;margin:0 auto 15px;"]
                 label[style="font-weight:normal;"]
                   = check_box_tag :organization_single_representative_attestation, '1', false, required: true, class: 'js-payout-required-checkbox'
-                  |  J’atteste que la personne renseignée est la seule personne à déclarer pour cette structure.
-              .form-group.text-left[style="max-width:760px;margin:0 auto 15px;"]
-                label[style="font-weight:normal;"]
-                  = check_box_tag :stripe_tos_acceptance, '1', false, required: true, class: 'js-payout-required-checkbox'
-                  |  J’atteste être autorisé à représenter cette structure et j’accepte que ces informations soient utilisées pour vérifier les documents et effectuer le paiement.
+                  |  La personne renseignée est la seule personne à déclarer pour cette structure.
+              = hidden_field_tag :stripe_tos_acceptance, '1'
               button.btn.btn-lg.btn-warning[type="submit" disabled=true style="padding:12px 40px;font-size:1.1em;"]
                 i.fa.fa-save
-                |  Envoyer mes documents
+                |  Envoyer mes informations et documents
 
           javascript:
             document.addEventListener('DOMContentLoaded', function() {

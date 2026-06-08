@@ -116,11 +116,11 @@ class User < ActiveRecord::Base
   ].freeze
 
   PAYOUT_KYC_LABELS = {
-    'IDENTITY_PROOF' => 'Piece d identite',
+    'IDENTITY_PROOF' => 'Pièce d’identité',
     'ADDRESS_PROOF' => 'Justificatif de domicile',
-    'REGISTRATION_PROOF' => 'Extrait d immatriculation',
-    'ARTICLES_OF_ASSOCIATION' => 'Statuts de l entreprise',
-    'SHAREHOLDER_DECLARATION' => 'Declaration des actionnaires'
+    'REGISTRATION_PROOF' => 'Extrait d’immatriculation',
+    'ARTICLES_OF_ASSOCIATION' => 'Statuts de l’entreprise',
+    'SHAREHOLDER_DECLARATION' => 'Déclaration des actionnaires'
   }.freeze
 
   after_initialize :init
@@ -245,18 +245,18 @@ class User < ActiveRecord::Base
     missing << 'Type de profil (particulier ou entreprise)' unless %w[personal organization].include?(profile_type)
     missing << 'Nom complet' if name.blank?
     missing << 'Date de naissance' if birthday.blank?
-    missing << 'Nationalite' if nationality.blank?
-    missing << 'Pays de residence' if residence_country.blank?
+    missing << 'Nationalité' if nationality.blank?
+    missing << 'Pays de résidence' if residence_country.blank?
 
     if profile_type == 'organization'
-      missing << 'Raison sociale de l entreprise' if organization.blank? || organization.name.blank?
+      missing << 'Raison sociale de l’entreprise' if organization.blank? || organization.name.blank?
       if organization.present? && organization.respond_to?(:registration_number) && organization.registration_number.blank?
-        missing << 'Numero SIREN, SIRET ou RNA'
+        missing << 'Numéro SIREN, SIRET ou RNA'
       end
       if organization.present? &&
          organization.respond_to?(:payout_single_representative_attested_at) &&
          organization.payout_single_representative_attested_at.blank?
-        missing << 'Attestation sur le representant legal unique'
+        missing << 'Attestation sur le représentant légal unique'
       end
     end
 

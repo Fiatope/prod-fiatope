@@ -111,7 +111,7 @@
                   span.sort-order
                 th= t('.state')
                 th= t('.wallet_id')
-                th Stripe
+                th Paiement
                 th= t('.doc')
                 th
             tbody
@@ -180,7 +180,7 @@
                           span.label.label-warning title="Brut: #{number_to_currency(w_balance, unit: '€', format: '%n %u')} | En attente: #{number_to_currency(w_pending, unit: '€', format: '%n %u')}"
                             = "⚡ #{number_to_currency(w_pending, unit: '€', format: '%n %u')}"
                       - else
-                        span.label.label-default title="Aucune contribution Stripe" —
+                        span.label.label-default title="Aucune contribution en ligne" —
                     - else
                       = project.mangopay_wallet_handler.try(:wallet_key)
                   td
@@ -189,22 +189,22 @@
                         - stripe_account = project.stripe_account_id.presence || project.user.stripe_connect_account_id
                         - profile_ready = project.user.payout_profile_complete?
                         - if profile_ready
-                          span.label.label-success title="Compte: #{stripe_account}\nProfil de retrait complet" ✅ Profil retrait OK
+                          span.label.label-success title="Compte: #{stripe_account}\nInformations et documents de paiement complets" ✅ Documents OK
                         - else
-                          span.label.label-warning title="Compte: #{stripe_account}\nLe porteur doit completer son profil de retrait" ⚠️ Profil incomplet
+                          span.label.label-warning title="Compte: #{stripe_account}\nLe porteur doit compléter ses informations et documents de paiement" ⚠️ À compléter
                         - payout_status = project.stripe_payout_status.to_s
                         - if (payout_status == 'paid' || project.state == 'paid') && !%w[failed canceled].include?(payout_status)
                           br
-                          span.label.label-success title="Confirme le #{project.stripe_payout_paid_at&.strftime('%d/%m/%Y %H:%M') || project.stripe_settled_at&.strftime('%d/%m/%Y %H:%M')}" Virement bancaire confirme
+                          span.label.label-success title="Confirmé le #{project.stripe_payout_paid_at&.strftime('%d/%m/%Y %H:%M') || project.stripe_settled_at&.strftime('%d/%m/%Y %H:%M')}" Virement bancaire confirmé
                         - elsif %w[pending in_transit].include?(payout_status)
                           br
-                          span.label.label-info title="Payout Stripe #{project.stripe_payout_id}" Virement bancaire en cours
+                          span.label.label-info title="Paiement #{project.stripe_payout_id}" Virement bancaire en cours
                         - elsif %w[failed canceled].include?(payout_status)
                           br
-                          span.label.label-alert title="#{project.stripe_payout_failure_message || project.stripe_payout_failure_code}" Virement bancaire echoue
+                          span.label.label-alert title="#{project.stripe_payout_failure_message || project.stripe_payout_failure_code}" Virement bancaire échoué
                         - elsif project.stripe_settlement_type == 'transferred'
                           br
-                          span.label.label-warning title="Transfert Connect effectue; payout bancaire a finaliser" Transfert Connect fait
+                          span.label.label-warning title="Contributions préparées; virement bancaire à finaliser" Paiement bancaire à finaliser
                         - elsif project.stripe_settlement_type == 'refunded'
                           br
                           span.label.label-alert title="Remboursé le #{project.stripe_settled_at&.strftime('%d/%m/%Y %H:%M')}" ↩️ Remboursé
@@ -216,8 +216,8 @@
                             span.label.label-primary title="#{stripe_contributions_pending.count} contribution(s) en attente - #{number_to_currency(stripe_contributions_pending.sum(:value), unit: '€', format: '%n %u')} brut" 💳 #{stripe_contributions_pending.count} en attente
                       - else
                         - if project.user.stripe_connect_account_id.present?
-                          = link_to sync_stripe_account_project_path(project), method: :put, class: 'label label-warning', title: "Compte porteur: #{project.user.stripe_connect_account_id}\nCliquer pour synchroniser", data: { confirm: "Synchroniser ce projet avec le compte Stripe #{project.user.stripe_connect_account_id} ?" }
-                            | 🔗 Synchroniser
+                          = link_to sync_stripe_account_project_path(project), method: :put, class: 'label label-warning', title: "Compte porteur: #{project.user.stripe_connect_account_id}\nCliquer pour vérifier", data: { confirm: "Vérifier les informations de paiement de ce projet ?" }
+                            | 🔗 Vérifier
                         - else
                           span.label ❌ Non activé
                   td
@@ -301,18 +301,18 @@
                             - payout_edit_url = main_app.pay_project_path(project)
                             = link_to "javascript:openPayoutProfileModal('#{j(project.name)}', '#{payout_profile_url}', '#{payout_unlock_url}', '#{payout_edit_url}')" do
                               i.icon-et-vcard
-                              = " 👤 Voir profil de retrait"
+                              = " Voir informations de paiement"
                           li
-                            = link_to main_app.sync_payout_profile_to_stripe_project_path(project), method: :put, data: { confirm: "Synchroniser maintenant les informations locales du porteur vers Stripe ?" } do
+                            = link_to main_app.sync_payout_profile_to_stripe_project_path(project), method: :put, data: { confirm: "Vérifier maintenant les informations de paiement du porteur ?" } do
                               i.fa.fa-refresh
-                              = " Synchroniser profil vers Stripe"
+                              = " Vérifier informations de paiement"
 
                           - unless project.use_stripe?
                             /= Activer Stripe (crée ou réutilise le compte du porteur)
                             li
                               = link_to main_app.enable_stripe_project_path(project), method: :put do
                                 i.icon-et-credit-card
-                                = " Activer Stripe"
+                                = " Activer paiement en ligne"
                           - else
                             /= Contributions Stripe NON TRAITÉES (ni transférées, ni remboursées)
                             - stripe_contribs_pending = project.contributions.where(payment_method: 'Stripe', state: 'confirmed').where(stripe_refunded: [false, nil]).where(stripe_transferred: [false, nil])
@@ -326,14 +326,14 @@
                             /= Porteur reçoit: brut * (1 - PLATFORM_FEE%). Ex: 100€ * (1-4%) = 96€
                             - fiatope_commission = total_brut * (platform_fee_pct / 100.0)
                             - net_to_owner = total_brut - fiatope_commission
-                            /= Frais Stripe estimés (info interne - inclus dans la commission)
+                            /= Frais bancaires estimés (info interne - inclus dans la commission)
                             - stripe_fees_estimate = stripe_contribs_pending.count * 0.25 + total_brut * 0.029
                             
                             /= Toutes les contributions Stripe confirmées (pour les modals avec filtre)
                             - all_stripe_contribs = project.contributions.where(payment_method: 'Stripe', state: ['confirmed', 'refunded'])
                             - build_contrib_data = lambda { |c| status = c.stripe_transferred ? 'transferred' : (c.stripe_refunded ? 'refunded' : 'pending'); { id: c.id, user_id: c.user_id, name: c.user&.name || 'Anonyme', email: c.user&.email || '', amount: c.value.to_f, charge_id: c.stripe_charge_id, date: (c.confirmed_at || c.created_at)&.strftime('%d/%m/%Y %H:%M'), stripe_fee: (c.value.to_f * 0.029 + 0.25).round(2), status: status, transfer_id: c.stripe_transfer_id, refund_id: c.stripe_refund_id } }
                             
-                            /= TRANSFERT: si contributions EN ATTENTE + profil de retrait local complet
+                            /= TRANSFERT: si contributions EN ATTENTE + informations de paiement complètes
                             - can_transfer = (has_pending_contributions || needs_bank_payout) && project.user.payout_profile_complete?
                             - if can_transfer
                               li
@@ -342,9 +342,9 @@
                                 - transfer_contribs_list = all_stripe_contribs.map(&build_contrib_data)
                                 - transfer_contribs_json = transfer_contribs_list.to_json.gsub("'", "\\\\'")
                                 - if needs_bank_payout && !has_pending_contributions
-                                  = link_to transfer_url, method: :put, data: { confirm: "Creer ou reessayer le virement bancaire Stripe pour #{project.name} ?" } do
+                                  = link_to transfer_url, method: :put, data: { confirm: "Créer ou réessayer le virement bancaire pour #{project.name} ?" } do
                                     i.icon-et-money
-                                    = " Creer / reessayer le virement bancaire"
+                                    = " Créer / réessayer le virement bancaire"
                                 - else
                                   = link_to "javascript:openTransferModal('#{j(project.name)}', '#{j(project.user.name)}', '#{stripe_acct}', '#{sprintf('%.2f', total_brut)}', '#{sprintf('%.2f', stripe_fees_estimate)}', '#{sprintf('%.2f', fiatope_commission)}', '#{platform_fee_pct}', '#{sprintf('%.2f', net_to_owner)}', '#{transfer_url}', #{transfer_contribs_json})" do
                                     i.icon-et-money
@@ -365,9 +365,9 @@
                             /= VÉRIFICATION WALLET: réconciliation DB vs Stripe
                             - if project.stripe_wallet_balance > 0
                               li
-                                = link_to main_app.verify_stripe_wallet_project_path(project), method: :get, data: { confirm: "Vérifier le wallet de #{project.name} via Stripe API ? (peut prendre quelques secondes)" } do
+                                = link_to main_app.verify_stripe_wallet_project_path(project), method: :get, data: { confirm: "Vérifier le solde de #{project.name} ? (peut prendre quelques secondes)" } do
                                   i.icon-et-search
-                                  = " 🔍 Vérifier Wallet"
+                                  = " 🔍 Vérifier solde"
                               
         = paginate @projects
 

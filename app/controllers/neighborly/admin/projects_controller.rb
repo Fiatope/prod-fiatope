@@ -13,7 +13,7 @@ module Neighborly::Admin
       define_method name do
         @project = Project.find_by_permalink params[:id]
         if name == :push_to_paid && @project.respond_to?(:use_stripe?) && @project.use_stripe? && @project.stripe_payout_status.to_s != 'paid'
-          flash[:alert] = "Projet Stripe: l'etat paye est autorise uniquement apres confirmation bancaire Stripe payout.paid."
+          flash[:alert] = "Projet: l’état payé est autorisé uniquement après confirmation bancaire."
           return redirect_back(fallback_location: root_path)
         end
 
@@ -93,7 +93,7 @@ module Neighborly::Admin
       @project = Project.find_by_permalink params[:id]
       
       unless @project.user.stripe_connect_account_id.present?
-        flash[:alert] = "Le porteur #{@project.user.name} n'a pas encore de compte Stripe Connect."
+        flash[:alert] = "Le porteur #{@project.user.name} n’a pas encore de compte de paiement."
         return redirect_back(fallback_location: projects_path)
       end
       
@@ -102,7 +102,7 @@ module Neighborly::Admin
         
         if service.sync_all!
           results = service.results
-          flash[:success] = "✅ Synchronisation complète! " \
+          flash[:success] = "✅ Mise à jour effectuée. " \
             "Compte: #{results[:user][:charges_enabled] ? 'Actif' : 'En attente'}, " \
             "#{results[:projects].count} projet(s), " \
             "#{results[:contributions].count} contribution(s) vérifiée(s)."
@@ -117,14 +117,13 @@ module Neighborly::Admin
       redirect_back(fallback_location: projects_path)
     end
 
-    # Pousse explicitement les donnees locales du profil de retrait vers Stripe.
-    # Utile apres correction par le porteur ou si la synchronisation automatique a echoue.
+    # Vérifie explicitement les informations de paiement du porteur.
     def sync_payout_profile_to_stripe
       @project = Project.find_by_permalink params[:id]
       user = @project.user
 
       unless user.payout_profile_complete?
-        flash[:alert] = "Profil de retrait incomplet: #{user.payout_profile_missing_fields.join(', ')}"
+        flash[:alert] = "Informations ou documents de paiement incomplets: #{user.payout_profile_missing_fields.join(', ')}"
         return redirect_back(fallback_location: projects_path)
       end
 
@@ -135,13 +134,13 @@ module Neighborly::Admin
       )
 
       if sync_result.success?
-        warnings = sync_result.warnings.any? ? " Avertissements: #{sync_result.warnings.join(', ').truncate(200)}" : ''
-        flash[:success] = "Profil de retrait synchronise vers Stripe.#{warnings}"
+        warnings = sync_result.warnings.any? ? " À vérifier: #{payout_profile_admin_failure_message(sync_result.warnings)}" : ''
+        flash[:success] = "Informations de paiement vérifiées.#{warnings}"
       else
-        handle_payout_profile_sync_failure!(sync_result, @project, 'Synchronisation Stripe impossible')
+        handle_payout_profile_sync_failure!(sync_result, @project, 'Vérification impossible')
       end
     rescue => e
-      flash[:alert] = "Erreur de synchronisation Stripe: #{e.message.truncate(200)}"
+      flash[:alert] = "Vérification impossible pour le moment. Consultez les logs si le problème persiste."
       Rails.logger.error "[Admin] Payout profile sync error: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
     ensure
       redirect_back(fallback_location: projects_path) unless performed?
@@ -155,13 +154,13 @@ module Neighborly::Admin
         # Forcer la synchronisation même si Stripe est déjà activé
         if @project.user.stripe_connect_account_id.present?
           if stripe_project_account_locked?(@project)
-            flash[:notice] = "Synchronisation ignoree: un retrait est deja en cours ou historise pour ce projet."
+            flash[:notice] = "Action non effectuée: un retrait est déjà en cours ou historisé pour ce projet."
           else
             @project.update_column(:stripe_account_id, @project.user.stripe_connect_account_id)
-            flash[:notice] = "Compte Stripe synchronise."
+            flash[:notice] = "Compte de paiement vérifié."
           end
         else
-          flash[:notice] = "Stripe est déjà activé pour ce projet."
+          flash[:notice] = "Le paiement en ligne est déjà activé pour ce projet."
         end
       else
         begin
@@ -173,12 +172,12 @@ module Neighborly::Admin
           end
           
           if @project.user.payout_profile_complete?
-            flash[:success] = "Stripe active! Le porteur peut soumettre sa demande de retrait depuis la plateforme."
+            flash[:success] = "Paiement en ligne activé. Le porteur peut demander le paiement depuis la plateforme."
           else
-            flash[:success] = "Stripe active! Le porteur doit completer son profil de retrait local (identite, banque, justificatifs)."
+            flash[:success] = "Paiement en ligne activé. Le porteur doit compléter ses informations et documents de paiement."
           end
         rescue => e
-          flash[:alert] = "Erreur lors de l'activation de Stripe: #{e.message.truncate(200)}"
+          flash[:alert] = "Impossible d’activer le paiement en ligne: #{e.message.truncate(200)}"
         end
       end
       
@@ -202,7 +201,7 @@ module Neighborly::Admin
     # Action desactivee: plus de generation de lien d'onboarding externe.
     def stripe_onboarding_link
       @project = Project.find_by_permalink params[:id]
-      flash[:alert] = "Cette action est desactivee. Le porteur doit completer son profil de retrait directement sur la plateforme."
+      flash[:alert] = "Cette action est désactivée. Le porteur doit compléter ses informations et documents de paiement sur la plateforme."
       
       redirect_back(fallback_location: projects_path)
     end
@@ -213,18 +212,18 @@ module Neighborly::Admin
       @project = Project.find_by_permalink params[:id]
       
       unless @project.use_stripe?
-        flash[:alert] = "Stripe n'est pas activé pour ce projet."
+        flash[:alert] = "Le paiement en ligne n’est pas activé pour ce projet."
         return redirect_back(fallback_location: projects_path)
       end
       
       unless @project.user.payout_profile_complete?
-        flash[:alert] = "Le porteur n'a pas complete son profil de retrait local (identite, banque, justificatifs)."
+        flash[:alert] = "Le porteur n’a pas complété ses informations et documents de paiement."
         return redirect_back(fallback_location: projects_path)
       end
 
       sync_result = Neighborly::Stripe::PayoutProfileSyncService.call(@project.user)
       unless sync_result.success?
-        handle_payout_profile_sync_failure!(sync_result, @project, 'Synchronisation Stripe impossible avant transfert')
+        handle_payout_profile_sync_failure!(sync_result, @project, 'Vérification impossible avant paiement')
         return redirect_back(fallback_location: projects_path)
       end
       @project.reload
@@ -236,11 +235,11 @@ module Neighborly::Admin
                             (payout_status == 'paid' && remaining_contributions.empty?)
       if @project.stripe_settlement_type == 'transferred' && payout_blocks_retry
         flash[:notice] = if payout_status == 'paid'
-                           "Le virement bancaire Stripe a deja ete confirme."
+                           "Le virement bancaire a déjà été confirmé."
                          elsif payout_status == 'manual_review'
-                           "Un rapprochement manuel est requis avant toute nouvelle operation Stripe."
+                           "Une vérification manuelle est requise avant toute nouvelle opération."
                          else
-                           "Un virement bancaire Stripe est deja en cours. Le projet passera en paye apres confirmation bancaire Stripe."
+                           "Un virement bancaire est déjà en cours. Le projet sera marqué payé après confirmation bancaire."
                          end
         return redirect_back(fallback_location: projects_path)
       end
@@ -249,7 +248,7 @@ module Neighborly::Admin
       contributions = @project.contributions.where(payment_method: 'Stripe', state: 'confirmed')
                               .where(stripe_refunded: [false, nil])
       if contributions.empty?
-        flash[:alert] = "Aucune contribution Stripe à transférer."
+        flash[:alert] = "Aucune contribution en ligne à transférer."
         return redirect_back(fallback_location: projects_path)
       end
       was_already_transferred = @project.stripe_settlement_type == 'transferred'
@@ -262,17 +261,17 @@ module Neighborly::Admin
           total = contributions.sum(:value)
           payout_status = @project.stripe_payout_status.to_s
           if settlement.errors.any?
-            flash[:notice] = "Transfert Stripe traite avec avertissements: #{settlement.errors.join(', ').truncate(200)}. Le projet reste en demande jusqu'a confirmation bancaire Stripe."
+            flash[:notice] = "Paiement préparé avec avertissements: #{settlement.errors.join(', ').truncate(200)}. Le projet reste en demande jusqu’à confirmation bancaire."
           elsif settlement.payouts.any?
             flash[:success] = if was_already_transferred
-                                "Virement bancaire Stripe cree ou repris. Le projet passera en paye uniquement apres le webhook payout.paid."
+                                "Virement bancaire créé ou repris. Le projet sera marqué payé après confirmation bancaire."
                               else
-                                "Transfert interne de #{total} EUR traite et virement bancaire Stripe cree. Le projet passera en paye uniquement apres le webhook payout.paid."
+                                "Paiement de #{total} EUR préparé et virement bancaire créé. Le projet sera marqué payé après confirmation bancaire."
                               end
           elsif %w[pending in_transit].include?(payout_status)
-            flash[:notice] = "Un virement bancaire Stripe est en cours. Le projet passera en paye uniquement apres confirmation bancaire Stripe."
+            flash[:notice] = "Un virement bancaire est en cours. Le projet sera marqué payé après confirmation bancaire."
           else
-            flash[:notice] = "Transfert interne traite. Creez ou validez le virement bancaire Stripe; le projet passera en paye uniquement apres payout.paid."
+            flash[:notice] = "Paiement préparé. Créez ou validez le virement bancaire; le projet sera marqué payé après confirmation bancaire."
           end
         else
           error_msg = settlement.errors.any? ? settlement.errors.join(', ').truncate(200) : "Une erreur inconnue s'est produite"
@@ -292,7 +291,7 @@ module Neighborly::Admin
       @project = Project.find_by_permalink params[:id]
       
       unless @project.use_stripe?
-        flash[:alert] = "Stripe n'est pas activé pour ce projet."
+        flash[:alert] = "Le paiement en ligne n’est pas activé pour ce projet."
         return redirect_back(fallback_location: projects_path)
       end
       
@@ -342,13 +341,13 @@ module Neighborly::Admin
       @project = Project.find_by_permalink params[:id]
       
       unless @project.use_stripe?
-        flash[:alert] = "Stripe n'est pas activé pour ce projet."
+        flash[:alert] = "Le paiement en ligne n’est pas activé pour ce projet."
         return redirect_back(fallback_location: projects_path)
       end
       
       stripe_count = @project.stripe_contributions.where(state: 'confirmed').count
       if stripe_count.zero?
-        flash[:notice] = "Aucune contribution Stripe à vérifier pour ce projet."
+        flash[:notice] = "Aucune contribution en ligne à vérifier pour ce projet."
         return redirect_back(fallback_location: projects_path)
       end
       
@@ -357,14 +356,14 @@ module Neighborly::Admin
         totals = results[:totals]
         
         if totals[:match] && results[:errors].empty?
-          flash[:success] = "✅ Wallet vérifié: #{totals[:verified_count]} contribution(s), " \
-            "total DB #{totals[:db_total]}€ = Stripe #{totals[:stripe_total]}€. Tout est cohérent."
+          flash[:success] = "✅ Solde vérifié: #{totals[:verified_count]} contribution(s), " \
+            "total plateforme #{totals[:db_total]}€ = prestataire de paiement #{totals[:stripe_total]}€. Tout est cohérent."
         else
           parts = []
           parts << "✅ #{totals[:verified_count]} OK" if totals[:verified_count] > 0
           parts << "⚠️ #{totals[:mismatch_count]} écarts" if totals[:mismatch_count] > 0
           parts << "❌ #{totals[:error_count]} erreurs" if totals[:error_count] > 0
-          parts << "DB: #{totals[:db_total]}€ vs Stripe: #{totals[:stripe_total]}€"
+          parts << "Plateforme: #{totals[:db_total]}€ vs prestataire de paiement: #{totals[:stripe_total]}€"
           parts << "Diff: #{totals[:difference]}€" unless totals[:match]
           
           flash_key = totals[:mismatch_count] > 0 || totals[:error_count] > 0 ? :alert : :success
@@ -374,7 +373,7 @@ module Neighborly::Admin
         # Stocker les détails pour le modal (limiter la taille pour le cookie)
         detail_parts = []
         results[:mismatches].each do |m|
-          detail_parts << "Contrib ##{m[:contribution_id]}: DB=#{m[:db_amount]}€ Stripe=#{m[:stripe_amount]}€ (#{m[:difference] > 0 ? '+' : ''}#{m[:difference]}€)"
+          detail_parts << "Contribution ##{m[:contribution_id]}: plateforme=#{m[:db_amount]}€ prestataire=#{m[:stripe_amount]}€ (#{m[:difference] > 0 ? '+' : ''}#{m[:difference]}€)"
         end
         results[:errors].each do |e|
           detail_parts << "Contrib ##{e[:contribution_id]}: #{e[:error].to_s.truncate(80)}"
@@ -382,14 +381,14 @@ module Neighborly::Admin
         flash[:wallet_details] = detail_parts.join("\n") if detail_parts.any?
         
       rescue => e
-        flash[:alert] = "Erreur technique: #{e.message.truncate(200)}"
+        flash[:alert] = "Impossible de vérifier le solde: #{e.message.truncate(200)}"
         Rails.logger.error "Verify Wallet Error: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
       end
       
       redirect_back(fallback_location: projects_path)
     end
 
-    # Donnees locales du profil de retrait du porteur (identite, banque, KYC).
+    # Autorise le porteur à corriger ses informations et documents de paiement.
     def unlock_payout_profile_edit
       @project = Project.find_by_permalink params[:id]
       user = @project.user
@@ -407,18 +406,18 @@ module Neighborly::Admin
       )
 
       notification_sent = notify_payout_profile_update_required(@project)
-      notification_message = notification_sent ? ' Un email a ete envoye au porteur.' : ' Attention: email porteur non envoye, voir les logs.'
+      notification_message = notification_sent ? ' Un email a été envoyé au porteur.' : ' Attention: email porteur non envoyé, voir les logs.'
 
       render json: {
         success: true,
-        message: (reopened_request ? 'Autorisation enregistree. La demande a ete reouverte pour une nouvelle soumission.' : 'Le porteur peut modifier et soumettre a nouveau son profil de retrait pendant 14 jours.') + notification_message
+        message: (reopened_request ? 'Autorisation enregistrée. La demande a été rouverte pour une nouvelle soumission.' : 'Le porteur peut corriger et renvoyer ses informations et documents pendant 14 jours.') + notification_message
       }
     rescue => e
       Rails.logger.error "unlock_payout_profile_edit failed: #{e.message}"
-      render json: { success: false, error: "Impossible d autoriser la reedition: #{e.message}" }, status: :unprocessable_entity
+      render json: { success: false, error: "Impossible d’autoriser la correction: #{e.message}" }, status: :unprocessable_entity
     end
 
-    # Donnees locales du profil de retrait du porteur (identite, banque, KYC).
+    # Données locales des informations de paiement du porteur.
     def payout_profile
       @project = Project.find_by_permalink params[:id]
       user = @project.user
@@ -493,11 +492,11 @@ module Neighborly::Admin
 
       if payout_profile_owner_action_required?(errors)
         reopen_result = reopen_payout_profile_edit!(project)
-        notification_message = reopen_result[:notification_sent] ? ' Un email a ete envoye au porteur.' : ' Attention: email porteur non envoye, voir les logs.'
-        reopened_message = reopen_result[:reopened_request] ? ' La demande a ete reouverte pour une nouvelle soumission.' : ''
-        flash[:alert] = "#{prefix}: #{payout_profile_admin_failure_message(errors)} Le formulaire de retrait a ete reactive pendant 14 jours.#{reopened_message}#{notification_message}"
+        notification_message = reopen_result[:notification_sent] ? ' Un email a été envoyé au porteur.' : ' Attention: email porteur non envoyé, voir les logs.'
+        reopened_message = reopen_result[:reopened_request] ? ' La demande a été rouverte pour une nouvelle soumission.' : ''
+        flash[:alert] = "#{prefix}: #{payout_profile_admin_failure_message(errors)} Le formulaire a été réactivé pendant 14 jours.#{reopened_message}#{notification_message}"
       else
-        flash[:alert] = "#{prefix}: #{errors.join(', ').truncate(200)}"
+        flash[:alert] = "#{prefix}: vérification complémentaire nécessaire. Consultez les logs si le problème persiste."
       end
     end
 
@@ -509,16 +508,16 @@ module Neighborly::Admin
     def payout_profile_admin_failure_message(errors)
       details = Array(errors).join(' ')
 
-      return 'le porteur doit cocher l attestation et soumettre a nouveau son profil depuis la plateforme.' if details.match?(/conditions de paiement|accepter les conditions|soumettre.*formulaire|recree|recreer/i)
-      return 'le numero de telephone doit etre corrige au format international.' if details.match?(/valid phone|phone/i)
-      return 'le pays ou le compte bancaire renseigne n est pas pris en charge pour ce virement.' if details.match?(/not currently supported|not supported/i)
-      return 'le code postal doit etre corrige.' if details.match?(/postal|zip/i)
-      return 'les informations bancaires doivent etre corrigees.' if details.match?(/iban|bank account|account_number|routing/i)
-      return 'la date de naissance doit etre corrigee.' if details.match?(/date of birth|dob|birthday/i)
-      return 'l adresse du titulaire doit etre corrigee.' if details.match?(/address|city|country|line1/i)
-      return 'un justificatif doit etre corrige ou renvoye.' if details.match?(/document|file|upload/i)
+      return 'le porteur doit cocher l’attestation et renvoyer ses informations depuis la plateforme.' if details.match?(/conditions de paiement|accepter les conditions|soumettre.*formulaire|recree|recreer/i)
+      return 'le numéro de téléphone doit être corrigé au format international.' if details.match?(/valid phone|phone/i)
+      return 'le pays ou le compte bancaire renseigné n’est pas pris en charge pour ce paiement.' if details.match?(/not currently supported|not supported/i)
+      return 'le code postal doit être corrigé.' if details.match?(/postal|zip/i)
+      return 'les informations bancaires doivent être corrigées.' if details.match?(/iban|bank account|account_number|routing/i)
+      return 'la date de naissance doit être corrigée.' if details.match?(/date of birth|dob|birthday/i)
+      return 'l’adresse du titulaire doit être corrigée.' if details.match?(/address|city|country|line1/i)
+      return 'un document doit être corrigé ou renvoyé.' if details.match?(/document|file|upload/i)
 
-      'le porteur doit verifier et soumettre a nouveau son profil de retrait.'
+      'le porteur doit vérifier et renvoyer ses informations et documents de paiement.'
     end
 
     def reopen_payout_profile_edit!(project)

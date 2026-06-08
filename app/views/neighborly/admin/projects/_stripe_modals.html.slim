@@ -25,14 +25,14 @@
               td.font-weight-bold Porteur
               td#transferOwnerName
             tr
-              td.font-weight-bold Compte Stripe
+              td.font-weight-bold Compte de paiement
               td#transferStripeAccount
             tr
               td.font-weight-bold Montant brut collecté
               td#transferGrossAmount
             tr
               td
-                | Frais Stripe
+                | Frais bancaires
                 small.text-muted.ml-1
                   |  (2.9% + 0.25€/txn)
               td.text-danger#transferStripeFees
@@ -48,7 +48,7 @@
               td
                 i.fa.fa-building.mr-1.text-info
                 | Gain net plateforme
-                small.text-muted.ml-1  (commission - frais Stripe)
+                small.text-muted.ml-1  (commission - frais bancaires)
               td.text-info.font-weight-bold#transferPlatformNetRevenue
         
         .card.mt-3
@@ -70,9 +70,9 @@
                   th # ID
                   th Contributeur
                   th.text-right Montant
-                  th.text-right.text-danger Frais Stripe
+                  th.text-right.text-danger Frais bancaires
                   th.text-center Taux
-                  th Charge Stripe
+                  th Référence paiement
                   th Statut
                   th Date
               tbody#transferContributionsList
@@ -107,7 +107,7 @@
         .alert.alert-danger.mb-3
           i.fa.fa-exclamation-circle.mr-2
           strong Attention.
-          |  Les frais Stripe et la commission seront déduits.
+          |  Les frais bancaires et la commission seront déduits.
         
         table.table.table-bordered.table-sm
           tbody
@@ -125,7 +125,7 @@
               td#refundGrossAmount
             tr
               td
-                | Frais Stripe retenus
+                | Frais bancaires retenus
                 small.text-muted.ml-1
                   |  (2.9% + 0.25€/txn)
               td.text-danger#refundStripeFees
@@ -161,11 +161,11 @@
                     i.fa.fa-check-square
                   th Contributeur
                   th.text-right Payé
-                  th.text-right.text-danger Frais Stripe
+                  th.text-right.text-danger Frais bancaires
                   th.text-center Taux
                   th.text-right.text-warning Commission
                   th.text-right.text-success Remboursé
-                  th Charge Stripe
+                  th Référence paiement
                   th Statut
                   th Date
               tbody#refundContributorsList
@@ -191,14 +191,14 @@
             i.fa.fa-undo.mr-1
             | Confirmer
 
-/= Modal profil de retrait (donnees locales)
+/= Modal informations de paiement
 #payoutProfileModal.modal.fade[tabindex="-1" role="dialog"]
   .modal-dialog.modal-lg[role="document"]
     .modal-content
       .modal-header.bg-info.text-white
         h5.modal-title
           i.fa.fa-id-card.mr-2
-          | Profil de retrait du porteur
+          | Informations de paiement du porteur
         button.close.text-white[type="button" data-dismiss="modal" aria-label="Fermer"]
           span[aria-hidden="true"] &times;
       .modal-body
@@ -209,11 +209,11 @@
         .alert.alert-light[style="border:1px solid #dee2e6;"]
           p[style="margin-bottom:8px;"]
             i.fa.fa-unlock-alt.mr-1
-            | Si un justificatif est illisible, autorisez le porteur a modifier et soumettre a nouveau son profil de retrait.
+            | Si une information ou un document doit être corrigé, autorisez le porteur à renvoyer ses informations et documents.
           .btn-group
             button#payoutAuthorizeEditBtn.btn.btn-sm.btn-warning[type="button" onclick="authorizePayoutProfileEdit()"]
               i.fa.fa-unlock.mr-1
-              | Autoriser la reedition
+              | Autoriser la correction
             a#payoutOwnerEditFormLink.btn.btn-sm.btn-outline-primary[href="#" target="_blank" rel="noopener"]
               i.fa.fa-external-link.mr-1
               | Ouvrir le formulaire porteur
@@ -223,7 +223,7 @@
           .col-md-6
             h6
               i.fa.fa-user.mr-1
-              | Identite
+              | Identité
             table.table.table-sm.table-bordered
               tbody
                 tr
@@ -236,7 +236,7 @@
                   td.font-weight-bold Email
                   td#payoutOwnerEmail
                 tr
-                  td.font-weight-bold Type
+                  td.font-weight-bold Type de porteur
                   td#payoutOwnerType
                 tr
                   td.font-weight-bold Entreprise
@@ -245,17 +245,14 @@
                   td.font-weight-bold Date de naissance
                   td#payoutOwnerBirthday
                 tr
-                  td.font-weight-bold Nationalite
+                  td.font-weight-bold Nationalité
                   td#payoutOwnerNationality
                 tr
-                  td.font-weight-bold Pays de residence
+                  td.font-weight-bold Pays de résidence
                   td#payoutOwnerResidence
                 tr
-                  td.font-weight-bold Telephone
+                  td.font-weight-bold Téléphone
                   td#payoutOwnerPhone
-                tr
-                  td.font-weight-bold Compte Stripe
-                  td#payoutOwnerStripeAccount
 
           .col-md-6
             h6
@@ -270,7 +267,7 @@
                   td.font-weight-bold Ville
                   td#payoutBankCity
                 tr
-                  td.font-weight-bold Region
+                  td.font-weight-bold Région
                   td#payoutBankRegion
                 tr
                   td.font-weight-bold Code postal
@@ -279,16 +276,16 @@
                   td.font-weight-bold Pays
                   td#payoutBankCountry
                 tr
-                  td.font-weight-bold Type de reference
+                  td.font-weight-bold Type de référence
                   td#payoutBankReferenceType
                 tr
-                  td.font-weight-bold Reference bancaire
+                  td.font-weight-bold Référence bancaire
                   td#payoutBankReferenceValue
 
         .mt-3
           h6
             i.fa.fa-credit-card.mr-1
-            | Verification Stripe
+            | Vérification du paiement
           .alert#payoutStripeStatus.alert-light[style="border:1px solid #dee2e6;"]
             | Chargement...
           ul#payoutStripeRequirements.list-group
@@ -304,7 +301,7 @@
         .mt-3
           h6
             i.fa.fa-exclamation-triangle.mr-1
-            | Champs manquants
+            | À compléter
           ul#payoutMissingList.list-group
             li.list-group-item.text-muted Chargement...
 
@@ -540,7 +537,7 @@ javascript:
   // Génère le lien Stripe Dashboard adaptatif test/prod
   function stripeChargeLink(chargeId) {
     if (!chargeId) return '<span class="text-muted">—</span>';
-    return '<a href="' + stripeDashboardBase + chargeId + '" target="_blank" title="Voir sur Stripe Dashboard"><code>' + chargeId.substring(0, 16) + '...</code> <i class="fa fa-external-link"></i></a>';
+    return '<a href="' + stripeDashboardBase + chargeId + '" target="_blank" title="Ouvrir la référence paiement"><code>' + chargeId.substring(0, 16) + '...</code> <i class="fa fa-external-link"></i></a>';
   }
   
   // Génère le nom cliquable vers le profil
@@ -582,18 +579,18 @@ javascript:
       headers: { 'X-CSRF-Token': csrfToken }
     })
       .done(function(response) {
-        var message = (response && response.message) ? response.message : 'Autorisation enregistree.';
+        var message = (response && response.message) ? response.message : 'Autorisation enregistrée.';
         $('#payoutEditUnlockStatus').removeClass('text-muted text-danger').addClass('text-success').text(message);
       })
       .fail(function(xhr) {
-        var message = 'Impossible d autoriser la reedition.';
+        var message = 'Impossible d’autoriser la correction.';
         if (xhr && xhr.responseJSON && xhr.responseJSON.error) {
           message = xhr.responseJSON.error;
         }
         $('#payoutEditUnlockStatus').removeClass('text-muted text-success').addClass('text-danger').text(message);
       })
       .always(function() {
-        btn.prop('disabled', false).html('<i class="fa fa-unlock mr-1"></i>Autoriser la reedition');
+        btn.prop('disabled', false).html('<i class="fa fa-unlock mr-1"></i>Autoriser la correction');
       });
   }
 
@@ -601,13 +598,13 @@ javascript:
     var el = $('#payoutProfileStatus');
     if (profileComplete) {
       el.removeClass('alert-info alert-warning alert-danger').addClass('alert-success');
-      el.html('<i class="fa fa-check-circle mr-2"></i>Profil local complet. Pret pour demande de retrait.');
+      el.html('<i class="fa fa-check-circle mr-2"></i>Informations et documents complets.');
     } else if (missingCount > 0) {
       el.removeClass('alert-info alert-success alert-danger').addClass('alert-warning');
-      el.html('<i class="fa fa-exclamation-triangle mr-2"></i>Profil incomplet: ' + missingCount + ' element(s) manquant(s).');
+      el.html('<i class="fa fa-exclamation-triangle mr-2"></i>' + missingCount + ' élément(s) à compléter.');
     } else {
       el.removeClass('alert-warning alert-success alert-danger').addClass('alert-info');
-      el.html('<i class="fa fa-info-circle mr-2"></i>Profil partiellement renseigne.');
+      el.html('<i class="fa fa-info-circle mr-2"></i>Informations partiellement renseignées.');
     }
   }
 
@@ -705,22 +702,69 @@ javascript:
         }
       })
       .fail(function(xhr) {
-        var message = 'Impossible de charger le profil de retrait.';
+        var message = 'Impossible de charger les informations de paiement.';
         if (xhr && xhr.responseJSON && xhr.responseJSON.error) {
           message = xhr.responseJSON.error;
         }
         $('#payoutProfileStatus').removeClass('alert-info alert-success alert-warning').addClass('alert-danger').html('<i class="fa fa-times-circle mr-2"></i>' + message);
         $('#payoutKycList').html('<li class="list-group-item text-muted">—</li>');
         $('#payoutMissingList').html('<li class="list-group-item text-muted">—</li>');
-        $('#payoutStripeStatus').removeClass('alert-light alert-success alert-warning').addClass('alert-danger').html('Impossible de charger le statut Stripe.');
+        $('#payoutStripeStatus').removeClass('alert-light alert-success alert-warning').addClass('alert-danger').html('Impossible de charger la vérification du paiement.');
         $('#payoutStripeRequirements').html('<li class="list-group-item text-muted">—</li>');
       });
+  }
+
+  function payoutRequirementLabel(value) {
+    var key = String(value || '');
+    var exact = {
+      'directors.first_name': 'Prénom du dirigeant',
+      'directors.last_name': 'Nom du dirigeant',
+      'representative.first_name': 'Prénom du représentant',
+      'representative.last_name': 'Nom du représentant',
+      'representative.dob.day': 'Date de naissance du représentant',
+      'representative.dob.month': 'Date de naissance du représentant',
+      'representative.dob.year': 'Date de naissance du représentant',
+      'individual.first_name': 'Prénom du titulaire',
+      'individual.last_name': 'Nom du titulaire',
+      'individual.dob.day': 'Date de naissance du titulaire',
+      'individual.dob.month': 'Date de naissance du titulaire',
+      'individual.dob.year': 'Date de naissance du titulaire',
+      'external_account': 'Compte bancaire',
+      'tos_acceptance.date': 'Acceptation des conditions de paiement',
+      'tos_acceptance.ip': 'Acceptation des conditions de paiement'
+    };
+
+    if (exact[key]) return exact[key];
+    if (key.indexOf('verification.document') >= 0) return 'Pièce d’identité';
+    if (key.indexOf('verification.additional_document') >= 0) return 'Justificatif de domicile';
+    if (key.indexOf('company.verification.document') >= 0 || key.indexOf('company_registration_verification') >= 0) return 'Justificatif d’immatriculation';
+    if (key.indexOf('company.verification.additional_document') >= 0 || key.indexOf('company_memorandum_of_association') >= 0) return 'Statuts de la structure';
+    if (key.indexOf('company.address') >= 0) return 'Adresse de la structure';
+    if (key.indexOf('company.name') >= 0) return 'Nom de la structure';
+    if (key.indexOf('business_profile') >= 0) return 'Informations de la structure';
+    if (key.indexOf('address') >= 0) return 'Adresse du titulaire';
+    if (key.indexOf('phone') >= 0) return 'Téléphone';
+    if (key.indexOf('email') >= 0) return 'Email';
+    return 'Information complémentaire à vérifier';
+  }
+
+  function payoutRequirementReason(error) {
+    var code = String((error && error.code) || '');
+    var reason = String((error && error.reason) || '');
+    var text = (code + ' ' + reason).toLowerCase();
+
+    if (text.indexOf('verification_failed') >= 0 || text.indexOf('unable to find information') >= 0) {
+      return 'les informations saisies n’ont pas pu être confirmées. Vérifiez le nom, l’adresse et les documents.';
+    }
+    if (text.indexOf('document') >= 0) return 'le document doit être lisible, complet et au bon format.';
+    if (text.indexOf('invalid') >= 0) return 'la valeur renseignée semble invalide.';
+    if (reason) return 'vérification complémentaire nécessaire.';
+    return 'à vérifier avant le paiement.';
   }
 
   function updatePayoutStripeStatus(stripe) {
     var status = $('#payoutStripeStatus');
     var list = $('#payoutStripeRequirements');
-    var account = stripe.account_id || 'Aucun compte';
     var transfers = stripe.transfers || 'inconnu';
     var payoutsEnabled = stripe.payouts_enabled === true;
     var requirements = []
@@ -732,27 +776,28 @@ javascript:
 
     status.removeClass('alert-light alert-success alert-warning alert-danger');
     if (stripe.error) {
-      status.addClass('alert-danger').html('<strong>Erreur Stripe:</strong> ' + escapeHtml(stripe.error));
+      status.addClass('alert-danger').html('<strong>Vérification indisponible.</strong> Consultez les logs si le problème persiste.');
     } else if (payoutsEnabled && transfers === 'active' && requirements.length === 0 && errors.length === 0) {
-      status.addClass('alert-success').html('<strong>Stripe OK.</strong> Compte ' + escapeHtml(account) + ' pret pour les virements.');
+      status.addClass('alert-success').html('<strong>Prêt pour le paiement.</strong> Les informations connues permettent de lancer le paiement bancaire.');
     } else {
-      status.addClass('alert-warning').html('<strong>Stripe demande encore une verification.</strong> Compte ' + escapeHtml(account) + ', transfers=' + escapeHtml(transfers) + ', payouts_enabled=' + payoutsEnabled);
+      status.addClass('alert-warning').html('<strong>Vérification complémentaire nécessaire.</strong> Vérifiez les éléments ci-dessous avant de payer.');
     }
 
     list.empty();
     if (requirements.length === 0 && errors.length === 0 && !stripe.disabled_reason) {
-      list.html('<li class="list-group-item text-success">Aucune exigence Stripe bloquante retournee.</li>');
+      list.html('<li class="list-group-item text-success">Aucune action complémentaire détectée.</li>');
       return;
     }
     if (stripe.disabled_reason) {
-      list.append('<li class="list-group-item text-danger"><strong>disabled_reason:</strong> ' + escapeHtml(stripe.disabled_reason) + '</li>');
+      list.append('<li class="list-group-item text-warning">Paiement temporairement bloqué: vérification complémentaire nécessaire.</li>');
     }
     requirements.forEach(function(item) {
-      list.append('<li class="list-group-item text-warning">' + escapeHtml(item) + '</li>');
+      list.append('<li class="list-group-item text-warning">' + escapeHtml(payoutRequirementLabel(item)) + '</li>');
     });
     errors.forEach(function(err) {
-      var text = [err.requirement, err.code, err.reason].filter(Boolean).join(' - ');
-      list.append('<li class="list-group-item text-danger">' + escapeHtml(text || 'Erreur Stripe sans detail') + '</li>');
+      var label = payoutRequirementLabel(err && err.requirement);
+      var reason = payoutRequirementReason(err);
+      list.append('<li class="list-group-item text-danger"><strong>' + escapeHtml(label) + ':</strong> ' + escapeHtml(reason) + '</li>');
     });
   }
   

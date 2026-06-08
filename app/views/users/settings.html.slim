@@ -35,9 +35,9 @@
                     i.icon-et-info
                     = " Etat du retrait"
                 .large-4.columns style="margin-bottom: 0.5rem;"
-                  = button_to neighborly_stripe.sync_account_path, method: :post, class: 'button small secondary radius', style: 'width: 100%;', data: { disable_with: 'Verification...' } do
+                  = button_to neighborly_stripe.sync_account_path, method: :post, class: 'button small secondary radius', style: 'width: 100%;', data: { disable_with: 'Vérification...' } do
                     i.icon-et-refresh
-                    = " Verifier"
+                    = " Vérifier"
                 .large-4.columns style="margin-bottom: 0.5rem;"
                   a.button.small.radius href="#" data-click-toggle="unlink-stripe-section" style="background: #ef4444; width: 100%;"
                     i.icon-et-close
@@ -65,13 +65,13 @@
                   h5 style="color: #92400e; margin-bottom: 0.25rem; font-weight: 600;"
                     | Configuration incomplète
                   p style="color: #a16207; margin-bottom: 1rem; font-size: 0.9rem;"
-                    | Veuillez compléter votre profil pour activer les paiements.
+                    | Veuillez compléter vos informations et documents pour activer les paiements.
                   
                   .row
                     .large-8.columns style="margin-bottom: 0.5rem;"
                       = link_to pay_project_path(@user.projects.last), class: 'button radius', style: 'background: #f59e0b; width: 100%;' do
                         i.icon-et-arrow-right
-                        = " Compléter mon profil"
+                        = " Compléter mes documents de paiement"
                     .large-4.columns style="margin-bottom: 0.5rem;"
                       = button_to neighborly_stripe.connect_unlink_path, method: :post, class: 'button small radius', style: 'background: #ef4444; width: 100%;', data: { confirm: 'Délier ce compte incomplet ? Vous pourrez ensuite en cr\u00e9er ou lier un autre.' } do
                         i.icon-et-close
@@ -94,7 +94,7 @@
               .large-12.columns style="margin-bottom: 0.5rem;"
                 = link_to pay_project_path(@user.projects.last), class: 'button radius', style: 'background: #22c55e; width: 100%; margin-bottom: 0;' do
                   i.icon-et-arrow-right
-                  = " Completer mon profil de retrait"
+                  = " Compléter mes documents de paiement"
         
         javascript:
           document.addEventListener('DOMContentLoaded', function() {

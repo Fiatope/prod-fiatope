@@ -166,7 +166,7 @@ class ProjectsController < ApplicationController
     end
 
     unless payout_profile_single_representative_attested?
-      flash[:alert] = 'Vous devez cocher l’attestation avant d’envoyer vos documents de paiement.'
+      flash[:alert] = 'Vous devez cocher l’attestation avant d’envoyer vos informations et documents.'
       return redirect_to pay_project_path(@project)
     end
 
@@ -215,8 +215,13 @@ class ProjectsController < ApplicationController
         end
       else
         Rails.logger.warn "Payout profile sync failed for user #{current_user.id}: #{sync_result.errors.join(', ')}"
-        unlock_payout_profile_edit_for_retry!(current_user)
-        flash[:alert] = payout_profile_sync_failure_message(sync_result.errors)
+        if payout_profile_internal_sync_issue?(sync_result.errors)
+          clear_payout_profile_edit_unlock!(current_user)
+          flash[:notice] = payout_profile_sync_failure_message(sync_result.errors)
+        else
+          unlock_payout_profile_edit_for_retry!(current_user)
+          flash[:alert] = payout_profile_sync_failure_message(sync_result.errors)
+        end
       end
     rescue ActiveRecord::RecordInvalid => e
       flash[:alert] = e.record.errors.full_messages.to_sentence
@@ -291,8 +296,12 @@ class ProjectsController < ApplicationController
     )
     unless sync_result.success?
       Rails.logger.warn "Payout request profile sync failed for user #{current_user.id}: #{sync_result.errors.join(', ')}"
-      unlock_payout_profile_edit_for_retry!(current_user)
-      flash[:alert] = payout_profile_sync_failure_message(sync_result.errors)
+      if payout_profile_internal_sync_issue?(sync_result.errors)
+        flash[:notice] = payout_profile_sync_failure_message(sync_result.errors)
+      else
+        unlock_payout_profile_edit_for_retry!(current_user)
+        flash[:alert] = payout_profile_sync_failure_message(sync_result.errors)
+      end
       return redirect_to pay_project_path(@project)
     end
 
@@ -549,11 +558,21 @@ class ProjectsController < ApplicationController
   end
 
   def payout_profile_acceptance_required_message
-    'Vous devez cocher l’attestation avant d’envoyer vos documents de paiement.'
+    'Vous devez cocher l’attestation avant d’envoyer vos informations et documents.'
+  end
+
+  def payout_profile_internal_sync_issue?(errors)
+    Array(errors).join(' ').match?(
+      /account token|business_type|jeton sécurisé|configuration|api key|responsibilities of collecting requirements|platform-profile|platform profile|collecting requirements|cannot change.*verification.*document|account is verified|legal entity information/i
+    )
   end
 
   def payout_profile_sync_failure_message(errors)
     details = Array(errors).join(' ')
+
+    if payout_profile_internal_sync_issue?(errors)
+      return 'Vos informations et documents ont été envoyés. Notre équipe finalise une vérification avant le paiement et vous contactera seulement si une action est nécessaire.'
+    end
 
     if details.match?(/valid phone number|phone/i)
       return 'Le numéro de téléphone doit être au format international. Exemple: +237654770064.'
@@ -580,18 +599,14 @@ class ProjectsController < ApplicationController
     end
 
     if details.match?(/document|file|upload/i)
-      return 'Un justificatif n’a pas pu être lu ou vérifié. Vérifiez les fichiers envoyés et réessayez.'
+      return 'Un justificatif n’a pas pu être vérifié. Vérifiez que le fichier est lisible, complet et au format demandé, puis renvoyez-le.'
     end
 
     if details.match?(/conditions de paiement|accepter les conditions|conditions/i)
       return payout_profile_acceptance_required_message
     end
 
-    if details.match?(/account token|business_type|jeton sécurisé|configuration|api key/i)
-      return 'Vos documents ont été enregistrés. Nous devons vérifier une information avant de lancer le paiement. Nous vous contacterons si besoin.'
-    end
-
-    'Vos documents ont été enregistrés. Nous vous contacterons si une information doit être corrigée.'
+    'Vos informations et documents ont été envoyés. Nous vous contacterons seulement si une correction est nécessaire.'
   end
 
   def payout_profile_edit_unlock_cache_key(user)
