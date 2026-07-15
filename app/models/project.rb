@@ -46,6 +46,20 @@ class Project < ActiveRecord::Base
   belongs_to :partner, :autosave => true
   belongs_to :category
   has_one :project_total
+
+  # Certains projets (anciens, ou sans contribution) n'ont pas encore de ligne
+  # project_totals associée. Sans ce filet de sécurité, tout accès à pledged/
+  # progress/total_contributions/... (méthodes déléguées ci-dessous) lève un
+  # DelegationError ("project_total is nil"), aussi bien en admin que sur les
+  # pages publiques (carte projet, barre de progression...).
+  # On reconstruit alors la ligne à la volée via le service existant plutôt
+  # que de renvoyer des valeurs arbitraires.
+  def project_total
+    super || begin
+      ProjectTotalBuilder.new(self).perform
+      reload_project_total
+    end
+  end
   has_one :bank_information, through: :user
   has_many :contributions, dependent: :destroy
   has_many :matches, dependent: :destroy

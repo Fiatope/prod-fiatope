@@ -108,163 +108,28 @@ module Neighborly::Mangopay::User
       document_types - kycs.pluck(:proof_type)
     end
 
+    # MangoPay est désactivé sur toute la plateforme (remplacé par Stripe Connect,
+    # cf. app/models/concerns/stripe_project.rb). Ces documents ne sont plus jamais
+    # vérifiés via l'API distante MangoPay: on renvoie uniquement les documents
+    # déjà stockés localement (aucun appel réseau, aucune dépendance à MangoPay).
     def kycs_updatable_elements
-      res = []
-
-      kycs.each do |kyc|
-        next if OTHER_DOCUMENT_TYPE.include?(kyc.proof_type)
-        begin
-          user_kyc_docs = MangoPay::KycDocument.fetch(self.mangopay_contributor.key, kyc.document_key)
-          if !user_kyc_docs.empty?
-            if user_kyc_docs.is_a?(Hash)
-              user_kyc_doc = user_kyc_docs
-              if user_kyc_doc['Status'] == 'CREATED' && user_kyc_doc['Id'] == kyc.document_key
-                res << kyc
-              end
-            else
-              user_kyc_docs.each do |user_kyc_doc|
-                if user_kyc_doc['Status'] == 'CREATED' && user_kyc_doc['Id'] == kyc.document_key
-                  res << kyc
-                end
-              end
-            end
-            puts "==================================================="
-            puts "===== MANGOPAY KYC DOC HAS STATUS CREATED ========="
-            puts "================ #{res} ========================="
-            puts "==================================================="
-            puts "==================================================="
-          end
-        rescue MangoPay::ResponseError => ex
-          puts "==================================================="
-          puts "===== MANGOPAY KYC DOC HAS STATUS HAS FAILED======="
-          puts "================ #{res} ========================="
-          puts "==================================================="
-          puts "==================================================="
-          puts ex.details
-        end
-      end
-
-      res + kycs.other_documents
+      kycs.other_documents
     end
 
     def kycs_displayable_elements
-      res = []
-
-      kycs.each do |kyc|
-        next if OTHER_DOCUMENT_TYPE.include?(kyc.proof_type)
-        begin
-          user_kyc_docs = MangoPay::KycDocument.fetch(self.mangopay_contributor_key, kyc.document_key)
-          if !user_kyc_docs.empty?
-            if user_kyc_docs.is_a?(Hash)
-              user_kyc_doc = user_kyc_docs
-              if user_kyc_doc['Status'] != 'CREATED' && user_kyc_doc['Status'] != 'REFUSED' && user_kyc_doc['Id'] == kyc.document_key
-                res << kyc
-              end
-            else
-              user_kyc_docs.each do |user_kyc_doc|
-                if user_kyc_doc['Status'] != 'CREATED' && user_kyc_doc['Status'] != 'REFUSED' && user_kyc_doc['Id'] == kyc.document_key
-                  res << kyc
-                end
-              end
-            end
-          end
-        rescue MangoPay::ResponseError => ex
-          puts ex.details
-          puts 'Error while fetching displayable documents'
-        end
-      end
-
-      res + kycs.other_documents
+      kycs.other_documents
     end
 
     def kycs_validated_elements
-      res = []
-
-      kycs.each do |kyc|
-        next if OTHER_DOCUMENT_TYPE.include?(kyc.proof_type)
-        begin
-          user_kyc_docs = MangoPay::KycDocument.fetch(self.mangopay_contributor_key, kyc.document_key)
-          if !user_kyc_docs.empty?
-            if user_kyc_docs.is_a?(Hash)
-              user_kyc_doc = user_kyc_docs
-              if user_kyc_doc['Status'] == 'VALIDATED' && user_kyc_doc['Id'] == kyc.document_key
-                res << kyc
-              end
-            else
-              user_kyc_docs.each do |user_kyc_doc|
-                if user_kyc_doc['Status'] == 'VALIDATED' && user_kyc_doc['Id'] == kyc.document_key
-                  res << kyc
-                end
-              end
-            end
-          end
-        rescue MangoPay::ResponseError => ex
-          puts ex.details
-          puts 'Error while fetching validated documents'
-        end
-      end
-
-      res
+      []
     end
 
     def kycs_articles_of_association_elements
-      res = []
-
-      kycs.each do |kyc|
-        next if OTHER_DOCUMENT_TYPE.include?(kyc.proof_type)
-        begin
-          user_kyc_docs = MangoPay::KycDocument.fetch(self.mangopay_contributor_key, kyc.document_key)
-          if !user_kyc_docs.empty?
-            if user_kyc_docs.is_a?(Hash)
-              user_kyc_doc = user_kyc_docs
-              if user_kyc_doc['Type'] == 'ARTICLES_OF_ASSOCIATION' && user_kyc_doc['Id'] == kyc.document_key
-                res << kyc
-              end
-            else
-              user_kyc_docs.each do |user_kyc_doc|
-                if user_kyc_doc['Type'] == 'ARTICLES_OF_ASSOCIATION' && user_kyc_doc['Id'] == kyc.document_key
-                  res << kyc
-                end
-              end
-            end
-          end
-        rescue  MangoPay::ResponseError => ex
-          puts ex.details
-          puts 'Error while fetching documents articles of association'
-        end
-      end
-
-      res
+      []
     end
 
     def kycs_registration_proof_elements
-      res = []
-
-      kycs.each do |kyc|
-        next if OTHER_DOCUMENT_TYPE.include?(kyc.proof_type)
-        begin
-          user_kyc_docs = MangoPay::KycDocument.fetch(self.mangopay_contributor_key, kyc.document_key)
-          if !user_kyc_docs.empty?
-            if user_kyc_docs.is_a?(Hash)
-              user_kyc_doc = user_kyc_docs
-              if user_kyc_doc['Type'] == 'REGISTRATION_PROOF' && user_kyc_doc['Id'] == kyc.document_key
-                res << kyc
-              end
-            else
-              user_kyc_docs.each do |user_kyc_doc|
-                if user_kyc_doc['Type'] == 'REGISTRATION_PROOF' && user_kyc_doc['Id'] == kyc.document_key
-                  res << kyc
-                end
-              end
-            end
-          end
-        rescue MangoPay::ResponseError => ex
-          puts ex.details
-          puts 'Error while fetching documents registration proof'
-        end
-      end
-
-      res
+      []
     end
 
     def update_mangopay_user
