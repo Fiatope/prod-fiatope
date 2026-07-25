@@ -1,18 +1,19 @@
 class OrangeMoneyService < ApplicationService
 
-  attr_accessor :contribution
+  attr_accessor :contribution, :country
 
-  def initialize(contribution)
+  def initialize(contribution, country: nil)
     @contribution = contribution
+    @country = country.presence || @contribution.project.address_state
     @currency = (Rails.env.development? ? "OUV" : "XOF")
   end
 
-  def self.initialize_payment_for(*args, &block)
-    new(*args, &block).initialize_payment_for
+  def self.initialize_payment_for(contribution, country: nil)
+    new(contribution, country: country).initialize_payment_for
   end
 
   def env_for(env_name)
-    case @contribution.project.address_state
+    case @country
     when /cameroon|cameroun/i
       @currency = 'XAF'
       ENV["#{env_name}_CAMEROON"] 
@@ -42,7 +43,7 @@ class OrangeMoneyService < ApplicationService
   def initialize_payment_for
     uri = URI.parse(orange_money_webpay_url)
 
-    provider = case @contribution.project.address_state
+    provider = case @country
     when /cameroon|cameroun/i
       @currency = 'XAF'
       "orange_money_cameroon"
@@ -89,7 +90,7 @@ class OrangeMoneyService < ApplicationService
 
     end
 
-    Rails.logger.warn "[OrangeMoney] address_state=#{@contribution.project.address_state.inspect} provider=#{provider} currency=#{@currency} webpay_url=#{uri} merchant_key_present=#{orange_money_merchant_key.present?}"
+    Rails.logger.warn "[OrangeMoney] requested_country=#{@country.inspect} address_state=#{@contribution.project.address_state.inspect} provider=#{provider} currency=#{@currency} webpay_url=#{uri} merchant_key_present=#{orange_money_merchant_key.present?}"
 
     body_json = {
       merchant_key: orange_money_merchant_key,
