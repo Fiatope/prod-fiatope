@@ -1,3 +1,5 @@
+require_relative 'image_processing'
+
 class ImageUploader < CarrierWave::Uploader::Base
   include FiatopeImageProcessing
 
