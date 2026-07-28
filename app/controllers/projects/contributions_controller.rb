@@ -23,6 +23,25 @@ class Projects::ContributionsController < ApplicationController
     @project      = parent
     @contribution = resource
     authorize resource
+    
+    # Self-healing: when the user lands back on /edit after paying, check
+    # whether a payment provider has already notified us successfully
+    # (transaction row has a txnid / reference set by their webhook).
+    # If so, promote the contribution to :confirmed here. Catches the rare
+    # cases where the async webhook was received but its state transition
+    # rolled back (generate_tickets exception, transient DB error, etc.)
+    # — without this, the user sees the payment form again forever.
+    unless @contribution.state == "confirmed" || @contribution.state == "canceled"
+      reconcile_provider_payment(@contribution)
+    end
+    
+    if @contribution.state == "canceled"
+      flash.notice = "This order has been canceled. Please create a new one!"
+      redirect_to project_path(@project)
+    elsif @contribution.state == "confirmed"
+      flash.notice = t('controllers.projects.contributions.create.success')
+      redirect_to project_contribution_path(@project, @contribution)
+    end
   end
 
   def mailing
@@ -565,5 +584,40 @@ class Projects::ContributionsController < ApplicationController
     else
       redirect_to new_user_registration_path(:from_contribution => parent)
     end
+  end
+  
+  # Réconcilie automatiquement les paiements confirmés par webhook
+  # Appelé quand l'utilisateur revient sur /edit après avoir payé
+  def reconcile_provider_payment(contribution)
+    # Vérifier Orange Money
+    om_tx = contribution.orange_money_transactions.where.not(txnid: [nil, ""]).order(:id).last
+    if om_tx
+      Rails.logger.info "[reconcile contrib=#{contribution.id}] Orange Money txnid=#{om_tx.txnid} → confirm"
+      contribution.response_code = "SUCCESS"
+      contribution.transaction_number = om_tx.txnid
+      contribution.response_message ||= t('controllers.projects.contributions.orange_money_payment_confirmation.success')
+      contribution.payment_method ||= "Orange Money"
+      contribution.state_event = :confirm
+      contribution.save!
+      return true
+    end
+    
+    # Vérifier Pay Plus Africa
+    ppa_tx = contribution.pay_plus_africa_transactions.where.not(invoice_number: [nil, ""]).order(:id).last
+    if ppa_tx
+      Rails.logger.info "[reconcile contrib=#{contribution.id}] PayPlusAfrica invoice=#{ppa_tx.invoice_number} → confirm"
+      contribution.response_code = "00"
+      contribution.transaction_number = ppa_tx.invoice_number
+      contribution.response_message ||= t('controllers.projects.contributions.pay_plus_africa_payment_confirmation.success')
+      contribution.payment_method ||= "Pay Plus Africa"
+      contribution.state_event = :confirm
+      contribution.save!
+      return true
+    end
+    
+    false
+  rescue => e
+    Rails.logger.error "[reconcile contrib=#{contribution.id}] failed: #{e.class} #{e.message}"
+    false
   end
 end
