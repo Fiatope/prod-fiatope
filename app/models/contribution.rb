@@ -77,8 +77,13 @@ class Contribution < ActiveRecord::Base
   end
 
   def compute_cfa_value
-    conversion_rate = ENV['CFA_CONVERSION_RATE'] || 656
-    self.cfa_value = self.value.to_s.to_d * conversion_rate.to_s.to_d
+    # Si l'utilisateur a saisi directement en FCFA, utiliser ce montant exact
+    if respond_to?(:cfa_value_from_user_input)
+      self.cfa_value = cfa_value_from_user_input
+    else
+      conversion_rate = ENV['CFA_CONVERSION_RATE'] || 656
+      self.cfa_value = self.value.to_s.to_d * conversion_rate.to_s.to_d
+    end
   end
 
   def matches
