@@ -1,5 +1,5 @@
 class ImageUploader < CarrierWave::Uploader::Base
-  include ImageProcessing
+  include FiatopeImageProcessing
 
   def extension_white_list
     %w(jpg jpeg gif png) unless mounted_as == :video_thumbnail

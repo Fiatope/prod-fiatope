@@ -1,4 +1,4 @@
-module ImageProcessing
+module FiatopeImageProcessing
   def self.included(base)
     if Rails.env.production? || ENV['ENVIRONMENT_NAME']&.casecmp('preproduction') == 0
       base.send :include, CarrierWave::RMagick
