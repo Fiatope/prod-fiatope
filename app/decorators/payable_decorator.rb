@@ -3,12 +3,19 @@ class PayableDecorator < Draper::Decorator
 
   def display_value
     s = number_to_currency object.value
-    cfa_value = object.value.to_s.to_d * conversion_rate.to_s.to_d
+    
+    # Utiliser object.cfa_value si disponible (montant exact saisi par l'utilisateur)
+    # Sinon calculer depuis EUR
+    if object.respond_to?(:cfa_value) && object.cfa_value.present?
+      cfa_value = object.cfa_value
+    else
+      cfa_value = object.value.to_s.to_d * conversion_rate.to_s.to_d
+    end
     
     if object.payment_method == "Orange Money"
-      "#{cfa_value.round} CFA (= #{s})"
+      "#{cfa_value.round} FCFA (= #{s})"
     else
-      "#{s} (= #{cfa_value.round} CFA)"
+      "#{s} (= #{cfa_value.round} FCFA)"
     end
   end
 

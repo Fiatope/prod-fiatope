@@ -28,7 +28,7 @@
     
       - if @project.has_at_least_one_cfa_contribution?
         div[style="font-size:16px;margin:5px;"]
-          = t(".cfa_ratio_info", percent: (100 * @project.cfa_ratio).round)
+          = "#{number_with_delimiter(@project.total_cfa_collected)} FCFA collectés via Orange Money"
         = @project.cfa_progress_bar
 
 

@@ -167,6 +167,11 @@ class ProjectDecorator < Draper::Decorator
     return 0 if object.progress.to_d == 0
     (cfa_progress * 100) / object.progress.to_d
   end
+  
+  def total_cfa_collected
+    cfa_contributions = object.contributions.with_state(:confirmed).where(payment_method: "Orange Money")
+    cfa_contributions.map(&:cfa_value).compact.sum.round
+  end
 
   def successful_flag
     return unless object.successful?
