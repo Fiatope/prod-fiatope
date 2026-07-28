@@ -67,9 +67,16 @@ class Projects::ContributionsController < ApplicationController
 
   def create
     @project      = parent
-    @contribution = ContributionForm.new(permitted_params[:contribution_form].
-                                     merge(user: current_user,
-                                           project: parent))
+    
+    # Gérer la conversion de devise si l'utilisateur a saisi en FCFA
+    contribution_params = permitted_params[:contribution_form].dup
+    if params[:selected_currency] == 'FCFA' && contribution_params[:value].present?
+      conversion_rate = ENV['CFA_CONVERSION_RATE']&.to_f || 656.0
+      contribution_params[:value] = (contribution_params[:value].to_f / conversion_rate).round(2)
+      Rails.logger.warn "[Contribution] Converted FCFA #{params[:contribution_form][:value]} to EUR #{contribution_params[:value]} (rate: #{conversion_rate})"
+    end
+    
+    @contribution = ContributionForm.new(contribution_params.merge(user: current_user, project: parent))
     rewards = permitted_params[:reward_ids]
     if @project.presale? && permitted_params[:user_articles]
       permitted_user_articles = permitted_params[:user_articles].to_unsafe_h

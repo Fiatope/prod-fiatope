@@ -20,6 +20,8 @@ class VendorOauthToken < ActiveRecord::Base
       { "Authorization" => "Basic #{ENV['ORANGE_MONEY_AUTHORIZATION_HEADER_CAMEROON']}", "Content-Type" => "application/x-www-form-urlencoded" }
     when "orange_money_mali"
       { "Authorization" => "Basic #{ENV['ORANGE_MONEY_AUTHORIZATION_HEADER_MALI']}", "Content-Type" => "application/x-www-form-urlencoded" }
+    when "orange_money_niger"
+      { "Authorization" => "Basic #{ENV['ORANGE_MONEY_AUTHORIZATION_HEADER_NIGER']}", "Content-Type" => "application/x-www-form-urlencoded" }
     else # "orange_money_default"
       { "Authorization" => "Basic #{ENV['ORANGE_MONEY_AUTHORIZATION_HEADER_DEFAULT']}", "Content-Type" => "application/x-www-form-urlencoded" }
     end

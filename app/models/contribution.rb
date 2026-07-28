@@ -17,6 +17,7 @@ class Contribution < ActiveRecord::Base
   has_one :match, through: :matching
   has_many :orange_money_transactions
   has_many :pay_plus_africa_transactions
+  has_many :flutterwave_transactions
   has_many :article_orders
   has_many :articles, through: :article_orders
 
