@@ -37,6 +37,7 @@ class Project < ActiveRecord::Base
            :progress_bar_presale,
            :cfa_progress_bar,
            :cfa_ratio,
+           :total_cfa_collected,
            :successful_flag,
            :display_address_formated,
            :display_organization_type,
