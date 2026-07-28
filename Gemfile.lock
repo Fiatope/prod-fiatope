@@ -425,6 +425,7 @@ GEM
       multi_json (~> 1.3)
       multi_xml (~> 0.5)
       rack (>= 1.2, < 4)
+    observer (0.1.2)
     oga (3.4)
       ast
       ruby-ll (~> 2.1)
@@ -472,6 +473,7 @@ GEM
     pjax_rails (0.5.1)
       jquery-rails
       railties (>= 4.0)
+    pkg-config (1.6.5)
     pony (1.13.1)
       mail (>= 2.0)
     postgres-copy (1.7.2)
@@ -550,6 +552,9 @@ GEM
       actionpack (>= 5.2)
       railties (>= 5.2)
     rinku (1.5.1)
+    rmagick (6.3.0)
+      observer (~> 0.1)
+      pkg-config (~> 1.4)
     rollbar (3.5.2)
     rouge (4.2.1)
     ruby-ll (2.1.3)
@@ -780,6 +785,7 @@ DEPENDENCIES
   redis (~> 4.8)
   remotipart
   responders
+  rmagick
   rollbar
   rubyzip
   sass-rails (>= 3.2)

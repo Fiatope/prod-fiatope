@@ -9,11 +9,23 @@ class ContentImageUploader < ImageUploader
   # To remove transparency from PNG
   def flatten
     manipulate! do |img|
+      if defined?(Magick)
+        # RMagick (production)
         img_list = Magick::ImageList.new
         img_list.from_blob img.to_blob
-        img_list.new_image(img_list.first.columns, img_list.first.rows) { |options| options.background_color = "white" } # Create new "layer" with white background and size of original image
+        img_list.new_image(img_list.first.columns, img_list.first.rows) { |options| options.background_color = "white" }
         img = img_list.reverse.flatten_images
-        img
+      else
+        # MiniMagick (development)
+        ext = File.extname(img.respond_to?(:path) ? img.path.to_s : "").downcase
+        if ext =~ /\.(png|gif|tiff?)$/
+          img.combine_options do |c|
+            c.background "white"
+            c.alpha "remove"
+          end
+        end
+      end
+      img
     end
   end
 end

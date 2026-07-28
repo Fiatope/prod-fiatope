@@ -87,9 +87,13 @@ gem 'kaminari'
 
 # Uploads
 gem 'carrierwave', '~> 3.0' # Version 3.0+ n'utilise plus mimemagic
-# gem 'rmagick', :require => 'rmagick' # Commenté - problème d'installation sur Windows
-gem 'mini_magick' # Alternative à rmagick, plus facile à installer
+gem 'mini_magick'
 gem 'dropzonejs-rails'
+
+# RMagick only on Linux (production servers)
+platforms :ruby do
+  gem 'rmagick', :require => 'rmagick'
+end
 
 # Other Tools
 gem 'has_permalink'
