@@ -1,3 +1,11 @@
+# CRITICAL: This file's name shadows the 'image_processing' gem in $LOAD_PATH.
+# We MUST load the real gem first, otherwise ImageProcessing::Chainable is never
+# defined and CarrierWave::MiniMagick crashes on boot.
+if defined?(Gem) && Gem.loaded_specs['image_processing']
+  gem_main = File.join(Gem.loaded_specs['image_processing'].full_gem_path, 'lib', 'image_processing.rb')
+  load gem_main unless defined?(::ImageProcessing::Chainable)
+end
+
 module FiatopeImageProcessing
   def self.included(base)
     if Rails.env.production? || ENV['ENVIRONMENT_NAME']&.casecmp('preproduction') == 0
