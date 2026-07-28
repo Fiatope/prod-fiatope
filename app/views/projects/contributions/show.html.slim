@@ -21,21 +21,44 @@
             li = t('.bankaccount.steps.second')
             li = t('.bankaccount.steps.third')
 
-  h3.black.text-center = t('.thank_you', project_name: @project.name)  
-  .mycontrib
-    h3.text-center = t('.mycontrib', amount: @contribution.display_value)
-  .statusbar
-    .row
-      .status.col-md-12.text-center
-        = @project.progress_bar
-        .pledged.hide-for-medium
-          = @project.display_pledged
-          small = t('.so_far').html_safe
-          = @project.display_goal
-        .pledged.show-for-medium
-          = @project.display_pledged
-          small = t('.reached_goal_small_separator_html')
-          = @project.display_goal
+  .success-container[style="max-width:800px;margin:40px auto;padding:30px;background:#fff;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.1);"]
+    .success-icon[style="text-align:center;margin-bottom:30px;"]
+      svg[xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"]
+        path[d="M22 11.08V12a10 10 0 1 1-5.93-9.14"]
+        polyline[points="22 4 12 14.01 9 11.01"]
+    
+    h2.text-center[style="color:#2ecc71;font-size:32px;font-weight:bold;margin-bottom:15px;"] 
+      = "✓ Paiement confirmé !"
+    
+    h3.text-center[style="color:#333;font-size:20px;margin-bottom:30px;"] 
+      = t('.thank_you', project_name: @project.name)
+    
+    .contribution-details[style="background:#f8f9fa;padding:25px;border-radius:8px;margin-bottom:30px;"]
+      .detail-row[style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;padding-bottom:15px;border-bottom:1px solid #dee2e6;"]
+        span[style="font-size:16px;color:#666;"] Votre contribution :
+        strong[style="font-size:24px;color:#2ecc71;"] = @contribution.display_value
+      
+      .detail-row[style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;padding-bottom:15px;border-bottom:1px solid #dee2e6;"]
+        span[style="font-size:16px;color:#666;"] Projet :
+        strong[style="font-size:18px;color:#333;"] = @project.name
+      
+      .detail-row[style="display:flex;justify-content:space-between;align-items:center;"]
+        span[style="font-size:16px;color:#666;"] Méthode de paiement :
+        strong[style="font-size:16px;color:#333;"] = @contribution.payment_method
+    
+    .project-progress[style="margin-bottom:30px;"]
+      h4[style="color:#333;font-size:18px;margin-bottom:15px;text-align:center;"] Impact de votre contribution
+      = @project.progress_bar
+      .pledged[style="text-align:center;margin-top:15px;font-size:18px;color:#666;"]
+        strong[style="color:#2ecc71;"] = @project.display_pledged
+        span[style="margin:0 10px;"] collectés sur
+        strong[style="color:#333;"] = @project.display_goal
+    
+    .info-box[style="background:#e8f5e9;padding:20px;border-radius:8px;border-left:4px solid #2ecc71;margin-bottom:30px;"]
+      p[style="margin:0;color:#333;font-size:15px;line-height:1.6;"]
+        strong Merci pour votre participation !
+        br
+        | Le porteur de projet en sera informé. Un email de confirmation de paiement vous a été envoyé.
 
   = render 'shared/payments/success/share', i18n_scope: 'projects.contributions.show', tweet_text: t('.twitter-text', value: @contribution.display_value, name: @project.name, project_url: project_url(@project))
   .row
