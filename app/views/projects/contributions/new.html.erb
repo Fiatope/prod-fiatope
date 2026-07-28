@@ -4,7 +4,7 @@
   <%= simple_form_for @contribution, url: project_contributions_path(@project), html: { id: 'form-contribution' } do |form| %>
       <%= hero_header_tag @project do %> 
 
-        <div class="row" style="margin-top: 200px;">
+        <div class="row">
           <div class="large-10 columns large-centered">
             <div class="name">
               <% if @project.matches.active.any? %>
