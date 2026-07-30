@@ -22,7 +22,8 @@ class HeroImageUploader < ImageUploader
 
   def apply_blur
     manipulate! do |img|
-      img.blur("0x5")
+      img.gaussian_blur(0, 5)
+      img
     end
   end
 
