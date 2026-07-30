@@ -36,7 +36,7 @@
         .row
           .large-10.small-11.columns.large-centered.small-centered
             = simple_form_for @project do |f|
-              = f.input :category_id, collection: Category.array, selected: @project.category_id, include_blank: false, required: true
+              = f.input :category_id, collection: Category.array, selected: @project.category_id, prompt: "Sélectionnez une catégorie", required: true
               - if current_user.admin?
                 = f.input :partner_id, label: "Inclure dans la page partenaire:", collection: Partner.all.map { |e| [e.permalink, e.id] }, include_blank: "Ne pas inclure ce project dans la page partenaire"
               - elsif current_user.partner
