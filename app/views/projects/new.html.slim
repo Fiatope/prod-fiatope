@@ -1,7 +1,7 @@
-- @title = t('.titles.site')
+- content_for :title, t('.titles.site')
 
 - content_for :meta_tags do
-  meta name="description" content= t('.meta_description')
+  meta name="description" content=t('.meta_description')
 
 .background-full-color.flex-container.text-center
 	.background-title.flex-item
@@ -31,10 +31,10 @@
           p = t(".joyride.#{joy[:name]}.description").html_safe
 
   .row
-    .large-6.medium-7.columns.large-centered
+    .large-8.medium-10.columns.large-centered
       .new-project-box
         .row
-          .large-10.small-11.columns.large-centered.small-centered
+          .large-12.small-12.columns
             = simple_form_for @project do |f|
               = f.input :category_id, collection: Category.array, selected: @project.category_id, prompt: "Sélectionnez une catégorie", required: true
               - if current_user.admin?
