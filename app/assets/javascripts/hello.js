@@ -32,11 +32,13 @@ $(document).ready(function() {
 		$('#contribution_form_value').val(newValue);
 		$('#selected_currency').val(selectedCurrency);
 		
-		// Mettre à jour le préfixe
+		// Mettre à jour le préfixe et le max
 		if (selectedCurrency === 'FCFA') {
 			$('.currency-prefix').text('FCFA');
+			$('#contribution_form_value').attr('max', 2500 * conversionRate); // 2500 EUR = ~1,640,000 FCFA
 		} else {
 			$('.currency-prefix').text($('.currency-prefix').data('original-symbol') || '€');
+			$('#contribution_form_value').attr('max', 2500); // 2500 EUR
 		}
 		
 		currentCurrency = selectedCurrency;
