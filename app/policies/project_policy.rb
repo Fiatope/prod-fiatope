@@ -74,7 +74,8 @@ class ProjectPolicy < ApplicationPolicy
                 ]
       }
     else
-      { project: [:about,         :video_url,            :uploaded_image,
+      { project: [:name,          :category_id,          :permalink,
+                  :about,         :video_url,            :uploaded_image,
                   :hero_image,    :headline,             :budget,
                   :english, :terms, :address_neighborhood, :location,
                   :address_city,  :address_state,        :hash_tag,
