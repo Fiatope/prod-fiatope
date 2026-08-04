@@ -1,9 +1,10 @@
 class FixProjectTotalsContributorsCount < ActiveRecord::Migration[6.1]
   def up
+    # Fiatope uses a materialized table, not a view
     execute <<-SQL
-      DROP VIEW IF EXISTS project_totals CASCADE;
+      DROP TABLE IF EXISTS project_totals CASCADE;
       
-      CREATE VIEW project_totals AS
+      CREATE TABLE project_totals AS
         SELECT contributions.project_id,
                sum(contributions.value) AS pledged,
                ((sum(contributions.value) / projects.goal) * (100)::numeric) AS progress,
@@ -17,14 +18,16 @@ class FixProjectTotalsContributorsCount < ActiveRecord::Migration[6.1]
         JOIN contributions_fees ON contributions_fees.id = contributions.id
         WHERE contributions.state IN ('confirmed', 'refunded', 'requested_refund')
         GROUP BY contributions.project_id, projects.goal;
+      
+      CREATE INDEX index_project_totals_on_project_id ON project_totals(project_id);
     SQL
   end
 
   def down
     execute <<-SQL
-      DROP VIEW IF EXISTS project_totals CASCADE;
+      DROP TABLE IF EXISTS project_totals CASCADE;
       
-      CREATE VIEW project_totals AS
+      CREATE TABLE project_totals AS
         SELECT contributions.project_id,
                sum(contributions.value) AS pledged,
                ((sum(contributions.value) / projects.goal) * (100)::numeric) AS progress,
@@ -37,6 +40,8 @@ class FixProjectTotalsContributorsCount < ActiveRecord::Migration[6.1]
         JOIN contributions_fees ON contributions_fees.id = contributions.id
         WHERE contributions.state IN ('confirmed', 'refunded', 'requested_refund')
         GROUP BY contributions.project_id, projects.goal;
+      
+      CREATE INDEX index_project_totals_on_project_id ON project_totals(project_id);
     SQL
   end
 end
