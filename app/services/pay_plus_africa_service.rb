@@ -49,18 +49,18 @@ class PayPlusAfricaService < ApplicationService
       host = ENV['HOST']
       cancel_url = Rails.application.routes.url_helpers.edit_project_contribution_url(contribution.project, contribution, host: host)
       notif_url = Rails.application.routes.url_helpers.webhooks_pay_plus_africa_payment_confirmations_url(host: host)
-      return_url = notif_url
+      return_url = Rails.application.routes.url_helpers.edit_project_contribution_url(contribution.project, contribution, host: host)
 
     elsif Rails.env.development?
       ngrok_host = "http://b367de05.ngrok.io"
       cancel_url = Rails.application.routes.url_helpers.edit_project_contribution_url(contribution.project, contribution, host: ngrok_host)
       notif_url = Rails.application.routes.url_helpers.webhooks_pay_plus_africa_payment_confirmations_url(host: ngrok_host)
-      return_url = notif_url
+      return_url = Rails.application.routes.url_helpers.edit_project_contribution_url(contribution.project, contribution, host: ngrok_host)
 
     else
       cancel_url = Rails.application.routes.url_helpers.edit_project_contribution_url(contribution.project, contribution, protocol: :https)
       notif_url = Rails.application.routes.url_helpers.webhooks_pay_plus_africa_payment_confirmations_url(protocol: :https)
-      return_url = notif_url
+      return_url = Rails.application.routes.url_helpers.edit_project_contribution_url(contribution.project, contribution, protocol: :https)
 
     end
 
