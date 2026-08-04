@@ -10,6 +10,7 @@ class ProjectTotalBuilder
       pledged:                             pledged,
       progress:                            progress,
       total_contributions:                 total_contributions,
+      total_contributors:                  total_contributors,
       total_contributions_without_matches: total_contributions_without_matches,
       total_payment_service_fee:           total_payment_service_fee
     }
@@ -48,6 +49,10 @@ class ProjectTotalBuilder
 
   def total_contributions
     contributions.length
+  end
+
+  def total_contributors
+    contributions.select(:user_id).distinct.count
   end
 
   def total_contributions_without_matches
