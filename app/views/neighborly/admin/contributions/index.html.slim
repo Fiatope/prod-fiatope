@@ -131,38 +131,11 @@
                   - else
                     li= link_to t('admin.contributions.index.confirm_contribution'), confirm_contribution_path(contribution, local_params: params.to_unsafe_h), method: :put
                     - if contribution.pending?
-                      li
-                        a[href="#" data-reveal-id="manual-confirm-#{contribution.id}"] ✓ Validation Manuelle
+                      li= link_to "✓ Validation Manuelle", manual_confirm_contribution_path(contribution, local_params: params.to_unsafe_h, transaction_id: prompt("ID Transaction (vérifiez dans PayPlus/Orange Money):")), method: :put, data: { confirm: "Confirmer la validation manuelle de cette contribution ?" }
                   - if contribution.requested_refund? or contribution.confirmed?
                     li= link_to t('admin.contributions.index.refund_contribution'), refund_contribution_path(contribution, local_params: params.to_unsafe_h), method: :put
                   li= link_to t('admin.contributions.index.refund_and_hide'), hide_contribution_path(contribution, local_params: params.to_unsafe_h), method: :put
                   li= link_to t('admin.contributions.index.cancel'), cancel_contribution_path(contribution, local_params: params.to_unsafe_h), method: :put
                   li= link_to t('admin.contributions.index.push_to_trash'), push_to_trash_contribution_path(contribution, local_params: params.to_unsafe_h), method: :put
-                
-                - if contribution.pending?
-                  .reveal-modal.small.fixed id="manual-confirm-#{contribution.id}"
-                    a.close-reveal-modal ×
-                    h5 Validation Manuelle
-                    .modal-body style='text-align: left'
-                      = form_tag admin_manual_confirm_contribution_path(contribution, local_params: params.to_unsafe_h), method: :put do
-                        p
-                          strong= "#{contribution.project.name}"
-                          br
-                          = "#{contribution.user.display_name} • #{number_to_currency contribution.value}"
-                        hr
-                        .row
-                          .large-12.columns
-                            label
-                              strong ID Transaction
-                            = text_field_tag :transaction_id, nil, placeholder: "Vérifiez dans PayPlus/Orange Money", required: true, autofocus: true
-                        .row
-                          .large-12.columns
-                            p.alert-box.warning style='font-size: 0.9em; padding: 0.5em'
-                              | ⚠️ Vérifiez le paiement dans l'agrégateur avant validation
-                        .row
-                          .large-6.columns
-                            = submit_tag "✓ Valider", class: 'button success expand'
-                          .large-6.columns
-                            a.button.secondary.expand.close-reveal-modal Annuler
       /= paginate @contributions
 
