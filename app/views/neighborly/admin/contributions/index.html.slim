@@ -90,6 +90,7 @@
               th= t('.id')
               th= t('.mailing')
               th= t('.state')
+              th Actions
               th
           tbody
             - @contributions.includes(:project, :user, :reward).each do |contribution|
@@ -171,14 +172,14 @@
                         li= link_to t('admin.contributions.index.unconfirm_contribution'), pendent_contribution_path(contribution, local_params: params.to_unsafe_h), method: :put
                       - else
                         li= link_to t('admin.contributions.index.confirm_contribution'), confirm_contribution_path(contribution, local_params: params.to_unsafe_h), method: :put
-                        - if contribution.pending?
-                          li
-                            a.manual-confirm-btn[href="javascript:void(0);" data-contribution-id="#{contribution.id}" data-csrf="#{form_authenticity_token}"] ✓ Validation Manuelle
                       - if contribution.requested_refund? or contribution.confirmed?
                         li= link_to t('admin.contributions.index.refund_contribution'), refund_contribution_path(contribution, local_params: params.to_unsafe_h), method: :put
                       li= link_to t('admin.contributions.index.refund_and_hide'), hide_contribution_path(contribution, local_params: params.to_unsafe_h), method: :put
                       li= link_to t('admin.contributions.index.cancel'), cancel_contribution_path(contribution, local_params: params.to_unsafe_h), method: :put
                       li= link_to t('admin.contributions.index.push_to_trash'), push_to_trash_contribution_path(contribution, local_params: params.to_unsafe_h), method: :put
+                td
+                  - if contribution.pending?
+                    a.manual-confirm-btn.button.tiny.success[href="javascript:void(0);" data-contribution-id="#{contribution.id}" data-csrf="#{form_authenticity_token}"] ✓ Valider
       /= paginate @contributions
 
 javascript:
