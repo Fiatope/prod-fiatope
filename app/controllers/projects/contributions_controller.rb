@@ -602,7 +602,7 @@ class Projects::ContributionsController < ApplicationController
       return true
     end
     
-    # Vérifier Pay Plus Africa
+    # Vérifier Pay Plus Africa - transaction déjà confirmée par webhook
     ppa_tx = contribution.pay_plus_africa_transactions.where.not(invoice_number: [nil, ""]).order(:id).last
     if ppa_tx
       Rails.logger.info "[reconcile contrib=#{contribution.id}] PayPlusAfrica invoice=#{ppa_tx.invoice_number} → confirm"
@@ -613,6 +613,28 @@ class Projects::ContributionsController < ApplicationController
       contribution.state_event = :confirm
       contribution.save!
       return true
+    end
+    
+    # Si pas de invoice_number, vérifier activement auprès de PayPlus
+    ppa_tx_pending = contribution.pay_plus_africa_transactions.where(invoice_number: [nil, ""]).order(:id).last
+    if ppa_tx_pending && ppa_tx_pending.notif_token.present?
+      Rails.logger.info "[reconcile contrib=#{contribution.id}] Checking PayPlus status for token=#{ppa_tx_pending.notif_token}"
+      begin
+        response_status = PayPlusAfricaService.confirm_payment_for(ppa_tx_pending)
+        if response_status["response_code"] == "00" && response_status["status"] == "completed"
+          Rails.logger.info "[reconcile contrib=#{contribution.id}] PayPlus confirmed! token=#{response_status['token']}"
+          ppa_tx_pending.update_column(:invoice_number, response_status["token"])
+          contribution.response_code = "00"
+          contribution.transaction_number = response_status["token"]
+          contribution.response_message = t('controllers.projects.contributions.pay_plus_africa_payment_confirmation.success')
+          contribution.payment_method = "Pay Plus Africa"
+          contribution.state_event = :confirm
+          contribution.save!
+          return true
+        end
+      rescue => e
+        Rails.logger.error "[reconcile contrib=#{contribution.id}] PayPlus check failed: #{e.message}"
+      end
     end
     
     false

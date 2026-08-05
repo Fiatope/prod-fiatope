@@ -21,6 +21,33 @@ module Neighborly::Admin
       redirect_to contributions_path(params[:local_params])
     end
 
+    def manual_confirm
+      contribution = resource
+      transaction_id = params[:transaction_id].to_s.strip
+      
+      if transaction_id.blank?
+        flash.alert = "ID de transaction requis"
+        redirect_to contributions_path(params[:local_params]) and return
+      end
+      
+      contribution.response_code = "ADMIN_VALIDATED"
+      contribution.transaction_number = transaction_id
+      contribution.response_message = "Validé manuellement par #{current_user.email}"
+      contribution.payment_method ||= "Validation Manuelle"
+      contribution.admin_validated = true
+      contribution.admin_validated_at = Time.current
+      contribution.admin_validated_by = current_user.id
+      contribution.state_event = :confirm
+      
+      if contribution.save
+        flash.notice = "✓ Contribution ##{contribution.id} validée"
+      else
+        flash.alert = "Erreur: #{contribution.errors.full_messages.join(', ')}"
+      end
+      
+      redirect_to contributions_path(params[:local_params])
+    end
+
     protected
 
     def collection
