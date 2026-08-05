@@ -99,6 +99,15 @@ Neighborly::Application.routes.draw do
   end
 
   mount Neighborly::Admin::Engine => '/admin/', as: :neighborly_admin
+  
+  # Route additionnelle pour validation manuelle des contributions
+  namespace :admin, module: 'neighborly/admin' do
+    resources :contributions, only: [] do
+      member do
+        put :manual_confirm
+      end
+    end
+  end
 
   # Root path should be after channel constraints
   root to: 'projects#index'
