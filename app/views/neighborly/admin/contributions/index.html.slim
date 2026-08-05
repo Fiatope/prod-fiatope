@@ -75,26 +75,27 @@
         = t('.no_contributions')
       - else
         h5 = t('.filtered_contributions_title')
-        table
-          thead
-            tr
-              th= t('.info')
-              th= t('.project')
-              th= t('.user')
-              th= t('.value')
-              th= t('.payment_method')
-              th= t('.reward')
-              th= t('.key')
-              th= t('.anonymous')
-              th= t('.credits')
-              th= t('.id')
-              th= t('.mailing')
-              th= t('.state')
-              th Actions
-              th
-          tbody
-            - @contributions.includes(:project, :user, :reward).each do |contribution|
-              tr id=contribution.id
+        .table-wrapper style="overflow-x: auto; -webkit-overflow-scrolling: touch;"
+          table
+            thead
+              tr
+                th= t('.info')
+                th= t('.project')
+                th= t('.user')
+                th= t('.value')
+                th= t('.payment_method')
+                th= t('.reward')
+                th= t('.key')
+                th= t('.anonymous')
+                th= t('.credits')
+                th= t('.id')
+                th= t('.mailing')
+                th= t('.state')
+                th Actions
+                th
+            tbody
+              - @contributions.includes(:project, :user, :reward).each do |contribution|
+                tr id=contribution.id
                 td
                   .modal.fade id="contribution-info-#{contribution.id}"
                     .modal-dialog

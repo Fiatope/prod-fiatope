@@ -27,7 +27,7 @@ module Neighborly::Admin
       
       if transaction_id.blank?
         flash.alert = "ID de transaction requis"
-        redirect_to contributions_path(params[:local_params]) and return
+        redirect_to neighborly_admin.contributions_path(params[:local_params]) and return
       end
       
       contribution.response_code = "ADMIN_VALIDATED"
@@ -45,7 +45,7 @@ module Neighborly::Admin
         flash.alert = "Erreur: #{contribution.errors.full_messages.join(', ')}"
       end
       
-      redirect_to contributions_path(params[:local_params])
+      redirect_to neighborly_admin.contributions_path(params[:local_params])
     end
 
     protected
