@@ -99,6 +99,9 @@ Neighborly::Application.routes.draw do
   end
 
   mount Neighborly::Admin::Engine => '/admin/', as: :neighborly_admin
+  
+  # Route pour validation manuelle admin (override gem)
+  put '/admin/contributions/:id/manual_confirm', to: 'neighborly/admin/contributions#manual_confirm', as: :manual_confirm_contribution
 
   # Root path should be after channel constraints
   root to: 'projects#index'
