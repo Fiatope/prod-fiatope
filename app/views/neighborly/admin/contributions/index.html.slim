@@ -144,7 +144,7 @@
                     a.close-reveal-modal ×
                     h5 Validation Manuelle
                     .modal-body style='text-align: left'
-                      = form_tag manual_confirm_contribution_path(contribution, local_params: params.to_unsafe_h), method: :put do
+                      = form_tag admin_manual_confirm_contribution_path(contribution, local_params: params.to_unsafe_h), method: :put do
                         p
                           strong= "#{contribution.project.name}"
                           br
