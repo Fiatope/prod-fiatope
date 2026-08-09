@@ -123,7 +123,7 @@ class Project < ActiveRecord::Base
   scope :recommended, -> { where(recommended: true) }
   scope :featured, -> {where(featured: true) }
 
-  scope :projects_to_show_on_home_page, -> { without_state('canceled').where(recommended: true).where(show_on_homepage: true).order("online_date DESC") }
+  scope :projects_to_show_on_home_page, -> { without_state('canceled').where(recommended: true).where(show_on_homepage: true).order_for_search }
   
   scope :expired, -> { where("projects.expires_at < current_timestamp") }
   scope :not_expired, -> { where("projects.expires_at >= current_timestamp") }
