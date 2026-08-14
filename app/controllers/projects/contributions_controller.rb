@@ -643,6 +643,8 @@ class Projects::ContributionsController < ApplicationController
     false
   end
 
+  public
+
   # ========== MOLLIE PAYMENT METHODS ==========
 
   def mollie_payment_new
