@@ -12,7 +12,7 @@
     </p>
   </div>
   
-  <%= link_to mollie_payment_new_project_contribution_path(project_id: @contribution.project.id, id: @contribution.id), 
+  <%= link_to mollie_payment_new_project_contribution_path(@contribution.project, @contribution), 
       method: :get,
       style: 'display: block; width: 100%; padding: 18px 24px; background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: 700; text-align: center; text-decoration: none; box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4); transition: all 0.3s ease;',
       onmouseover: "this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(255, 107, 107, 0.5)'",
