@@ -12,20 +12,24 @@ class MollieService < ApplicationService
     return error_response('Mollie not configured') unless mollie_configured?
 
     begin
-      payment = Mollie::Payment.create(
+      payment_params = {
         amount: {
           value: format_amount(@contribution.value),
           currency: currency_code
         },
         description: payment_description,
         redirect_url: success_url,
-        webhook_url: webhook_url,
         metadata: {
           contribution_id: @contribution.id,
           project_id: @contribution.project.id,
           user_id: @contribution.user.id
         }
-      )
+      }
+      
+      # Webhook uniquement en production (localhost inaccessible pour Mollie)
+      payment_params[:webhook_url] = webhook_url if Rails.env.production? || ENV['MOLLIE_WEBHOOK_URL'].present?
+      
+      payment = Mollie::Payment.create(payment_params)
 
       Rails.logger.info "[MollieService] Payment created: id=#{payment.id} amount=#{payment.amount.value} #{payment.amount.currency} status=#{payment.status}"
 
