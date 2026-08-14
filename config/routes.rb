@@ -198,6 +198,9 @@ Neighborly::Application.routes.draw do
   post 'webhooks/pay-plus-africa-payment-confirmations', to: 'projects/contributions#pay_plus_africa_payment_confirmation'
   get  'webhooks/pay-plus-africa-payment-confirmations', to: 'projects/contributions#pay_plus_africa_payment_confirmation'
 
+  # Mollie webhook
+  post 'webhooks/mollie', to: 'projects/contributions#mollie_webhook', as: :mollie_webhook
+
   get '/carte-projets-accomplis', to: 'projects#public_map', as: :public_projects_map
 
   resources :projects, except: [ :destroy ] do
@@ -262,6 +265,9 @@ Neighborly::Application.routes.draw do
         get 'touch_payment_check_status'
         get 'touch_payment_return'
         post 'touch_payment_return'
+        # Mollie routes
+        get 'mollie_payment_new'
+        get 'mollie_payment_return'
       end
     end
 

@@ -3,8 +3,8 @@ class Projects::ContributionsController < ApplicationController
   skip_before_action :set_persistent_warning
   # Renommé: vérification des pré-requis utilisateur (indépendant de MangoPay)
   before_action :has_user_prerequisites, only: [:new, :create]
-  skip_before_action :verify_authenticity_token, only: [:orange_money_payment_confirmation, :touch_payment_initialization, :touch_payment_status, :touch_payment_return]
-  skip_after_action :verify_authorized, only: [:cancel, :orange_money_payment_confirmation, :pay_plus_africa_payment_confirmation, :touch_payment_initialization, :touch_payment_status, :touch_payment_return, :touch_payment_pending, :touch_payment_check_status]
+  skip_before_action :verify_authenticity_token, only: [:orange_money_payment_confirmation, :touch_payment_initialization, :touch_payment_status, :touch_payment_return, :mollie_webhook]
+  skip_after_action :verify_authorized, only: [:cancel, :orange_money_payment_confirmation, :pay_plus_africa_payment_confirmation, :touch_payment_initialization, :touch_payment_status, :touch_payment_return, :touch_payment_pending, :touch_payment_check_status, :mollie_payment_new, :mollie_payment_return, :mollie_webhook]
 
   has_scope :available_to_count, type: :boolean
   has_scope :with_state
@@ -641,5 +641,99 @@ class Projects::ContributionsController < ApplicationController
   rescue => e
     Rails.logger.error "[reconcile contrib=#{contribution.id}] failed: #{e.class} #{e.message}"
     false
+  end
+
+  # ========== MOLLIE PAYMENT METHODS ==========
+
+  def mollie_payment_new
+    @contribution = Contribution.find(params[:id])
+    @project = @contribution.project
+
+    service = MollieService.new(@contribution)
+    result = service.create_payment
+
+    if result[:success]
+      @contribution.update_column(:payment_id, result[:payment_id])
+      Rails.logger.info "[Mollie] Redirecting to checkout: payment_id=#{result[:payment_id]} contribution_id=#{@contribution.id}"
+      redirect_to result[:checkout_url], allow_other_host: true
+    else
+      flash.alert = "Erreur Mollie: #{result[:error]}"
+      redirect_to edit_project_contribution_path(@project, @contribution)
+    end
+  end
+
+  def mollie_payment_return
+    @contribution = Contribution.find(params[:id])
+    @project = @contribution.project
+
+    # L'utilisateur revient après paiement
+    # On attend le webhook pour confirmer, mais on peut vérifier le statut
+    if @contribution.payment_id.present?
+      payment_status = MollieService.check_payment_status(@contribution.payment_id)
+      
+      if payment_status && payment_status[:paid]
+        # Paiement confirmé
+        flash.notice = t('controllers.projects.contributions.create.success')
+        redirect_to project_contribution_path(@project, @contribution)
+      else
+        # En attente de confirmation
+        flash.notice = "Paiement en cours de traitement..."
+        redirect_to edit_project_contribution_path(@project, @contribution)
+      end
+    else
+      redirect_to edit_project_contribution_path(@project, @contribution)
+    end
+  end
+
+  def mollie_webhook
+    payment_id = params[:id]
+    
+    Rails.logger.info "[Mollie Webhook] Received for payment_id=#{payment_id}"
+
+    payment = MollieService.get_payment(payment_id)
+    
+    unless payment
+      Rails.logger.error "[Mollie Webhook] Payment not found: #{payment_id}"
+      head :not_found
+      return
+    end
+
+    contribution = Contribution.find_by(payment_id: payment_id)
+    
+    unless contribution
+      Rails.logger.error "[Mollie Webhook] Contribution not found for payment_id=#{payment_id}"
+      head :not_found
+      return
+    end
+
+    Rails.logger.info "[Mollie Webhook] Processing: payment_id=#{payment_id} status=#{payment.status} contribution_id=#{contribution.id}"
+
+    if payment.paid?
+      # Paiement réussi
+      contribution.update(
+        transaction_number: payment.id,
+        response_message: t('controllers.projects.contributions.create.success'),
+        payment_method: 'Mollie'
+      )
+      contribution.state_event = :confirm
+      contribution.save!
+      
+      Rails.logger.info "[Mollie Webhook] Payment confirmed: contribution_id=#{contribution.id}"
+    elsif payment.failed? || payment.canceled? || payment.expired?
+      # Paiement échoué
+      contribution.update(
+        response_message: "Paiement #{payment.status}",
+        payment_method: 'Mollie'
+      )
+      contribution.state_event = :cancel
+      contribution.save!
+      
+      Rails.logger.warn "[Mollie Webhook] Payment failed: contribution_id=#{contribution.id} status=#{payment.status}"
+    end
+
+    head :ok
+  rescue => e
+    Rails.logger.error "[Mollie Webhook] Error: #{e.class} #{e.message}\n#{e.backtrace.first(5).join("\n")}"
+    head :internal_server_error
   end
 end

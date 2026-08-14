@@ -1,0 +1,36 @@
+<div class="payment-mollie" style="margin-bottom: 20px; padding: 25px; border: 2px solid #ff6b6b; border-radius: 12px; background: linear-gradient(135deg, #fff5f5 0%, #ffffff 100%); box-shadow: 0 4px 15px rgba(255, 107, 107, 0.15);">
+  
+  <div style="text-align: center; margin-bottom: 20px;">
+    <div style="display: inline-block; background: #ff6b6b; color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-bottom: 12px;">
+      🇪🇺 ALTERNATIVE EUROPÉENNE
+    </div>
+    <h4 style="margin: 0 0 8px 0; color: #32325d; font-size: 20px; font-weight: 700;">
+      💳 Paiement par carte bancaire
+    </h4>
+    <p style="margin: 0; color: #6b7280; font-size: 14px;">
+      Paiement sécurisé via <strong style="color: #ff6b6b;">Mollie</strong> - Rapide et fiable
+    </p>
+  </div>
+  
+  <%= link_to mollie_payment_new_project_contribution_path(project_id: @contribution.project.id, id: @contribution.id), 
+      method: :get,
+      style: 'display: block; width: 100%; padding: 18px 24px; background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: 700; text-align: center; text-decoration: none; box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4); transition: all 0.3s ease;',
+      onmouseover: "this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(255, 107, 107, 0.5)'",
+      onmouseout: "this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(255, 107, 107, 0.4)'" do %>
+    🔐 Payer <%= number_to_currency(@contribution.value, unit: @contribution.project.currency_sym) %> avec Mollie
+  <% end %>
+  
+  <div style="display: flex; align-items: center; justify-content: center; margin-top: 18px; gap: 10px; flex-wrap: wrap;">
+    <span style="background: #1a1f71; color: white; padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: bold;">VISA</span>
+    <span style="background: #eb001b; color: white; padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: bold;">Mastercard</span>
+    <span style="background: #006fcf; color: white; padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: bold;">AMEX</span>
+    <span style="background: #0077a6; color: white; padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: bold;">Maestro</span>
+    <span style="color: #10b981; font-size: 13px; margin-left: 8px; font-weight: 600;">🔒 100% Sécurisé</span>
+  </div>
+  
+  <div style="margin-top: 15px; padding: 12px; background: #f9fafb; border-radius: 8px; border-left: 4px solid #ff6b6b;">
+    <p style="margin: 0; font-size: 12px; color: #6b7280; line-height: 1.5;">
+      💡 <strong>Paiement rapide :</strong> Virement reçu sous 24h (vs 48h avec d'autres solutions)
+    </p>
+  </div>
+</div>
