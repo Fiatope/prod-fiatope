@@ -237,25 +237,63 @@ class Projects::ContributionsController < ApplicationController
   end
 
 
+  # Server-to-server webhook hit by Orange Money once the user completes (or
+  # abandons) the payment on their side. Bulletproof: any 500 causes Orange
+  # Money to retry; any 200 tells them "we handled it".
   def orange_money_payment_confirmation
-    if params["status"] == "SUCCESS"
-      transaction = OrangeMoneyTransaction.find_by(notif_token: params["notif_token"])
-      transaction.update_column(:txnid, params["txnid"])
-      @contribution = Contribution.find_by(id: transaction.contribution_id)
-      if params["status"] == "SUCCESS"
-        response_message = t('controllers.projects.contributions.orange_money_payment_confirmation.success')
-      else
-        response_message = t('controllers.projects.contributions.orange_money_payment_initialization.error', status: params["status"])
-      end
-      @contribution.response_code = params["status"]
-      @contribution.transaction_number = params["txnid"]
+    Rails.logger.info "[webhook orange_money] params=#{params.to_unsafe_h.inspect}"
+
+    status      = params["status"]
+    notif_token = params["notif_token"]
+    txnid       = params["txnid"]
+
+    if status != "SUCCESS"
+      Rails.logger.warn "[webhook orange_money] non-SUCCESS status=#{status.inspect}, ack and skip"
+      return render json: { success: true, note: "non-success status" }
+    end
+
+    transaction = OrangeMoneyTransaction.find_by(notif_token: notif_token)
+    unless transaction
+      Rails.logger.error "[webhook orange_money] no transaction for notif_token=#{notif_token.inspect}"
+      return render json: { success: false, error: "transaction not found" }, status: :not_found
+    end
+
+    transaction.update_column(:txnid, txnid) if txnid.present?
+
+    @contribution = Contribution.find_by(id: transaction.contribution_id)
+    unless @contribution
+      Rails.logger.error "[webhook orange_money] no contribution id=#{transaction.contribution_id} for notif_token=#{notif_token.inspect}"
+      return render json: { success: false, error: "contribution not found" }, status: :not_found
+    end
+
+    # Idempotence: if something already flipped this contribution to :confirmed
+    # (a previous retry of this webhook, or our /edit reconcile), just ack.
+    if @contribution.state == "confirmed"
+      Rails.logger.info "[webhook orange_money] contribution #{@contribution.id} already confirmed, ack"
+      return render json: { success: true, note: "already confirmed" }
+    end
+
+    begin
+      response_message = t('controllers.projects.contributions.orange_money_payment_confirmation.success')
+      @contribution.response_code = status
+      @contribution.transaction_number = txnid
       @contribution.response_message = response_message
       @contribution.payment_method = "Orange Money"
-      @contribution.state_event = params["status"] == "SUCCESS" ? :confirm : :cancel
+      @contribution.state_event = :confirm
       @contribution.save!
-      @contribution.notify_owner(:orange_money_payment_confirmed) if params["status"] == "SUCCESS"
+      @contribution.notify_owner(:orange_money_payment_confirmed)
+      Rails.logger.info "[webhook orange_money] contribution #{@contribution.id} confirmed (txnid=#{txnid.inspect})"
+      render json: { success: true }
+    rescue => e
+      Rails.logger.error(
+        "[webhook orange_money] confirm failed for contribution #{@contribution.id}: " \
+        "#{e.class} #{e.message}\n#{(e.backtrace || []).first(15).join("\n")}"
+      )
+      # Return 5xx so Orange Money retries. The /edit reconcile is a second
+      # line of defense: the txnid persisted on the transaction row is enough
+      # for the reconcile to flip the contribution to :confirmed server-side.
+      render json: { success: false, error: e.message }, status: :internal_server_error
     end
-    render json: { success: true }
   end
 
 
@@ -764,6 +802,13 @@ class Projects::ContributionsController < ApplicationController
     unless contribution
       Rails.logger.error "[Mollie Webhook] Contribution not found for payment_id=#{payment_id}"
       head :not_found
+      return
+    end
+
+    # Idempotence : Mollie peut renvoyer plusieurs webhooks pour le même paiement
+    if contribution.state == "confirmed" || contribution.state == "canceled"
+      Rails.logger.info "[Mollie Webhook] Contribution #{contribution.id} déjà en état terminal (#{contribution.state}), ack"
+      head :ok
       return
     end
 
