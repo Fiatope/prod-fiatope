@@ -3,7 +3,7 @@ class Projects::ContributionsController < ApplicationController
   skip_before_action :set_persistent_warning
   # Renommé: vérification des pré-requis utilisateur (indépendant de MangoPay)
   before_action :has_user_prerequisites, only: [:new, :create]
-  skip_before_action :verify_authenticity_token, only: [:orange_money_payment_confirmation, :touch_payment_initialization, :touch_payment_status, :touch_payment_return, :mollie_webhook]
+  skip_before_action :verify_authenticity_token, only: [:orange_money_payment_confirmation, :pay_plus_africa_payment_confirmation, :touch_payment_initialization, :touch_payment_status, :touch_payment_return, :mollie_webhook]
   skip_after_action :verify_authorized, only: [:cancel, :orange_money_payment_confirmation, :pay_plus_africa_payment_confirmation, :touch_payment_initialization, :touch_payment_status, :touch_payment_return, :touch_payment_pending, :touch_payment_check_status, :mollie_payment_new, :mollie_payment_return, :mollie_webhook]
 
   has_scope :available_to_count, type: :boolean
@@ -487,34 +487,54 @@ class Projects::ContributionsController < ApplicationController
 
 
   def pay_plus_africa_payment_confirmation
-    transaction = PayPlusAfricaTransaction.find_by!(notif_token: params["token"])
-    @contribution = Contribution.find_by!(id: transaction.contribution_id)
-    response_status = PayPlusAfricaService.confirm_payment_for(@contribution, transaction)
+    transaction = payplus_transaction_from_callback
 
-    if response_status["response_code"] == "00"
-      transaction.update_column(:invoice_number, response_status["token"])
-
-      response_message = t('controllers.projects.contributions.pay_plus_africa_payment_confirmation.success')
-
-      @contribution.response_code = response_status["status"]
-      @contribution.transaction_number = response_status["token"]
-      @contribution.response_message = response_message
-      @contribution.payment_method = "Pay Plus Africa"
-      @contribution.state_event = response_status["status"] == "completed" ? :confirm : :cancel
-      @contribution.save!
-      # @contribution.notify_owner(:pay_plus_africa_payment_confirmed) if response_status["status"] == "completed"
-
-      flash.notice = response_message
-
-      return redirect_to project_path(@contribution.project)
-    else
-      response_message = t('controllers.projects.contributions.pay_plus_africa_payment_confirmation.error', status: params["status"])
-      flash.alert = response_message
-      return redirect_to edit_project_contribution_path(@contribution.project, @contribution)
+    unless transaction
+      Rails.logger.warn "[PayPlus Callback] Transaction introuvable — payload: #{request.raw_post.to_s.truncate(500)}"
+      return head :not_found
     end
 
+    @contribution = Contribution.find_by(id: transaction.contribution_id)
+    return head :not_found unless @contribution
 
-    # render json: { success: true }
+    # Idempotence : PayPlus envoie 2 notifications par événement (form + json)
+    if @contribution.state == "confirmed" || @contribution.state == "canceled"
+      return payplus_callback_response(@contribution.state == "confirmed" ? :confirmed : :canceled)
+    end
+
+    # Toujours re-vérifier auprès de l'API PayPlus (ne jamais faire confiance au payload seul)
+    response_status = PayPlusAfricaService.confirm_payment_for(@contribution, transaction)
+    Rails.logger.info "[PayPlus Callback] contrib=#{@contribution.id} confirm=#{response_status.inspect}"
+
+    if response_status["response_code"] == "00"
+      case response_status["status"]
+      when "completed"
+        transaction.update_column(:invoice_number, response_status["token"]) if response_status["token"].present?
+        @contribution.response_code = "00"
+        @contribution.transaction_number = transaction.invoice_number.presence || transaction.notif_token
+        @contribution.response_message = t('controllers.projects.contributions.pay_plus_africa_payment_confirmation.success')
+        @contribution.payment_method = "Pay Plus Africa"
+        @contribution.state_event = :confirm
+        @contribution.save!
+        payplus_callback_response(:confirmed)
+      when "pending"
+        # Paiement pas encore finalisé : ne rien faire, PayPlus notifiera à nouveau
+        payplus_callback_response(:pending)
+      else
+        @contribution.response_code = response_status["status"].to_s
+        @contribution.response_message = t('controllers.projects.contributions.pay_plus_africa_payment_confirmation.error', status: response_status["status"])
+        @contribution.payment_method = "Pay Plus Africa"
+        @contribution.state_event = :cancel
+        @contribution.save!
+        payplus_callback_response(:canceled)
+      end
+    else
+      Rails.logger.error "[PayPlus Callback] Confirm API error contrib=#{@contribution.id}: #{response_status.inspect}"
+      head :ok
+    end
+  rescue => e
+    Rails.logger.error "[PayPlus Callback] #{e.class} #{e.message}\n#{e.backtrace.first(5).join("\n")}"
+    head :internal_server_error
   end
 
 
@@ -620,7 +640,7 @@ class Projects::ContributionsController < ApplicationController
     if ppa_tx_pending && ppa_tx_pending.notif_token.present?
       Rails.logger.info "[reconcile contrib=#{contribution.id}] Checking PayPlus status for token=#{ppa_tx_pending.notif_token}"
       begin
-        response_status = PayPlusAfricaService.confirm_payment_for(ppa_tx_pending)
+        response_status = PayPlusAfricaService.confirm_payment_for(contribution, ppa_tx_pending)
         if response_status["response_code"] == "00" && response_status["status"] == "completed"
           Rails.logger.info "[reconcile contrib=#{contribution.id}] PayPlus confirmed! token=#{response_status['token']}"
           ppa_tx_pending.update_column(:invoice_number, response_status["token"])
@@ -641,6 +661,45 @@ class Projects::ContributionsController < ApplicationController
   rescue => e
     Rails.logger.error "[reconcile contrib=#{contribution.id}] failed: #{e.class} #{e.message}"
     false
+  end
+
+  # Identifie la transaction PayPlus depuis le callback :
+  # - via params["token"] (anciens callbacks PayPlus)
+  # - sinon via custom_data.return_data = "projectId-contributionId"
+  def payplus_transaction_from_callback
+    token = params["token"].presence
+    return PayPlusAfricaTransaction.find_by(notif_token: token) if token
+
+    entries = params["custom_data"]
+    entries = entries.values if entries.is_a?(Hash) || entries.is_a?(ActionController::Parameters)
+    Array(entries).each do |entry|
+      key   = (entry["keyof_customdata"] rescue nil)
+      value = (entry["valueof_customdata"] rescue nil)
+      next unless key == "return_data" && value.present?
+      _project_id, contribution_id = value.to_s.split("-")
+      next if contribution_id.blank?
+      return PayPlusAfricaTransaction.where(contribution_id: contribution_id)
+                                     .where.not(notif_token: [nil, ""])
+                                     .order(:id).last
+    end
+    nil
+  end
+
+  # Réponse du callback : 200 OK pour le serveur PayPlus (POST),
+  # redirection avec message pour le navigateur (GET legacy)
+  def payplus_callback_response(outcome)
+    if request.get?
+      case outcome
+      when :confirmed
+        redirect_to project_path(@contribution.project), notice: t('controllers.projects.contributions.pay_plus_africa_payment_confirmation.success')
+      when :pending
+        redirect_to edit_project_contribution_path(@contribution.project, @contribution), notice: t('controllers.projects.contributions.pay_plus_africa_payment_confirmation.pending', default: 'Paiement en cours de traitement...')
+      else
+        redirect_to edit_project_contribution_path(@contribution.project, @contribution), alert: @contribution.response_message
+      end
+    else
+      head :ok
+    end
   end
 
   public
