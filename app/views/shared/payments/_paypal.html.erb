@@ -1,4 +1,26 @@
-<%= link_to paypal_payment_new_project_contribution_path(@contribution.project, @contribution), class: "btn button--paypal", data: { turbolinks: false } do %>
-  <%= image_tag('payments/paypal.png') %>
-  <span>Payer avec PayPal</span>
-<% end %>
+<div class="payment-paypal" style="margin-bottom: 20px; padding: 25px; border: 1px solid #e0e0e0; border-radius: 12px; background: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+  <div style="text-align: center; margin-bottom: 20px;">
+    <h4 style="margin: 0 0 8px 0; color: #003087; font-size: 18px; font-weight: 600;">
+      Paiement PayPal
+    </h4>
+    <p style="margin: 0; color: #6b7280; font-size: 14px;">
+      Paiement sécurisé via <strong style="color: #0070ba;">PayPal</strong> — compte PayPal ou carte bancaire
+    </p>
+  </div>
+
+  <%= link_to paypal_payment_new_project_contribution_path(resource.project, resource),
+        class: 'button paypal-pay-button',
+        style: 'display: block; width: 100%; padding: 16px 24px; background: #0070ba; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; text-align: center; text-decoration: none; transition: background 0.2s;',
+        onmouseover: "this.style.background='#005ea6'",
+        onmouseout: "this.style.background='#0070ba'" do %>
+    Payer <%= number_to_currency(resource.value, unit: resource.project.currency_sym) %> avec PayPal
+  <% end %>
+
+  <div style="display: flex; align-items: center; justify-content: center; margin-top: 16px; gap: 8px; flex-wrap: wrap;">
+    <span style="background: #003087; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">PayPal</span>
+    <span style="background: #1a1f71; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">VISA</span>
+    <span style="background: #eb001b; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">Mastercard</span>
+    <span style="background: #006fcf; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">AMEX</span>
+    <span style="color: #9ca3af; font-size: 12px; margin-left: 8px;">🔒 Sécurisé</span>
+  </div>
+</div>

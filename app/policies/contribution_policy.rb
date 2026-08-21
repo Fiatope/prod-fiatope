@@ -32,6 +32,18 @@ class ContributionPolicy < ApplicationPolicy
     update?
   end
 
+  def paypal_payment_new?
+    update?
+  end
+
+  def paypal_payment_return?
+    true
+  end
+
+  def paypal_payment_cancel?
+    update?
+  end
+
   def touch_payment_initialization?
     update?
   end
