@@ -268,6 +268,10 @@ Neighborly::Application.routes.draw do
         # Mollie routes
         get 'mollie_payment_new'
         get 'mollie_payment_return'
+        # PayPal routes
+        get 'paypal_payment_new'
+        get 'paypal_payment_return'
+        get 'paypal_payment_cancel'
       end
     end
 

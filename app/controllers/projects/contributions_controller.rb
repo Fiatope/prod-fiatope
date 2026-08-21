@@ -306,11 +306,19 @@ class Projects::ContributionsController < ApplicationController
     @html_operators = ''
     @operators = TouchService::LIST_OPERATORS
     @operators.each do |country, operators|
+      # N'afficher que les opérateurs réellement configurés (identifiants Touch présents)
+      configured = operators.select { |key, _| ENV["TOUCH_#{key}_SERVICECODE"].present? }
+      next if configured.empty?
       @html_operators += '<optgroup label="' + country + '">'
-      operators.each do |key, operator|
+      configured.each do |key, operator|
         @html_operators += '<option value="' + key + '">' + operator + '</option>'
       end
       @html_operators += '</optgroup>'
+    end
+
+    if @html_operators.blank?
+      redirect_to edit_project_contribution_path(@contribution.project, @contribution), alert: "Ce moyen de paiement est temporairement indisponible. Veuillez choisir une autre option."
+      return
     end
   end
 
@@ -524,6 +532,79 @@ class Projects::ContributionsController < ApplicationController
   end
 
 
+  def paypal_payment_new
+    @contribution = Contribution.find_by!(id: paypal_params[:id])
+    authorize @contribution
+
+    service  = PayPalService.new(@contribution)
+    response = service.create_order
+    approve_url = service.approved_url(response)
+
+    if approve_url.present?
+      redirect_to approve_url
+    else
+      Rails.logger.error "[PayPal] create_order failed contrib=#{@contribution.id}: #{response.inspect}"
+      redirect_to edit_project_contribution_path(@contribution.project, @contribution), alert: "PayPal est temporairement indisponible. Veuillez choisir un autre moyen de paiement."
+    end
+  rescue => e
+    Rails.logger.error "[PayPal] create_order error contrib=#{params[:id]}: #{e.class} #{e.message}"
+    redirect_to edit_project_contribution_path(@contribution.project, @contribution), alert: "PayPal est temporairement indisponible. Veuillez choisir un autre moyen de paiement."
+  end
+
+
+  def paypal_payment_return
+    @contribution = Contribution.find_by!(id: paypal_params[:id])
+    authorize @contribution
+
+    # Idempotence : si l'utilisateur recharge la page de retour PayPal
+    if @contribution.state == "confirmed"
+      flash.notice = t('controllers.projects.contributions.paypal_payment_confirmation.success')
+      return redirect_to project_contribution_path(project_id: @contribution.project, id: @contribution.id)
+    end
+
+    order_id = paypal_params[:token]
+    service  = PayPalService.new(@contribution)
+    response = service.capture_order(order_id)
+
+    case service.capture_status(response)
+    when 'COMPLETED'
+      @contribution.response_code = response['status'].to_s
+      @contribution.payment_id = service.capture_id(response).presence || order_id
+      @contribution.response_message = t('controllers.projects.contributions.paypal_payment_confirmation.success')
+      @contribution.payment_method = "PayPal"
+      @contribution.state_event = :confirm
+      @contribution.save!
+
+      flash.notice = @contribution.response_message
+      redirect_to project_contribution_path(project_id: @contribution.project, id: @contribution.id)
+    when 'PENDING'
+      # eCheck ou équivalent : l'argent n'est pas encore encaissé — on ne confirme ni n'annule
+      @contribution.update(response_code: 'PENDING', payment_id: service.capture_id(response).presence || order_id, payment_method: 'PayPal')
+      redirect_to edit_project_contribution_path(@contribution.project, @contribution), notice: "Paiement en cours de traitement par PayPal. Vous serez confirmé dès réception des fonds."
+    else
+      @contribution.response_code = service.capture_status(response).to_s.presence || response['status'].to_s
+      @contribution.response_message = t('controllers.projects.contributions.paypal_payment_confirmation.error', status: @contribution.response_code)
+      @contribution.payment_method = "PayPal"
+      @contribution.state_event = :cancel
+      @contribution.save!
+
+      flash.alert = @contribution.response_message
+      redirect_to edit_project_contribution_path(project_id: @contribution.project, id: @contribution.id)
+    end
+  rescue => e
+    Rails.logger.error "[PayPal] capture error contrib=#{params[:id]} order=#{params[:token]}: #{e.class} #{e.message}"
+    flash.alert = "Une erreur est survenue lors de la confirmation du paiement. Si vous avez été débité, contactez le support."
+    redirect_to edit_project_contribution_path(@contribution.project, @contribution)
+  end
+
+
+  def paypal_payment_cancel
+    @contribution = Contribution.find_by!(id: paypal_params[:id])
+    authorize @contribution
+    redirect_to edit_project_contribution_path(@contribution.project, @contribution), alert: "Paiement PayPal annulé."
+  end
+
+
   def pay_plus_africa_payment_confirmation
     transaction = payplus_transaction_from_callback
 
@@ -603,6 +684,10 @@ class Projects::ContributionsController < ApplicationController
 
   def touch_params
     params.permit(:id, :phone, :country_operator, :id_client, :commit)
+  end
+
+  def paypal_params
+    params.permit(:id, :txn_id, :payment_status, :token, :PayerID)
   end
 
   def permitted_params

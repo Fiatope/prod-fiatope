@@ -29,6 +29,9 @@ en:
         pay_plus_africa_payment_confirmation:
           success: "Pay Plus Africa Payment confirmed. Your contribution has been processed successfully."
           error: "The transaction has been refused and you will not be charged. (%{status})"
+        paypal_payment_confirmation:
+          success: "PayPal payment confirmed. Your contribution has been processed successfully."
+          error: "The transaction has been refused and you will not be charged. (%{status})"
         touch_payment_status:
           pending_verification: "Your mobile payment has been initiated. You will receive a confirmation once it is validated."
         touch_payment:

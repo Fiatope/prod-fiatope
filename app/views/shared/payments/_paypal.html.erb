@@ -1,0 +1,4 @@
+<%= link_to paypal_payment_new_project_contribution_path(@contribution.project, @contribution), class: "btn button--paypal", data: { turbolinks: false } do %>
+  <%= image_tag('payments/paypal.png') %>
+  <span>Payer avec PayPal</span>
+<% end %>

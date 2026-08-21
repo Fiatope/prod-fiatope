@@ -29,6 +29,9 @@ fr:
         pay_plus_africa_payment_confirmation:
           success: "Paiement Pay Plus Africa effectué avec succès. Votre contribution a été validée."
           error: "La transaction a été refusée et vous n'avez pas été débité. (%{status})"
+        paypal_payment_confirmation:
+          success: "Paiement PayPal effectué avec succès. Votre contribution a été validée."
+          error: "La transaction a été refusée et vous n'avez pas été débité. (%{status})"
         touch_payment_status:
           pending_verification: "Votre paiement mobile a été initialisé. Vous recevrez une confirmation dès qu'il sera validé."
         touch_payment:

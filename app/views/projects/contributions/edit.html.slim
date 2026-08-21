@@ -59,6 +59,8 @@
       div.payments
         = render 'shared/payments/stripe', resource: @contribution
         = render 'shared/payments/mollie', resource: @contribution
+        - if ENV['PAYPAL_CLIENT_ID'].present? && ENV['PAYPAL_SECRET'].present? && %w(EUR USD GBP CAD CHF AUD).include?(@project.currency.to_s.upcase)
+          = render 'shared/payments/paypal', resource: @contribution
       / MANGOPAY DÉSACTIVÉ - Utiliser Stripe uniquement
       / = render 'shared/payments/form', resource: @contribution
 
