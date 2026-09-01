@@ -50,16 +50,21 @@
       div
         = "Franc CFA (#{@contribution.project.address_state =~ /mali/i ? 'XOF' : 'XAF'})"
       div.payments
-        = render 'shared/payments/orange_money', resource: @contribution
-        = render 'shared/payments/pay_plus_africa', resource: @contribution
-        = render 'shared/payments/touch', resource: @contribution
+        - if payment_method_visible?(:orange_money)
+          = render 'shared/payments/orange_money', resource: @contribution
+        - if payment_method_visible?(:pay_plus_africa)
+          = render 'shared/payments/pay_plus_africa', resource: @contribution
+        - if payment_method_visible?(:touch)
+          = render 'shared/payments/touch', resource: @contribution
       br 
       div
         = "#{@project.currency.upcase}"
       div.payments
-        = render 'shared/payments/stripe', resource: @contribution
-        = render 'shared/payments/mollie', resource: @contribution
-        - if ENV['PAYPAL_CLIENT_ID'].present? && ENV['PAYPAL_SECRET'].present? && %w(EUR USD GBP CAD CHF AUD).include?(@project.currency.to_s.upcase)
+        - if payment_method_visible?(:stripe)
+          = render 'shared/payments/stripe', resource: @contribution
+        - if payment_method_visible?(:mollie)
+          = render 'shared/payments/mollie', resource: @contribution
+        - if payment_method_visible?(:paypal) && ENV['PAYPAL_CLIENT_ID'].present? && ENV['PAYPAL_SECRET'].present? && %w(EUR USD GBP CAD CHF AUD).include?(@project.currency.to_s.upcase)
           = render 'shared/payments/paypal', resource: @contribution
       / MANGOPAY DÉSACTIVÉ - Utiliser Stripe uniquement
       / = render 'shared/payments/form', resource: @contribution
