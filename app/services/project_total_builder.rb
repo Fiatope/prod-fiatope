@@ -4,16 +4,17 @@ class ProjectTotalBuilder
   end
 
   def attributes
-    {
+    attrs = {
       net_amount:                          net_amount,
       platform_fee:                        platform_fee,
       pledged:                             pledged,
       progress:                            progress,
       total_contributions:                 total_contributions,
-      total_contributors:                  total_contributors,
       total_contributions_without_matches: total_contributions_without_matches,
       total_payment_service_fee:           total_payment_service_fee
     }
+    attrs[:total_contributors] = total_contributors if ProjectTotal.column_names.include?('total_contributors')
+    attrs
   end
 
   def perform

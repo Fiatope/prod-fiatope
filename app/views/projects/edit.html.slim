@@ -22,8 +22,11 @@
 					          = form.input :permalink, as: :string
 					          = form.input :campaign_type, as: :select, collection: [['All or None', 'all_or_none'], ['Flexible', 'flexible']], include_blank: false
 					          = form.input :foundation_widget, as: :boolean
-					          = form.input :goal, as: :integer 
-					          = form.input :presale_goal, as: :integer 
+					          = form.input :presale, as: :boolean, label: t('crowdfunding.presale')
+					          .project-goal-field
+					            = form.input :goal, as: :integer 
+					          .project-presale-goal-field
+					            = form.input :presale_goal, as: :integer 
 					          = form.input :online_days, as: :integer
 					          = form.input :donation_can_issue_tax_receipt, as: :boolean
 					          hr

@@ -383,21 +383,54 @@ var loaded = function(){
 			});
 		}
 
-		if ($('form#new_project').length) {
-			$('form#new_project').on('change', function() {
-				if ($(this).find('input[name="project[presale]"]').length) {
-					if ($(this).find('input[name="project[presale]"]:checked').val() == '1') {
-						$(this).find('input[name="project[goal]"]').val(0);
-						$(this).find('input[name="project[goal]"]').prop("readonly",true);
-						$(this).find('input[name="project[presale_goal]"]').prop("readonly",false);
-					} else {
-						$(this).find('input[name="project[goal]"]').prop("readonly",false);
-						$(this).find('input[name="project[presale_goal]"]').val(0);
-						$(this).find('input[name="project[presale_goal]"]').prop("readonly",true);
+		function updatePresaleFields(form) {
+			var $form = $(form);
+			var $presaleCheckbox = $form.find('input[name="project[presale]"][type="checkbox"]');
+			if ($presaleCheckbox.length) {
+				var isPresale = $presaleCheckbox.is(':checked');
+				var $goalContainer = $form.find('.project-goal-field, .project_goal');
+				var $presaleGoalContainer = $form.find('.project-presale-goal-field, .project_presale_goal');
+				var $goalInput = $form.find('input[name="project[goal]"]');
+				var $presaleGoalInput = $form.find('input[name="project[presale_goal]"]');
+
+				if (isPresale) {
+					if ($goalContainer.length) {
+						$goalContainer.hide();
 					}
+					if ($presaleGoalContainer.length) {
+						$presaleGoalContainer.show();
+					}
+					$goalInput.prop("readonly", true);
+					if (!$goalInput.val() || $goalInput.val() === '') {
+						$goalInput.val(0);
+					}
+					$presaleGoalInput.prop("readonly", false);
+				} else {
+					if ($goalContainer.length) {
+						$goalContainer.show();
+					}
+					if ($presaleGoalContainer.length) {
+						$presaleGoalContainer.hide();
+					}
+					$goalInput.prop("readonly", false);
+					$presaleGoalInput.prop("readonly", true);
+					$presaleGoalInput.val(0);
 				}
-			});
+			}
 		}
+
+		$('form').each(function() {
+			if ($(this).find('input[name="project[presale]"]').length) {
+				updatePresaleFields(this);
+			}
+		});
+
+		$(document).on('change', 'input[name="project[presale]"]', function() {
+			var form = $(this).closest('form')[0];
+			if (form) {
+				updatePresaleFields(form);
+			}
+		});
 
 		if ($('.rewards').length) {
 			var rewards = $('.rewards');

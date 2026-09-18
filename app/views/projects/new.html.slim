@@ -44,30 +44,24 @@
               
               = f.input :name, as: :string, maxlength: 100
 
+              = f.input :presale, as: :boolean, label: t('crowdfunding.presale')
+
               = f.label :currency
               = f.select :currency, available_currencies
 
-              .input[class="#{'error' if @project.errors[:goal].present?}"]
+              .input.project-goal-field[class="#{'error' if @project.errors[:goal].present?}"]
                 .row
                   = f.label :goal
-                 	/.large-1.small-2.columns
-                  /   span.prefix €
                   .large-12.small-12.columns
                     = f.number_field :goal, class: 'with-prefix with-postfix'
-                  /.large-1.small-2.columns
-                  /   span.postfix .00
                 -  if @project.errors[:goal].present?
                   small.error = @project.errors[:goal].to_sentence
 
-              .input[class="#{'error' if @project.errors[:presale_goal].present?}"]
+              .input.project-presale-goal-field[class="#{'error' if @project.errors[:presale_goal].present?}"]
                 .row
-                  = f.label :presale_goal
-                 	/.large-1.small-2.columns
-                  /   span.prefix €
+                  = f.label :presale_goal, t('crowdfunding.presale_goal')
                   .large-12.small-12.columns
                     = f.number_field :presale_goal, class: 'with-prefix with-postfix'
-                  /.large-1.small-2.columns
-                  /   span.postfix .00
                 -  if @project.errors[:presale_goal].present?
                   small.error = @project.errors[:presale_goal].to_sentence
 

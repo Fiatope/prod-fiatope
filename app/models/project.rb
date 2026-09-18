@@ -57,6 +57,7 @@ class Project < ActiveRecord::Base
   # que de renvoyer des valeurs arbitraires.
   def project_total
     super || begin
+      return nil unless persisted?
       ProjectTotalBuilder.new(self).perform
       reload_project_total
     end
@@ -82,9 +83,21 @@ class Project < ActiveRecord::Base
   accepts_nested_attributes_for :rewards
   accepts_nested_attributes_for :project_documents
 
-  delegate :pledged, :progress, :total_contributions,
-    :total_contributions_without_matches, :total_payment_service_fee,
-    to: :project_total
+  delegate :total_contributions_without_matches, :total_payment_service_fee,
+    to: :project_total, allow_nil: true
+
+  def total_contributions
+    (project_total.try(:total_contributions) || contributions.with_state(:confirmed).count).to_i
+  end
+
+  def pledged
+    (project_total.try(:pledged) || contributions.with_state(:confirmed).sum(:value)).to_f
+  end
+
+  def progress
+    return 0 if goal.blank? || goal.zero?
+    (project_total.try(:progress) || (pledged / goal * 100)).to_i
+  end
 
   catarse_auto_html_for field: :about, video_width: 720, video_height: 405
   catarse_auto_html_for field: :budget, video_width: 720, video_height: 405
@@ -162,12 +175,26 @@ class Project < ActiveRecord::Base
   end
 
   validates :video_url, :online_days, :address_city, :address_state, presence: true, if: ->(p) { p.state_name == 'online' }
-  validates_presence_of :name, :user, :category, :about, :headline, :goal, :permalink, :location
+  validates_presence_of :name, :user, :category, :about, :headline, :permalink, :location
+  validates_presence_of :goal, unless: :presale?
+  validates_numericality_of :goal, greater_than_or_equal_to: 0, allow_blank: true
+  validates_presence_of :presale_goal, if: :presale?
+  validates_numericality_of :presale_goal, only_integer: true, greater_than: 0, if: :presale?
   validates_length_of :headline, maximum: 140
   validates_numericality_of :online_days
   validates_uniqueness_of :permalink, allow_blank: true, case_sensitive: false, on: :update
   validates_format_of :permalink, with: /\A(\w|-)*\z/, allow_blank: true
   validates_format_of :video_url, with: /(https?\:\/\/|)(youtu(\.be|be\.com)|vimeo).*+/, message: I18n.t('project.video_regex_validation'), allow_blank: true
+
+  before_validation :handle_presale_goal_and_defaults
+
+  def handle_presale_goal_and_defaults
+    if self.presale?
+      self.goal = 0 if self.goal.blank?
+    else
+      self.presale_goal = 0 if self.presale_goal.blank?
+    end
+  end
 
   before_validation do
     if self.site.present?
@@ -217,7 +244,11 @@ class Project < ActiveRecord::Base
   end
 
   def reached_goal?
-    pledged >= goal
+    if presale?
+      presale_goal.to_i > 0 ? total_contributions >= presale_goal : false
+    else
+      pledged >= goal
+    end
   end
 
   def expired?
@@ -229,7 +260,11 @@ class Project < ActiveRecord::Base
   end
 
   def pending_contributions_reached_the_goal?
-    pledged_and_waiting >= goal
+    if presale?
+      presale_goal.to_i > 0 ? total_contributions >= presale_goal : false
+    else
+      pledged_and_waiting >= goal
+    end
   end
 
   def pledged_and_waiting

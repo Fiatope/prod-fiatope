@@ -67,7 +67,10 @@ class ProjectsController < ApplicationController
 
   def create
     @project = Project.new(permitted_params[:project].merge(user: current_user))
-    @project.address_state = @project.address_state.capitalize
+    @project.address_state = @project.address_state.capitalize if @project.address_state.present?
+    if @project.presale? && @project.goal.blank?
+      @project.goal = 0
+    end
     authorize @project
     @project.save
     respond_with @project, location: success_project_path(@project)

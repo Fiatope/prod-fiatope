@@ -45,11 +45,11 @@ class Projects::BuildController < ApplicationController
     puts step.inspect
 
     # Only save project on last step; meanwhile the cache keep it
-    if step == :step1
-      if permitted_params[:project][:presale] == "1"
-        @project.assign_attributes(goal: 0)
-      end
+    if @project.presale? && @project.goal.blank?
+      @project.goal = 0
+    end
 
+    if step == :step1
       Rails.logger.debug("Skiping wicked save, step: #{step}, last step: #{Wicked::LAST_STEP}, finish step: #{Wicked::FINISH_STEP}")
       @skip_to = @next_step
       render_wizard
@@ -132,7 +132,7 @@ class Projects::BuildController < ApplicationController
   def permitted_params
     permitted = policy(@project || Project.new).permitted_attributes
     
-    permitted[:project] << [:description, :how_knows_fiatope, :how_knows_crowdfunding, :already_did_crowdfunding, :presale]
+    permitted[:project] << [:description, :how_knows_fiatope, :how_knows_crowdfunding, :already_did_crowdfunding, :presale, :presale_goal, :goal]
     permitted[:project] << [:how_many_contributors, :how_much_contribute, :contributors_from_where, :enrollment_strategy]
     permitted[:project] << [:partner_id]
 

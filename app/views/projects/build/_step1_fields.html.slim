@@ -14,9 +14,11 @@
 - else
   = f.input :currency, collection: [ "EUR"]
 
-= f.input :goal, as: :integer, input_html: { step: 50, class: 'with-prefix with-postfix', min: 0 }, label: t('crowdfunding.goal')
+.project-goal-field
+  = f.input :goal, as: :integer, input_html: { step: 50, class: 'with-prefix with-postfix', min: 0 }, label: t('crowdfunding.goal')
 
-= f.input :presale_goal, as: :integer, input_html: { min: 0}, label: t('crowdfunding.presale_goal')
+.project-presale-goal-field
+  = f.input :presale_goal, as: :integer, input_html: { min: 0}, label: t('crowdfunding.presale_goal')
 
 = f.input :online_days, as: :integer, input_html: { min: 0}, label: 'Durée de la collecte (nombres de jours)', required: true
 
