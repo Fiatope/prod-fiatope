@@ -336,6 +336,26 @@
           | Restaurer
         button.btn.btn-secondary[type="button" data-dismiss="modal"] Fermer
 
+/= Modal statistiques de campagne
+#campaignStatsModal.modal.fade[tabindex="-1" role="dialog"]
+  .modal-dialog.modal-lg[role="document" style="max-width: 1180px; width: 95%;"]
+    .modal-content
+      .modal-header.bg-info.text-white
+        h5.modal-title
+          i.fa.fa-bar-chart.mr-2
+          span#campaignStatsTitle Statistiques de la campagne
+        button.close.text-white[type="button" data-dismiss="modal" aria-label="Fermer"]
+          span[aria-hidden="true"] &times;
+      .modal-body#campaignStatsBody
+        .text-center.text-muted.py-4
+          i.fa.fa-spinner.fa-spin.fa-2x
+          p.mt-2 Chargement des statistiques...
+      .modal-footer
+        a#campaignStatsFullPage.btn.btn-default[type="button" target="_blank"]
+          i.fa.fa-external-link.mr-1
+          | Ouvrir en page complète
+        button.btn.btn-secondary[type="button" data-dismiss="modal"] Fermer
+
 - stripe_test_mode = ENV.fetch('STRIPE_SECRET_KEY', 'sk_test_').start_with?('sk_test_')
 javascript:
   // Mode test/prod Stripe pour adapter les URLs du dashboard
@@ -980,3 +1000,30 @@ javascript:
   function openRefundModalSimple(projectName, ownerName, contributorsCount, totalAmount, refundUrl) {
     openRefundModal(projectName, ownerName, contributorsCount, totalAmount, '0.00', '0.00', '0', [], refundUrl);
   }
+
+  // === Modal Statistiques de campagne ===
+  function openCampaignStats(projectName, statisticsUrl, fullPageUrl) {
+    $('#campaignStatsTitle').text('Statistiques — ' + projectName);
+    $('#campaignStatsFullPage').attr('href', fullPageUrl);
+    $('#campaignStatsModal').modal('show');
+    loadCampaignStats(statisticsUrl);
+  }
+
+  function loadCampaignStats(url) {
+    var $body = $('#campaignStatsBody');
+    $body.html('<div class="text-center text-muted py-4"><i class="fa fa-spinner fa-spin fa-2x"></i><p class="mt-2">Chargement des statistiques...</p></div>');
+    $.ajax({
+      url: url,
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    }).done(function(html) {
+      $body.html(html);
+    }).fail(function() {
+      $body.html('<div class="alert alert-danger">Impossible de charger les statistiques. Veuillez réessayer ou ouvrir la page complète.</div>');
+    });
+  }
+
+  $(document).on('submit', 'form.campaign-stats-filters', function(event) {
+    event.preventDefault();
+    var $form = $(this);
+    loadCampaignStats($form.attr('action') + '?' + $form.serialize());
+  });

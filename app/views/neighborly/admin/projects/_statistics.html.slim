@@ -1,0 +1,148 @@
+- campaign_currency = @project.currency.to_s.upcase
+- money_fmt = lambda { |amount| "#{number_with_delimiter(format('%.2f', amount.to_f), delimiter: ' ')} #{campaign_currency}" }
+- avg = @filtered_confirmed_count.positive? ? (@filtered_confirmed_total.to_f / @filtered_confirmed_count) : 0
+- export_params = campaign_stats_filters_params.reject { |_k, v| v.blank? }
+
+.campaign-stats
+  .row
+    .col-12.col-md-6
+      .mb-2
+        strong
+          i.fa.fa-info-circle.mr-1
+          | Vue d'ensemble de la campagne
+      table.table.table-bordered.table-sm style="width:100%"
+        tbody
+          tr
+            td.font-weight-bold Période
+            td
+              = @project.online_date&.strftime('%d/%m/%Y') || 'Non définie'
+              = " → "
+              = @project.display_expires_at
+          tr
+            td.font-weight-bold Statut
+            td
+              span.label.label-info= @project.state
+          tr
+            td.font-weight-bold Type de campagne
+            td= @project.presale? ? 'Prévente (objectif en articles)' : 'Collecte de fonds'
+          - if @project.presale?
+            tr
+              td.font-weight-bold Objectif initial (articles)
+              td= @project.presale_goal
+            tr
+              td.font-weight-bold Articles vendus (confirmés)
+              td= @project.total_contributions
+          - else
+            tr
+              td.font-weight-bold Objectif initial
+              td= money_fmt.call(@project.goal)
+          tr.table-success
+            td.font-weight-bold Montant total collecté (confirmé)
+            td.font-weight-bold= money_fmt.call(@project.pledged)
+          - unless @project.presale?
+            tr
+              td.font-weight-bold Progression
+              td= "#{@project.progress}%"
+          tr
+            td.font-weight-bold Contributions confirmées
+            td= @project.contributions.with_states(['confirmed']).count
+          tr
+            td.font-weight-bold Contributeurs uniques
+            td= @project.contributions.distinct.count(:user_id)
+
+  hr
+
+  .mb-2
+    strong
+      i.fa.fa-filter.mr-1
+      | Filtres & regroupement
+
+  = form_tag main_app.statistics_project_path(@project), method: :get, class: 'campaign-stats-filters form-horizontal' do
+    = hidden_field_tag :modal, 1
+    .row.mb-2
+      .col-md-2
+        = label_tag :stats_payment_method, 'Moyen de paiement'
+        = select_tag :payment_method, options_for_select([['Tous', '']] + @payment_methods.map { |m| [m, m] }, params[:payment_method]), id: :stats_payment_method, class: 'form-control input-sm'
+      .col-md-2
+        = label_tag :stats_contributor, 'Contributeur (nom / email)'
+        = text_field_tag :contributor, params[:contributor], id: :stats_contributor, class: 'form-control input-sm', placeholder: 'Ex: Marie'
+      .col-md-2
+        = label_tag :stats_state, 'État'
+        = select_tag :state, options_for_select([['Tous', '']] + @contribution_states.map { |s| [s, s] }, params[:state]), id: :stats_state, class: 'form-control input-sm'
+      .col-md-2
+        = label_tag :stats_start_date, 'Du (date contribution)'
+        = date_field_tag :start_date, params[:start_date], id: :stats_start_date, class: 'form-control input-sm'
+      .col-md-2
+        = label_tag :stats_end_date, 'Au (date contribution)'
+        = date_field_tag :end_date, params[:end_date], id: :stats_end_date, class: 'form-control input-sm'
+      .col-md-2
+        = label_tag :stats_group_by, 'Regrouper par'
+        = select_tag :group_by, options_for_select([['Aucun regroupement', ''], ['Moyen de paiement', 'payment_method'], ['Contributeur', 'contributor'], ['Jour', 'day'], ['Semaine', 'week'], ['Mois', 'month'], ['État', 'state']], params[:group_by]), id: :stats_group_by, class: 'form-control input-sm'
+    .row
+      .col-12
+        = submit_tag 'Appliquer les filtres', class: 'btn btn-primary btn-sm', data: { disable_with: 'Chargement...' }
+        = link_to 'Réinitialiser', 'javascript:loadCampaignStats($(\'form.campaign-stats-filters\').attr(\'action\') + \'?modal=1\')', class: 'btn btn-default btn-sm ml-1'
+        .pull-right.text-right
+          = link_to main_app.statistics_export_project_path(@project, export_params.merge(format: 'csv')), class: 'btn btn-success btn-sm', type: 'button' do
+            i.fa.fa-file-excel-o.mr-1
+            |  Exporter Excel (avec filtres)
+          = " "
+          = link_to main_app.statistics_export_project_path(@project, format: 'csv'), class: 'btn btn-outline-secondary btn-sm', type: 'button' do
+            i.fa.fa-download.mr-1
+            |  Exporter tout
+
+  .mt-2.small.text-muted
+    | #{@filtered_count} contribution(s) correspondant aux filtres — #{@filtered_confirmed_count} confirmée(s) — Total confirmé filtré : #{money_fmt.call(@filtered_confirmed_total)} — #{@filtered_contributors_count} contributeur(s) unique(s)
+
+  - if @grouped_rows.present?
+    .mt-3.mb-2
+      strong
+        i.fa.fa-list-alt.mr-1
+        = "Regroupement "
+        = {'payment_method' => 'par moyen de paiement', 'contributor' => 'par contributeur', 'day' => 'par jour', 'week' => 'par semaine', 'month' => 'par mois', 'state' => 'par état'}[@group_by]
+    table.table.table-striped.table-sm.table-bordered style="width:100%"
+      thead
+        tr
+          th Groupe
+          th.text-center Nb contributions
+          th.text-right Total confirmé
+      tbody
+        - @grouped_rows.each do |row|
+          tr
+            td= row[:label]
+            td.text-center= row[:count]
+            td.text-right= money_fmt.call(row[:amount])
+
+  .mt-3.mb-2
+    strong
+      i.fa.fa-hand-holding-usd.mr-1
+      | Détail des contributions
+    span.badge.badge-info.ml-1= @contribution_rows.count
+  .table-responsive style="max-height: 400px; overflow-y: auto;"
+    table.table.table-striped.table-sm style="width:100%"
+      thead
+        tr
+          th Date
+          th Contributeur
+          th.text-right Montant
+          th Moyen de paiement
+          th État
+          th Récompense
+      tbody
+        - @contribution_rows.each do |contribution|
+          - state_label_class = case contribution.state when 'confirmed' then 'label-success' when 'refunded' then 'label-warning' else 'label-danger' end
+          tr
+            td= contribution.created_at.strftime('%d/%m/%Y %H:%M')
+            td
+              = contribution.user&.name || contribution.payer_name || 'Inconnu'
+              - if contribution.anonymous?
+                span.label.label-primary.ml-1 anonyme
+            td.text-right= money_fmt.call(contribution.value)
+            td= contribution.payment_method
+            td
+              span.label class=state_label_class
+                = contribution.state
+            td= contribution.reward&.title
+        - if @contribution_rows.empty?
+          tr
+            td.text-center.text-muted colspan="6" Aucune contribution pour ces filtres.

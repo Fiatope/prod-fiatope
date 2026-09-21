@@ -1,0 +1,14 @@
+- @title = "Statistiques — #{@project.name}"
+.admin
+  .row
+    = render 'neighborly/admin/layouts/menu'
+    section.content.large-12.columns
+      h4
+        i.fa.fa-bar-chart.mr-2
+        strong = @project.name
+        span.text-muted.ml-2 — Statistiques de la campagne
+      p
+        = link_to '← Retour à la liste des projets', projects_path, class: 'button small secondary'
+        = " "
+        = link_to 'Ouvrir en page complète', main_app.statistics_project_path(@project), class: 'button small' if params[:modal].present?
+      = render partial: 'neighborly/admin/projects/statistics'

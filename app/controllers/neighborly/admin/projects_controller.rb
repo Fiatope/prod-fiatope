@@ -497,7 +497,197 @@ module Neighborly::Admin
       }
     end
 
+    # === STATISTIQUES DE CAMPAGNE (statut, période, montants, contributions, filtres, export Excel) ===
+
+    # Affiche les statistiques de la campagne : période, objectif initial,
+    # montant collecté, liste des contributions avec filtres et regroupements.
+    def statistics
+      @project = Project.find_by_permalink! params[:id]
+      load_campaign_statistics
+
+      if request.xhr? || params[:modal].present?
+        render partial: 'neighborly/admin/projects/statistics', layout: false
+      else
+        render :statistics
+      end
+    end
+
+    # Export Excel (CSV compatible Excel) des statistiques + contributions filtrées
+    def statistics_export
+      @project = Project.find_by_permalink! params[:id]
+      scope = filtered_campaign_contributions
+      csv_string = build_campaign_statistics_csv(@project, scope)
+      filename = "statistiques-campagne-#{@project.permalink}-#{Time.current.strftime('%Y%m%d')}.csv"
+      send_data("\uFEFF" + csv_string, filename: filename, type: 'text/csv; charset=utf-8', disposition: 'attachment')
+    end
+
     protected
+
+    def campaign_stats_filters_params
+      {
+        payment_method: params[:payment_method],
+        contributor: params[:contributor],
+        state: params[:state],
+        start_date: params[:start_date],
+        end_date: params[:end_date],
+        group_by: params[:group_by]
+      }
+    end
+    helper_method :campaign_stats_filters_params
+
+    def filtered_campaign_contributions
+      scope = @project.contributions
+      scope = scope.where(payment_method: params[:payment_method]) if params[:payment_method].present?
+      scope = scope.where(state: params[:state]) if params[:state].present?
+
+      if params[:contributor].present?
+        q = "%#{params[:contributor].to_s.strip}%"
+        scope = scope.joins(:user).where('users.name ILIKE :q OR users.email ILIKE :q', q: q)
+      end
+
+      if params[:start_date].present?
+        begin
+          scope = scope.where('contributions.created_at >= ?', Date.parse(params[:start_date].to_s).beginning_of_day)
+        rescue ArgumentError, TypeError
+        end
+      end
+
+      if params[:end_date].present?
+        begin
+          scope = scope.where('contributions.created_at <= ?', Date.parse(params[:end_date].to_s).end_of_day)
+        rescue ArgumentError, TypeError
+        end
+      end
+
+      scope
+    end
+
+    def load_campaign_statistics
+      base = filtered_campaign_contributions
+      confirmed = base.with_states(['confirmed'])
+
+      @payment_methods = @project.contributions.where.not(payment_method: [nil, '']).distinct.order(:payment_method).pluck(:payment_method)
+      @contribution_states = @project.contributions.distinct.order(:state).pluck(:state)
+
+      @filtered_count = base.count
+      @filtered_confirmed_count = confirmed.count
+      @filtered_confirmed_total = confirmed.sum(:value)
+      @filtered_contributors_count = base.distinct.count(:user_id)
+
+      @contribution_rows = base.includes(:user, :reward).order('contributions.created_at DESC')
+
+      @group_by = params[:group_by].to_s
+      @grouped_rows = %w[payment_method contributor day week month state].include?(@group_by) ? build_campaign_groupings(base) : nil
+    end
+
+    def build_campaign_groupings(base)
+      confirmed = base.with_states(['confirmed'])
+
+      case params[:group_by].to_s
+      when 'payment_method'
+        counts = base.group(:payment_method).count
+        amounts = confirmed.group(:payment_method).sum(:value)
+        counts.map { |key, count| { label: key.presence || 'Non renseigné', count: count, amount: amounts[key].to_f } }
+              .sort_by { |row| -row[:count] }
+      when 'contributor'
+        counts = base.joins(:user).group('users.id', 'users.name', 'users.email').count
+        amounts = confirmed.joins(:user).group('users.id', 'users.name', 'users.email').sum(:value)
+        counts.map do |key, count|
+          _id, name, email = key
+          { label: "#{name.presence || 'Anonyme'} (#{email})", count: count, amount: amounts[key].to_f }
+        end.sort_by { |row| -row[:amount] }
+      when 'state'
+        counts = base.group(:state).count
+        amounts = confirmed.group(:state).sum(:value)
+        counts.map { |key, count| { label: key.to_s, count: count, amount: amounts[key].to_f } }
+              .sort_by { |row| row[:label] }
+      when 'day', 'week', 'month'
+        date_campaign_groupings(base, params[:group_by].to_s)
+      else
+        []
+      end
+    end
+
+    def date_campaign_groupings(base, period)
+      expression = "date_trunc('#{period}', contributions.created_at)"
+      counts = base.group(Arel.sql(expression)).count
+      amounts = base.with_states(['confirmed']).group(Arel.sql(expression)).sum(:value)
+      counts.map do |time, count|
+        label = case period
+                when 'day'   then time.strftime('%d/%m/%Y')
+                when 'week'  then "Semaine du #{time.strftime('%d/%m/%Y')}"
+                else              time.strftime('%m/%Y')
+                end
+        { label: label, count: count, amount: amounts[time].to_f, sort_key: time }
+      end.sort_by { |row| -row[:sort_key].to_i }.each { |row| row.delete(:sort_key) }
+    end
+
+    def build_campaign_statistics_csv(project, scope)
+      require 'csv'
+      currency = project.currency.to_s.upcase
+      confirmed = scope.with_states(['confirmed'])
+
+      CSV.generate(col_sep: ';') do |csv|
+        csv << ['STATISTIQUES DE LA CAMPAGNE']
+        csv << ['Campagne', project.name]
+        csv << ['Porteur', project.user&.name]
+        csv << ['Email porteur', project.user&.email]
+        csv << ['Statut campagne', project.state]
+        csv << ['Début campagne', project.online_date&.strftime('%d/%m/%Y') || 'Non définie']
+        csv << ['Fin campagne', project.display_expires_at.to_s]
+        if project.presale?
+          csv << ['Type de campagne', "Prévente (objectif en nombre d'articles)"]
+          csv << ['Objectif initial (articles)', project.presale_goal]
+          csv << ['Articles vendus (confirmés)', project.total_contributions]
+        else
+          csv << ['Type de campagne', 'Collecte de fonds']
+          csv << ["Objectif initial (#{currency})", format('%.2f', project.goal.to_f)]
+          csv << ["Montant total collecté confirmé (#{currency})", format('%.2f', project.pledged)]
+          csv << ['Progression (%)', project.progress]
+        end
+        csv << ['Contributions confirmées (toutes)', project.contributions.with_states(['confirmed']).count]
+        csv << ['Contributeurs uniques', project.contributions.distinct.count(:user_id)]
+        csv << ['Export généré le', Time.current.strftime('%d/%m/%Y %H:%M')]
+        csv << []
+        csv << ["FILTRES APPLIQUÉS À L'EXPORT"]
+        csv << ['Moyen de paiement', params[:payment_method].presence || 'Tous']
+        csv << ['Contributeur', params[:contributor].presence || 'Tous']
+        csv << ['État', params[:state].presence || 'Tous']
+        csv << ['Début période (contributions)', params[:start_date].presence || '-']
+        csv << ['Fin période (contributions)', params[:end_date].presence || '-']
+        csv << ['Contributions exportées', scope.count]
+        csv << ["Total confirmé exporté (#{currency})", format('%.2f', confirmed.sum(:value).to_f)]
+        csv << []
+
+        groupings = %w[payment_method contributor day week month state].include?(params[:group_by].to_s) ? build_campaign_groupings(scope) : nil
+        if groupings.present?
+          csv << ["REGROUPEMENT PAR #{params[:group_by].to_s.upcase}"]
+          csv << ['Groupe', 'Nb contributions', "Total confirmé (#{currency})"]
+          groupings.each { |row| csv << [row[:label], row[:count], format('%.2f', row[:amount].to_f)] }
+          csv << []
+        end
+
+        csv << ['DÉTAIL DES CONTRIBUTIONS']
+        csv << ['ID', 'Date', 'Contributeur', 'Email', 'Anonyme', "Montant (#{currency})",
+                'Moyen de paiement', 'État', 'Récompense', 'Frais de paiement', 'Référence paiement', 'Confirmée le']
+        scope.includes(:user, :reward).order('contributions.created_at DESC').find_each do |contribution|
+          csv << [
+            contribution.id,
+            contribution.created_at.strftime('%d/%m/%Y %H:%M'),
+            contribution.user&.name || contribution.payer_name,
+            contribution.user&.email || contribution.payer_email,
+            contribution.anonymous? ? 'Oui' : 'Non',
+            format('%.2f', contribution.value.to_f),
+            contribution.payment_method,
+            contribution.state,
+            contribution.reward&.title,
+            format('%.2f', contribution.payment_service_fee.to_f),
+            contribution.key,
+            contribution.confirmed_at&.strftime('%d/%m/%Y %H:%M')
+          ]
+        end
+      end
+    end
 
     def handle_payout_profile_sync_failure!(sync_result, project, prefix)
       errors = Array(sync_result.errors)

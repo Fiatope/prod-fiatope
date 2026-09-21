@@ -237,6 +237,10 @@
                         li
                           = link_to populate_contribution_project_path(project) do
                             = t('.populate_contribution')
+                        li
+                          = link_to "javascript:openCampaignStats('#{j(project.name)}', '#{main_app.statistics_project_path(project, modal: 1)}', '#{main_app.statistics_project_path(project)}')" do
+                            i.fa.fa-bar-chart
+                            = " 📊 Statistiques & Export Excel"
                         - if project.can_approve?
                           li
                             = link_to approve_project_path(project), method: :put  do

@@ -227,6 +227,8 @@ Neighborly::Application.routes.draw do
       get :verify_stripe_wallet, to: 'neighborly/admin/projects#verify_stripe_wallet'
       get :payout_profile, to: 'neighborly/admin/projects#payout_profile'
       post :unlock_payout_profile_edit, to: 'neighborly/admin/projects#unlock_payout_profile_edit'
+      get :statistics, to: 'neighborly/admin/projects#statistics'
+      get :statistics_export, to: 'neighborly/admin/projects#statistics_export'
     end
 
     member do
