@@ -4,13 +4,27 @@ begin
 
     ActionMailer::Base.delivery_method = :smtp
 
+    # Ancienne configuration SendGrid (compte suspendu) - conservee pour memoire
+    # ActionMailer::Base.smtp_settings = {
+    #   address: Configuration[:SENDGRID_ADDRESS],
+    #   port: Configuration[:SENDGRID_PORT],
+    #   user_name: Configuration[:SENDGRID_USERNAME],
+    #   password: Configuration[:SENDGRID_PASSWORD],
+    #   authentication: :plain,
+    #   domain: 'fiatope.com',
+    # }
+
+    # SMTP generique configurable par variables d'environnement.
+    # Gmail : SMTP_ADDRESS=smtp.gmail.com SMTP_PORT=587 SMTP_USERNAME=<compte google>
+    #         SMTP_PASSWORD=<mot de passe d'application> SMTP_DOMAIN=fiatope.com
     ActionMailer::Base.smtp_settings = {
-      address: Configuration[:SENDGRID_ADDRESS],
-      port: Configuration[:SENDGRID_PORT],
-      user_name: Configuration[:SENDGRID_USERNAME],
-      password: Configuration[:SENDGRID_PASSWORD],
+      address: Configuration[:SMTP_ADDRESS],
+      port: Configuration[:SMTP_PORT] || 587,
+      user_name: Configuration[:SMTP_USERNAME],
+      password: Configuration[:SMTP_PASSWORD],
       authentication: :plain,
-      domain: 'fiatope.com',
+      enable_starttls_auto: true,
+      domain: Configuration[:SMTP_DOMAIN] || 'fiatope.com',
       open_timeout: 20,
       read_timeout: 20,
     }

@@ -45,13 +45,18 @@ class Message
       :html_body => simple_format(message),
       :via => :smtp,
       :via_options => {
-        :address              => Configuration[:SENDGRID_ADDRESS],
-        :port                 => Configuration[:SENDGRID_PORT],
-        # :enable_starttls_auto => Configuration[:sendgrid_tls].downcase == 'true' ? true : false,
-        :user_name            => Configuration[:SENDGRID_USERNAME],
-        :password             => Configuration[:SENDGRID_PASSWORD],
+        # Ancienne configuration SendGrid (compte suspendu) - conservee pour memoire
+        # :address              => Configuration[:SENDGRID_ADDRESS],
+        # :port                 => Configuration[:SENDGRID_PORT],
+        # :user_name            => Configuration[:SENDGRID_USERNAME],
+        # :password             => Configuration[:SENDGRID_PASSWORD],
+        :address              => Configuration[:SMTP_ADDRESS],
+        :port                 => Configuration[:SMTP_PORT] || 587,
+        :enable_starttls_auto => true,
+        :user_name            => Configuration[:SMTP_USERNAME],
+        :password             => Configuration[:SMTP_PASSWORD],
         :authentication       => :plain, # :plain, :login, :cram_md5, no auth by default
-        :domain               => "fiatope.com", # the HELO domain provided by the client to the server
+        :domain               => Configuration[:SMTP_DOMAIN] || "fiatope.com", # the HELO domain provided by the client to the server
         :arguments => ''
       }
     })
