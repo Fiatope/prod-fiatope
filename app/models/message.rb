@@ -29,22 +29,25 @@ class Message
   def deliver
     return false unless valid?
 
-    # Pony.mail({
-    #   :from => %("#{name}" <#{'contact@fiatope.com'}>),
-    #   :reply_to => email,
-    #   :subject => subject,
-    #   :body => message,
-    #   :html_body => simple_format(message)
-    # })
+    sender_name = name
+    body_text = message
+    html_body = simple_format(message)
 
-    Pony.mail({
-      :from => %("#{name}" <#{'contact@fiatope.com'}>),
-      :to => email,
-      :subject => subject,
-      :body => message,
-      :html_body => simple_format(message),
-      :via => :smtp,
-      :via_options => {
+    mail = Mail.new
+    mail.from    = "#{sender_name} <#{'contact@fiatope.com'}>"
+    mail.to      = email
+    mail.subject = subject
+    mail.text_part { body body_text }
+    mail.html_part do
+      content_type 'text/html; charset=UTF-8'
+      body html_body
+    end
+
+    if ENV['RESEND_API_KEY'].present?
+      # VPS de production : ports SMTP sortants bloques -> envoi via API HTTP Resend.
+      mail.delivery_method ResendDelivery
+    else
+      mail.delivery_method :smtp, {
         # Ancienne configuration SendGrid (compte suspendu) - conservee pour memoire
         # :address              => Configuration[:SENDGRID_ADDRESS],
         # :port                 => Configuration[:SENDGRID_PORT],
@@ -59,8 +62,9 @@ class Message
         :domain               => Configuration[:SMTP_DOMAIN] || "fiatope.com", # the HELO domain provided by the client to the server
         :arguments => ''
       }
-    })
+    end
 
+    mail.deliver!
   end
 
   def persisted?

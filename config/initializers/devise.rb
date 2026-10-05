@@ -8,30 +8,11 @@ Devise.setup do |config|
 
 
   if Rails.env.production?
-    config.mailer.delivery_method = :smtp
     config.mailer.default_url_options = { :host => 'www.fiatope.com' }
-    config.mailer.perform_deliveries = true
     config.mailer.raise_delivery_errors = true
-    # Ancienne configuration SendGrid (compte suspendu) - conservee pour memoire
-    # config.mailer.smtp_settings = {
-    #   address: ENV['SENDGRID_ADDRESS'],
-    #   port: ENV['SENDGRID_PORT'],
-    #   user_name: ENV['SENDGRID_USERNAME'],
-    #   password: ENV['SENDGRID_PASSWORD'],
-    #   authentication: :plain,
-    #   :domain => 'fiatope.com'
-    # }
-    config.mailer.smtp_settings = {
-      address: ENV['SMTP_ADDRESS'],
-      port: ENV['SMTP_PORT'] || 587,
-      user_name: ENV['SMTP_USERNAME'],
-      password: ENV['SMTP_PASSWORD'],
-      enable_starttls_auto: true,
-      authentication: :plain,
-      :domain => ENV['SMTP_DOMAIN'] || 'fiatope.com',
-      open_timeout: 20,
-      read_timeout: 20
-    }
+    # Le transport des mails (Resend HTTP ou SMTP generique) et ses parametres
+    # sont herites d'ActionMailer::Base, configures dans
+    # config/initializers/mail_config.rb. Ne rien redefinir ici.
   else
     config.mailer.delivery_method = :letter_opener
     config.mailer.perform_deliveries = true

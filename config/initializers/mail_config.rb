@@ -2,7 +2,12 @@ begin
   if Rails.env.production?
   ActionMailer::Base.default 'Content-Transfer-Encoding' => 'quoted-printable'
 
-    ActionMailer::Base.delivery_method = :smtp
+    if ENV['RESEND_API_KEY'].present?
+      # Les ports SMTP sortants sont bloques sur le VPS de production :
+      # envoi via l'API HTTP de Resend (port 443).
+      ActionMailer::Base.delivery_method = :resend
+    else
+      ActionMailer::Base.delivery_method = :smtp
 
     # Ancienne configuration SendGrid (compte suspendu) - conservee pour memoire
     # ActionMailer::Base.smtp_settings = {
@@ -28,6 +33,7 @@ begin
       open_timeout: 20,
       read_timeout: 20,
     }
+    end
   else
     config.mailer.delivery_method = :letter_opener
     config.mailer.perform_deliveries = true
