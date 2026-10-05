@@ -86,6 +86,10 @@ Neighborly::Application.configure do
   # Set this to true and configure the email server for immediate delivery to raise delivery errors.
   config.action_mailer.raise_delivery_errors = true
 
+  # Les mails asynchrones (deliver_later) passent par la queue Sidekiq 'default'
+  # (seule queue déclarée dans config/sidekiq.yml).
+  config.action_mailer.deliver_later_queue_name = 'default'
+
   # Enable locale fallbacks for I18n (makes lookups for any locale fall back to
   # the I18n.default_locale when a translation can not be found).
   # I18n.default_locale = :en

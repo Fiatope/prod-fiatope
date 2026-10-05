@@ -14,6 +14,13 @@ class User < ActiveRecord::Base
   devise :database_authenticatable, :registerable,
     :recoverable, :rememberable, :trackable, :omniauthable, :confirmable
 
+  # Les mails Devise (réinitialisation mot de passe, confirmation...) partent
+  # en tâche de fond via Sidekiq : un blocage/timeout SMTP ne doit jamais
+  # casser la requête utilisateur (500) et bénéficie des retries Sidekiq.
+  def send_devise_notification(notification, *args)
+    devise_mailer.send(notification, self, *args).deliver_later
+  end
+
   delegate :display_name, :display_image, :short_name, :display_image_html,
     :medium_name, :display_credits, :display_total_of_contributions, :first_name, :last_name, :gravatar_url,
     to: :decorator

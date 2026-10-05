@@ -11,11 +11,14 @@ begin
       password: Configuration[:SENDGRID_PASSWORD],
       authentication: :plain,
       domain: 'fiatope.com',
+      open_timeout: 20,
+      read_timeout: 20,
     }
   else
     config.mailer.delivery_method = :letter_opener
     config.mailer.perform_deliveries = true
   end
-rescue
-  nil
+rescue => e
+  Rails.logger.error("[MailConfig] Erreur de configuration SMTP: #{e.message}")
+  Rollbar.error(e) if defined?(Rollbar)
 end

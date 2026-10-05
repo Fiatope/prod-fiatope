@@ -19,7 +19,9 @@ Devise.setup do |config|
       password: ENV['SENDGRID_PASSWORD'],
       #enable_starttls_auto: true,
       authentication: :plain,
-      :domain => 'fiatope.com'
+      :domain => 'fiatope.com',
+      open_timeout: 20,
+      read_timeout: 20
     }
   else
     config.mailer.delivery_method = :letter_opener
